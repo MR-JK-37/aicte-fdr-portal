@@ -23,6 +23,8 @@ echo "[1/3] Verifying SHA-256 checksums..."
 # 2. Restore PostgreSQL
 echo "[2/3] Restoring database to clean state..."
 gunzip -c "$BACKUP_DIR/fdr_db.sql.gz" | docker exec -i fdr-portal-db-1 psql -U fdr -d fdr
+docker exec fdr-portal-db-1 psql -U fdr -d fdr -c "GRANT USAGE ON SCHEMA public TO fdr_readonly; GRANT SELECT ON ALL TABLES IN SCHEMA public TO fdr_readonly; ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO fdr_readonly;"
+
 
 # 3. Post-Restore Verification
 echo "[3/3] Running post-restore integrity check..."
