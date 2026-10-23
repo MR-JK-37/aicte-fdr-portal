@@ -214,6 +214,61 @@
   on provider API keys (needs your login/signup on at least one of
   Groq/OpenRouter/Cerebras/Mistral).
 
+## 2026-10-23 (cont'd) — Phase 5
+
+- Mock bank-confirmation API (`app/verification/mock_bank_api.py`): signed
+  (HMAC) responses with simulated latency and a configurable failure
+  rate. Every response carries `"simulated": True`; signature verified in
+  tests, including a tamper-detection check. Mock SFMS/NeSL feed
+  (`mock_sfms_feed.py`) for BG/E_BG/SURETY_BOND status, same
+  `simulated: True` labelling. Neither touches a real bank system
+  anywhere — both are explicitly SIMULATED per your instructions.
+- **Hard rule enforced structurally, not just documented:** "the evidence
+  level is never raised by AI; only human actions with uploaded evidence
+  move L1->L2->L3" (Blueprint.txt line 381). `request_bank_confirmation`
+  and `record_ledger_match` only ever write a `VerificationRecord`
+  (evidence) — neither touches `instrument.evidence_level`. Only
+  `confirm_bank_verification` (requires `verifier` role + a non-empty
+  reason + an actually-uploaded `Document` as evidence) and
+  `confirm_ledger_reconciliation` (requires `verifier` role + a
+  verification record sourced specifically from the AICTE CSV) move
+  evidence_level, and both write an audit entry. Tested: wrong role
+  rejected, missing evidence rejected, missing reason rejected, wrong
+  verification-record source rejected.
+- **Real (non-simulated) part:** AICTE bank-statement CSV import +
+  UTR/amount auto-match (`bank_statement.py`) for ONLINE_SD instruments —
+  exact UTR+amount match, fuzzy narration+amount fallback when no UTR was
+  recorded, explicit no-match. Added `instruments.utr` column (migration
+  `ef43e7d9fd11`) since no column existed to match against.
+- Declared-vs-confirmed diff (`diff.py`) and evidence-level badge metadata
+  (`badges.py`, L0-L3 with label+icon+tone — colour-blind-safe per the
+  design spec, never colour-only) are the API-shaped contracts the Phase
+  9 web UI will render; no UI exists yet to consume them.
+- **Found and fixed a real test-isolation bug, not a detector bug:** a
+  pipeline-integration test failed on a pHash "duplicate" flag. Traced it
+  to accumulated documents from earlier manual test runs during this
+  session (4 total rows, 2 colliding pairs) — confirmed by truncating and
+  re-running on a clean DB, where it passed. Root cause wasn't pHash
+  being unreliable; it was that `tests/` had no session-level DB reset,
+  so every local `pytest` invocation during development silently
+  accumulated rows that later tests' assertions didn't account for. Fixed
+  properly (not just patched around) with an autouse,
+  session-scoped `conftest.py` fixture that truncates every table these
+  tests write to once per session, run via the superuser role since
+  `fdr_app` has no TRUNCATE grant. Verified by running the full suite
+  twice in a row with no failures.
+- Tests: 22 new (102 fast + the 100-doc benchmark).
+
+### Known gaps / deferred (tracked, not forgotten)
+
+- No HTTP endpoints wired for any of this yet (request confirmation,
+  upload bank-reply evidence, import CSV, confirm L2/L3) — same Phase 9
+  web-UI wiring gap noted in Phase 4.
+- Bank-guarantee instruments (BG/E_BG/SURETY_BOND) have the mock SFMS/NeSL
+  feed function but no orchestration service wired to it yet (the FDR/
+  ONLINE_SD path through mock_bank_api + bank_statement is complete; the
+  BG path's verification service is a smaller follow-up, not built here).
+
 ### Unverified / to confirm later
 
 - Exact current free-tier limits for Groq/OpenRouter/Workers AI/Sarvam will

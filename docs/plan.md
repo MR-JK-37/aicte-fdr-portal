@@ -45,7 +45,7 @@ scripts/        check_providers.py, deploy scripts, backup/restore
       confirm. Forgery/duplicate signals.
       Accept: 100 synthetic FDRs, 8 layouts, ≥95% field accuracy; seeded
       defects detected with explanations.
-- [ ] **Phase 5 — Verification (SIMULATED bank side).** Mock bank-confirmation
+- [x] **Phase 5 — Verification (SIMULATED bank side).** Mock bank-confirmation
       API + mock SFMS/NeSL. Real: AICTE bank-statement CSV import w/ UTR match.
       Accept: declared-vs-confirmed diff view; evidence badges.
 - [ ] **Phase 6 — LLM gateway + agents.** `llm_gateway` module, provider

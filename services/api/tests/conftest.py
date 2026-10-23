@@ -7,6 +7,37 @@ from sqlalchemy.orm import Session, sessionmaker
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL", "postgresql+psycopg://fdr:fdr@localhost:5434/fdr"
 )
+SUPERUSER_DATABASE_URL = os.environ.get(
+    "SUPERUSER_DATABASE_URL", "postgresql+psycopg://fdr:fdr@localhost:5434/fdr"
+)
+
+# Tables these tests write to that must start each test session empty.
+# Reference/structural tables (banks, branches) are intentionally excluded
+# — they're not what any test's assertions depend on being absent.
+_VOLATILE_TABLES = [
+    "notification_log", "call_sessions", "device_tokens", "consent_records",
+    "escalations", "reminders", "release_requests", "penalties",
+    "scrutiny_observations", "discrepancies", "verification_records",
+    "documents", "audit_log", "instruments", "app_users", "trusts", "institutions",
+]
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _reset_db_once_per_session():
+    """Truncates all tables the test suite writes to, once at the start of
+    the session. Without this, these tests (necessarily integration tests
+    against the live Compose Postgres, not an in-memory DB — RLS and the
+    audit-immutability trigger only mean anything against real Postgres)
+    accumulate rows across every local `pytest` invocation during
+    development, which silently corrupts assertions that count rows or
+    compare hashes/perceptual-hashes against "nothing else in the table" —
+    exactly what caused a real false failure here (a pHash duplicate flag
+    tripped by a leftover document from an earlier manual test run, not a
+    bug in the detector)."""
+    engine = create_engine(SUPERUSER_DATABASE_URL, future=True)
+    with engine.begin() as conn:
+        conn.execute(text(f"TRUNCATE {', '.join(_VOLATILE_TABLES)} RESTART IDENTITY CASCADE"))
+    engine.dispose()
 
 
 @pytest.fixture(scope="session")

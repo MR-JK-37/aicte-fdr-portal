@@ -66,6 +66,9 @@ class Instrument(Base):
     )
     instrument_number: Mapped[str] = mapped_column(String(64))
     amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    # Declared UTR for ONLINE_SD instruments, used by the AICTE
+    # bank-statement reconciliation (ledger -> L3) matcher.
+    utr: Mapped[str | None] = mapped_column(String(32), nullable=True)
     issue_date: Mapped[datetime | None]
     maturity_date: Mapped[datetime | None]
     tenor_months: Mapped[int | None]
