@@ -1,0 +1,17 @@
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.turbo/
+dist/
+.expo/
+.env
+.env.*.local
+*.log
+.DS_Store
+db_data/
+valkey_data/
+minio_data/
+infra/docker/garage.toml
+garage_data/
+garage_meta/
