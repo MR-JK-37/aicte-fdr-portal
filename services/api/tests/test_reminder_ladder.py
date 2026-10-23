@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import httpx
 import pytest
 
-from app import sim_clock
 from app.models import AppUser, Institution, Instrument, Reminder
 from app.models.enums import AppRole, InstrumentStatus, InstrumentType
 from app.reminders.ladder import (
@@ -15,7 +14,7 @@ from app.reminders.ladder import (
 )
 
 
-def _make_reminder_with_contact(db_session, *, quiet_hours_start=21, quiet_hours_end=8):
+def _make_reminder_with_contact(db_session, clock, *, quiet_hours_start=21, quiet_hours_end=8):
     inst = Institution(aicte_code=f"LAD-{uuid.uuid4().hex[:8]}", name="Ladder Test Institution")
     db_session.add(inst)
     db_session.flush()
@@ -25,7 +24,7 @@ def _make_reminder_with_contact(db_session, *, quiet_hours_start=21, quiet_hours
         instrument_number=f"FDR-LAD-{uuid.uuid4().hex[:6]}",
         amount=500000,
         status=InstrumentStatus.EXPIRING,
-        maturity_date=sim_clock.now(db_session) + timedelta(days=5),
+        maturity_date=clock.now() + timedelta(days=5),
     )
     db_session.add(instrument)
     contact = AppUser(
@@ -45,7 +44,7 @@ def _make_reminder_with_contact(db_session, *, quiet_hours_start=21, quiet_hours
         instrument_id=instrument.id,
         window="T-7",
         channel="in_app",
-        scheduled_for=sim_clock.now(db_session),
+        scheduled_for=clock.now(),
         status="pending",
     )
     db_session.add(reminder)
@@ -53,27 +52,27 @@ def _make_reminder_with_contact(db_session, *, quiet_hours_start=21, quiet_hours
     return instrument, contact, reminder
 
 
-def test_first_call_sends_in_app_step(db_session):
-    _, _, reminder = _make_reminder_with_contact(db_session)
-    result = advance_ladder(db_session, reminder)
+def test_first_call_sends_in_app_step(db_session, clock):
+    _, _, reminder = _make_reminder_with_contact(db_session, clock)
+    result = advance_ladder(db_session, reminder, clock)
     assert result.step == "in_app"
     assert result.sent is True
     assert reminder.ladder_step == 0
 
 
-def test_does_not_escalate_before_delay_elapses(db_session):
-    _, _, reminder = _make_reminder_with_contact(db_session)
-    advance_ladder(db_session, reminder)  # in_app
-    again = advance_ladder(db_session, reminder)  # same sim-time, delay not elapsed
+def test_does_not_escalate_before_delay_elapses(db_session, clock):
+    _, _, reminder = _make_reminder_with_contact(db_session, clock)
+    advance_ladder(db_session, reminder, clock)  # in_app
+    again = advance_ladder(db_session, reminder, clock)  # same clock time, delay not elapsed
     assert again is None
     assert reminder.ladder_step == 0
 
 
-def test_escalates_to_push_after_delay(db_session):
-    _, _, reminder = _make_reminder_with_contact(db_session)
-    advance_ladder(db_session, reminder)  # in_app
-    sim_clock.advance(db_session, days=2)
-    result = advance_ladder(db_session, reminder)
+def test_escalates_to_push_after_delay(db_session, clock):
+    _, _, reminder = _make_reminder_with_contact(db_session, clock)
+    advance_ladder(db_session, reminder, clock)  # in_app
+    clock.advance(days=2)
+    result = advance_ladder(db_session, reminder, clock)
     assert result.step == "push"
     assert reminder.ladder_step == 1
     # No Firebase project configured in this environment — must fail
@@ -82,16 +81,16 @@ def test_escalates_to_push_after_delay(db_session):
     assert "FIREBASE_SERVICE_ACCOUNT_JSON" in result.reason
 
 
-def test_push_skipped_during_quiet_hours(db_session):
-    now_hour = sim_clock.now(db_session).hour
+def test_push_skipped_during_quiet_hours(db_session, clock):
+    now_hour = clock.now().hour
     # A one-hour quiet window starting at the current hour, so the push
-    # step (sent ~2 sim-days later, same hour-of-day) lands inside it.
+    # step (sent ~2 days later, same hour-of-day) lands inside it.
     start = now_hour
     end = (now_hour + 1) % 24
-    _, _, reminder = _make_reminder_with_contact(db_session, quiet_hours_start=start, quiet_hours_end=end)
-    advance_ladder(db_session, reminder)
-    sim_clock.advance(db_session, days=2)
-    result = advance_ladder(db_session, reminder)
+    _, _, reminder = _make_reminder_with_contact(db_session, clock, quiet_hours_start=start, quiet_hours_end=end)
+    advance_ladder(db_session, reminder, clock)
+    clock.advance(days=2)
+    result = advance_ladder(db_session, reminder, clock)
     assert result.step == "push"
     assert result.sent is False
     assert result.reason == "quiet hours"
@@ -102,14 +101,14 @@ def test_push_skipped_during_quiet_hours(db_session):
     assert reminder.ladder_step == LADDER_STEPS.index("push")
 
 
-def test_full_ladder_reaches_regulation_bureau_with_sim_clock_plus_300_days(db_session):
+def test_full_ladder_reaches_regulation_bureau_with_clock_plus_300_days(db_session, clock):
     from app.models import Escalation
 
-    _, _, reminder = _make_reminder_with_contact(db_session, quiet_hours_start=0, quiet_hours_end=0)
+    _, _, reminder = _make_reminder_with_contact(db_session, clock, quiet_hours_start=0, quiet_hours_end=0)
     seen_steps = []
     for _ in range(len(LADDER_STEPS) + 2):
-        sim_clock.advance(db_session, days=300)
-        result = advance_ladder(db_session, reminder)
+        clock.advance(days=300)
+        result = advance_ladder(db_session, reminder, clock)
         if result is not None:
             seen_steps.append(result.step)
 
@@ -125,28 +124,26 @@ def test_full_ladder_reaches_regulation_bureau_with_sim_clock_plus_300_days(db_s
     assert escalation.escalated_to == "Regulation Bureau"
 
     # Terminal step — further calls are no-ops, not errors.
-    assert advance_ladder(db_session, reminder) is None
+    assert advance_ladder(db_session, reminder, clock) is None
 
 
-def test_acknowledge_stops_further_escalation(db_session):
-    _, _, reminder = _make_reminder_with_contact(db_session)
-    advance_ladder(db_session, reminder)
-    acknowledge_reminder(db_session, reminder)
-    sim_clock.advance(db_session, days=300)
-    assert advance_ladder(db_session, reminder) is None
+def test_acknowledge_stops_further_escalation(db_session, clock):
+    _, _, reminder = _make_reminder_with_contact(db_session, clock)
+    advance_ladder(db_session, reminder, clock)
+    acknowledge_reminder(db_session, reminder, clock)
+    clock.advance(days=300)
+    assert advance_ladder(db_session, reminder, clock) is None
     assert reminder.ladder_step == 0
 
 
-def test_email_step_sends_a_real_smtp_message_caught_by_mailpit(db_session):
-    _, contact, reminder = _make_reminder_with_contact(db_session)
+def test_email_step_sends_a_real_smtp_message_caught_by_mailpit(db_session, clock):
+    _, contact, reminder = _make_reminder_with_contact(db_session, clock)
     # Walk the ladder up to (and including) the email step.
-    advance_ladder(db_session, reminder)  # in_app
-    sim_clock.advance(db_session, days=2)
-    advance_ladder(db_session, reminder)  # push
-    sim_clock.advance(db_session, days=2)
-    advance_ladder(db_session, reminder)  # voice_call
-    sim_clock.advance(db_session, days=2)
-    result = advance_ladder(db_session, reminder)  # email
+    advance_ladder(db_session, reminder, clock)  # in_app
+    clock.advance(days=2)
+    advance_ladder(db_session, reminder, clock)  # push
+    clock.advance(days=2)
+    result = advance_ladder(db_session, reminder, clock)  # email
     assert result.step == "email"
     assert result.sent is True
 
@@ -159,14 +156,14 @@ def test_email_step_sends_a_real_smtp_message_caught_by_mailpit(db_session):
     assert any(m["To"][0]["Address"] == contact.email for m in messages)
 
 
-def test_pstn_whatsapp_step_is_simulated_by_default(db_session):
-    _, _, reminder = _make_reminder_with_contact(db_session, quiet_hours_start=0, quiet_hours_end=0)
-    advance_ladder(db_session, reminder)  # in_app
-    for _ in range(3):
-        sim_clock.advance(db_session, days=2)
-        advance_ladder(db_session, reminder)  # push, voice_call, email
-    sim_clock.advance(db_session, days=2)
-    result = advance_ladder(db_session, reminder)  # pstn_whatsapp
+def test_pstn_whatsapp_step_is_simulated_by_default(db_session, clock):
+    _, _, reminder = _make_reminder_with_contact(db_session, clock, quiet_hours_start=0, quiet_hours_end=0)
+    advance_ladder(db_session, reminder, clock)  # in_app
+    for _ in range(2):
+        clock.advance(days=2)
+        advance_ladder(db_session, reminder, clock)  # push, email
+    clock.advance(days=2)
+    result = advance_ladder(db_session, reminder, clock)  # pstn_whatsapp
     assert result.step == "pstn_whatsapp"
     assert result.sent is False
     assert "SIMULATED" in result.reason

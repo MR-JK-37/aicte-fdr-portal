@@ -27,10 +27,9 @@ celery_app.conf.update(
 import app.reminders.tasks  # noqa: F401
 
 # Real wall-clock cadence per the brief: "Celery Beat every 15 minutes".
-# What counts as "due" inside that task is computed against the sim
-# clock (app.sim_clock), not wall-clock time — that's how advancing the
-# sim clock by simulated days fires the full ladder without an operator
-# waiting real days between runs.
+# What counts as "due" inside that task is computed against the real
+# clock (app.clock.RealClock) — there is no simulated/time-travel clock
+# in production (CLAUDE.md non-negotiable #10).
 celery_app.conf.beat_schedule = {
     "process-reminder-ladder-every-15-minutes": {
         "task": "app.reminders.tasks.process_reminder_ladder",

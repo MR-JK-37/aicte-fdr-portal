@@ -1,8 +1,8 @@
 """Computes which maturity reminder windows (T-90/60/30/7/0) are due for
-each active instrument, against the sim clock, and idempotently creates
-the Reminder rows the ladder (ladder.py) then works through. Also drives
-the automated ACTIVE->EXPIRING->MATURED lifecycle transitions Phase 3's
-`lifecycle.py` built the "system" pseudo-role for.
+each active instrument, against the injected Clock, and idempotently
+creates the Reminder rows the ladder (ladder.py) then works through.
+Also drives the automated ACTIVE->EXPIRING->MATURED lifecycle
+transitions Phase 3's `lifecycle.py` built the "system" pseudo-role for.
 """
 
 from dataclasses import dataclass
@@ -11,7 +11,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import sim_clock
+from app.clock import Clock
 from app.lifecycle import apply_transition
 from app.models.core import Instrument, Reminder
 from app.models.enums import InstrumentStatus
@@ -30,8 +30,8 @@ def _days_remaining(maturity_date: datetime, as_of: datetime) -> int:
     return (maturity_date.date() - as_of.date()).days
 
 
-def run_scheduler(session: Session) -> SchedulerResult:
-    as_of = sim_clock.now(session)
+def run_scheduler(session: Session, clock: Clock) -> SchedulerResult:
+    as_of = clock.now()
     instruments = session.execute(
         select(Instrument).where(
             Instrument.status.in_([InstrumentStatus.ACTIVE, InstrumentStatus.EXPIRING]),

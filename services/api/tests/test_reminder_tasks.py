@@ -1,9 +1,8 @@
 import uuid
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import text
 
-from app import sim_clock
 from app.db import SessionLocal
 from app.models import Institution, Instrument
 from app.models.enums import InstrumentStatus, InstrumentType
@@ -20,7 +19,7 @@ def test_process_reminder_ladder_runs_end_to_end_and_is_idempotent(db_session):
         instrument_number=f"FDR-TASK-{uuid.uuid4().hex[:6]}",
         amount=500000,
         status=InstrumentStatus.ACTIVE,
-        maturity_date=sim_clock.now(db_session) + timedelta(days=85),
+        maturity_date=datetime.now(UTC) + timedelta(days=85),
     )
     db_session.add(instrument)
     db_session.commit()  # the task uses its own session/connection — must actually be committed to be visible

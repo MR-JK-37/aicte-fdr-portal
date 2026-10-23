@@ -1,15 +1,12 @@
-"""The reminder/escalation ladder, per the brief exactly:
-"ladder: in-app -> FCM push (actions Acknowledge / Snooze / Call me) ->
-in-app AI call -> email -> (production flag) PSTN/WhatsApp -> Regulation
-Bureau." Each step escalates to the next only if the previous one went
-unacknowledged for a sim-clock delay — this is what makes "sim-clock
-+300 days fires the full ladder" true: advancing the sim clock by
-simulated days is what satisfies each step's escalation delay.
+"""The reminder/escalation ladder: in-app -> FCM push (actions
+Acknowledge / Snooze) -> email -> (production flag) PSTN/WhatsApp ->
+Regulation Bureau. Each step escalates to the next only if the previous
+one went unacknowledged for a clock-measured delay.
 
 Delivery is idempotent (NotificationLog.idempotency_key, unique per
 instrument+window+step — a re-run of the same scheduler tick for the
 same due step is a no-op, not a duplicate send) and quiet-hours aware
-for the two channels that actually interrupt someone (push, voice call).
+for the channel that actually interrupts someone (push).
 """
 
 from dataclasses import dataclass
@@ -18,11 +15,10 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import sim_clock
+from app.clock import Clock
 from app.config import settings
 from app.models.core import (
     AppUser,
-    CallSession,
     Escalation,
     Instrument,
     NotificationLog,
@@ -32,13 +28,12 @@ from app.reminders import i18n
 from app.reminders.email import send_email
 from app.reminders.push import PushNotConfiguredError, send_push
 
-LADDER_STEPS = ["in_app", "push", "voice_call", "email", "pstn_whatsapp", "regulation_bureau"]
+LADDER_STEPS = ["in_app", "push", "email", "pstn_whatsapp", "regulation_bureau"]
 
-# Sim-clock days to wait at each step before escalating to the next one.
+# Days to wait at each step before escalating to the next one.
 STEP_ESCALATION_DELAY_DAYS = {
     "in_app": 1,
     "push": 1,
-    "voice_call": 1,
     "email": 2,
     "pstn_whatsapp": 2,
     "regulation_bureau": 0,  # terminal step — nothing after it
@@ -135,27 +130,6 @@ def _execute_step(session: Session, reminder: Reminder, instrument: Instrument, 
         )
         return LadderStepResult(str(reminder.id), step, logged, "sent" if logged else "already sent")
 
-    if step == "voice_call":
-        if primary and _in_quiet_hours(primary, as_of):
-            return LadderStepResult(str(reminder.id), step, False, "quiet hours")
-        # Phase 8 owns actually placing the call; this records the
-        # trigger intent as a real DB row a Phase 8 voice worker can pick
-        # up, rather than pretending a call happened.
-        session.add(
-            CallSession(
-                institution_id=reminder.institution_id,
-                app_user_id=primary.id if primary else None,
-                language=language,
-                status="pending_voice_agent",
-            )
-        )
-        logged = _log_notification(
-            session, reminder=reminder, channel="in_app_ai_call", template="reminder.maturity_window",
-            payload={"message": message, "note": "call placement is Phase 8 — this records the trigger only"},
-            app_user_id=primary.id if primary else None,
-        )
-        return LadderStepResult(str(reminder.id), step, logged, "call session queued" if logged else "already sent")
-
     if step == "email":
         if primary:
             send_email(to_address=primary.email, subject="AICTE Security Deposit — maturity reminder", body=message)
@@ -195,14 +169,14 @@ def _execute_step(session: Session, reminder: Reminder, instrument: Instrument, 
     raise ValueError(f"unknown ladder step '{step}'")
 
 
-def advance_ladder(session: Session, reminder: Reminder) -> LadderStepResult | None:
+def advance_ladder(session: Session, reminder: Reminder, clock: Clock) -> LadderStepResult | None:
     """Runs the current (or, if its delay has elapsed, the next) ladder
     step for one reminder. Returns None if the reminder is acknowledged
     or the next step's delay hasn't elapsed yet (nothing to do)."""
     if reminder.acknowledged_at is not None:
         return None
 
-    as_of = sim_clock.now(session)
+    as_of = clock.now()
     instrument = session.get(Instrument, reminder.instrument_id)
 
     if reminder.last_step_at is not None:
@@ -222,7 +196,7 @@ def advance_ladder(session: Session, reminder: Reminder) -> LadderStepResult | N
     return result
 
 
-def acknowledge_reminder(session: Session, reminder: Reminder) -> None:
-    reminder.acknowledged_at = sim_clock.now(session)
+def acknowledge_reminder(session: Session, reminder: Reminder, clock: Clock) -> None:
+    reminder.acknowledged_at = clock.now()
     reminder.status = "acknowledged"
     session.flush()

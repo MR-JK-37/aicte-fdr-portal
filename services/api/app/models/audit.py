@@ -41,15 +41,3 @@ class AgentRun(Base):
     latency_ms: Mapped[int | None]
     status: Mapped[str] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-
-
-class SimClock(Base):
-    """Singleton row (id=1) holding the simulated-time offset used by Celery
-    Beat's reminder/escalation ladder so demos can time-travel without
-    waiting on wall-clock days."""
-
-    __tablename__ = "sim_clock"
-
-    id: Mapped[int] = mapped_column(primary_key=True, default=1)
-    offset_seconds: Mapped[int] = mapped_column(default=0)
-    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())

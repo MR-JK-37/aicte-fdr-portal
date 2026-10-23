@@ -1,4 +1,6 @@
 import os
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 
 import pytest
 import redis
@@ -17,11 +19,11 @@ VALKEY_URL = os.environ.get("VALKEY_URL", "redis://localhost:6379/0")
 # Reference/structural tables (banks, branches) are intentionally excluded
 # — they're not what any test's assertions depend on being absent.
 _VOLATILE_TABLES = [
-    "notification_log", "call_sessions", "device_tokens", "consent_records",
+    "notification_log", "device_tokens", "consent_records",
     "escalations", "reminders", "release_requests", "penalties",
     "scrutiny_observations", "discrepancies", "verification_records",
     "documents", "audit_log", "instruments", "app_users", "trusts", "institutions",
-    "sim_clock", "aph_clause_chunks",
+    "aph_clause_chunks",
 ]
 
 
@@ -83,3 +85,28 @@ def session_as(engine, role: str, institution_id: str | None = None, user_id: st
     session.execute(text("SELECT set_config('app.institution_id', :v, false)"), {"v": institution_id or ""})
     session.execute(text("SELECT set_config('app.user_id', :v, false)"), {"v": user_id or ""})
     return session
+
+
+@dataclass
+class FakeClock:
+    """Test-only `Clock` (see app.clock.Clock) that can be advanced
+    without waiting on wall-clock time. Lives strictly in this tests
+    package — production code only ever gets `app.clock.RealClock`."""
+
+    _offset: timedelta = field(default_factory=timedelta)
+
+    def now(self) -> datetime:
+        return datetime.now(UTC) + self._offset
+
+    def advance(self, *, days: int = 0, seconds: int = 0) -> datetime:
+        self._offset += timedelta(days=days, seconds=seconds)
+        return self.now()
+
+    def reset(self) -> datetime:
+        self._offset = timedelta()
+        return self.now()
+
+
+@pytest.fixture
+def clock() -> FakeClock:
+    return FakeClock()
