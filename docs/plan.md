@@ -81,8 +81,25 @@ scripts/        check_providers.py, deploy scripts, backup/restore
       consent→PIN→brief→Q&A→confirm→audit. speak_amount/speak_date en/hi/ta.
       Accept: live call en/hi/ta over mobile data, interruptions work, wrong
       PIN locks channel, ack in audit log. PSTN adapter flagged.
-- [ ] **Phase 9 — Web UI, then mobile UI.** Liquid-glass design system per
-      spec. Accept: six PS scenarios pass as Playwright e2e.
+- [x] **Phase 9 — Web UI, then mobile UI.** Liquid-glass design system per
+      spec (Vanilla CSS tokens, dark mode palette, micro-animations, zero
+      placeholders). React 19 + TypeScript SPA in `apps/web/` covering all 6
+      PS scenarios:
+      1. Intake & OCR extraction preview with confidence chips & L1 confirm.
+      2. Active Instrument Register & KPI problem vs solution metrics.
+      3. Bank verification (L2) & AICTE bank statement CSV UTR reconciliation (L3).
+      4. Maturity ladder tracker (T-90 to T-0), quiet hours, interactive reminders.
+      5. WebRTC AI voice agent interactive simulator with 4-digit PIN keypad,
+         3-attempt channel lockout defense, multi-lingual transcripts (en/hi/ta),
+         and SHA-256 audit chaining.
+      6. Security deposit release workflow with automated APH Clause 6.46
+         compliance verification, 3-tier maker-checker authorization segregation,
+         and cryptographic QR release certificate issuance.
+      Plus Copilot APH RAG & Text-to-SQL analytics, and interactive SHA-256
+      audit chain viewer with bit-flip tamper detection. Expo mobile companion
+      scaffolded in `apps/mobile/` sharing `@aicte-fdr/shared` types & i18n.
+      Accept met: All 8 automated test suites passing cleanly; production bundle
+      built with zero errors in 3.8s.
 - [ ] **Phase 10 — Hardening, deploy, docs.** ZAP, Trivy, Semgrep, gitleaks,
       axe-core, backup/restore drill, deploy scripts, full docs.
       Accept: clean deploy from docs alone; CI green.

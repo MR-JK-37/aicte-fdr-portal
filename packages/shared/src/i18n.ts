@@ -1,0 +1,47 @@
+export const i18n = {
+  en: {
+    portalTitle: 'AICTE Security Deposit Management Portal',
+    discloseVoice: 'Namaskar. This is AICTE Automated Security Deposit Notification Service calling. This call is recorded for statutory compliance.',
+    pinPrompt: 'Please enter your 4-digit voice security PIN to access deposit particulars.',
+    pinVerified: 'PIN verified successfully.',
+    ackSuccess: 'Acknowledgement recorded in AICTE immutable audit ledger.',
+    ladder: {
+      t90: 'T - 90 Days (In-App Advisory)',
+      t60: 'T - 60 Days (Push + Email)',
+      t30: 'T - 30 Days (In-App AI Call)',
+      t7: 'T - 7 Days (Daily Outbound Call)',
+      t0: 'T - 0 Days (Maturity Expiry Alert)',
+      escalated: 'T + 15 Days (Bureau Show-Cause Escalation)',
+    },
+  },
+  hi: {
+    portalTitle: 'एआईसीटीई सुरक्षा जमा (एफडीआर) प्रबंधन पोर्टल',
+    discloseVoice: 'नमस्कार। यह एआईसीटीई की स्वचालित सुरक्षा जमा सूचना सेवा है। यह कॉल सांविधिक अनुपालन के लिए रिकॉर्ड की जा रही है।',
+    pinPrompt: 'जमा विवरण तक पहुंचने के लिए कृपया अपना 4-अंकीय वॉयस सुरक्षा पिन दर्ज करें।',
+    pinVerified: 'पिन सफलतापूर्वक सत्यापित हुआ।',
+    ackSuccess: 'स्वीकृति एआईसीटीई अपरिवर्तनीय ऑडिट लेज़र में दर्ज की गई।',
+    ladder: {
+      t90: 'T - 90 दिन (इन-ऐप सलाह)',
+      t60: 'T - 60 दिन (पुश + ईमेल)',
+      t30: 'T - 30 दिन (इन-ऐप एआई कॉल)',
+      t7: 'T - 7 दिन (दैनिक आउटबाउंड कॉल)',
+      t0: 'T - 0 दिन (परिपक्वता समाप्ति अलर्ट)',
+      escalated: 'T + 15 दिन (ब्यूरो कारण बताओ नोटिस)',
+    },
+  },
+  ta: {
+    portalTitle: 'அகில இந்திய தொழில்நுட்பக் கல்விக் குழு (AICTE) பாதுகாப்பு வைப்புத்தொகை போர்டல்',
+    discloseVoice: 'வணக்கம். இது ஏஐசிடிஇ தானியங்கி பாதுகாப்பு வைப்புத்தொகை அறிவிப்பு அழைப்பு. இந்த அழைப்பு பதிவு செய்யப்படுகிறது.',
+    pinPrompt: 'வைப்புத்தொகை விவரங்களைப் பெற உங்கள் 4-இலக்க பாதுகாப்பு பின்னை உள்ளிடவும்.',
+    pinVerified: 'பின் வெற்றிகரமாக சரிபார்க்கப்பட்டது.',
+    ackSuccess: 'ஒப்புதல் ஏஐசிடிஇ மாறாத தணிக்கை பதிவேட்டில் பதிவு செய்யப்பட்டது.',
+    ladder: {
+      t90: 'T - 90 நாட்கள் (செயலி ஆலோசனை)',
+      t60: 'T - 60 நாட்கள் (புஷ் + மின்னஞ்சல்)',
+      t30: 'T - 30 நாட்கள் (செயலி ஏஐ அழைப்பு)',
+      t7: 'T - 7 நாட்கள் (தினசரி வெளிச்செல்லும் அழைப்பு)',
+      t0: 'T - 0 நாட்கள் (முதிர்வு எச்சரிக்கை)',
+      escalated: 'T + 15 நாட்கள் (காரணம் காட்டும் நோட்டீஸ்)',
+    },
+  },
+};

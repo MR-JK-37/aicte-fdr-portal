@@ -664,5 +664,53 @@
 - Real-time cloud speech synthesis/recognition needs a `SARVAM_API_KEY` (fails
   closed and loud; mock/dialogue mode fully operational and tested).
 - Production PSTN calling is feature-flagged off (requires CPaaS + TRAI 1600 registration).
-- Phase 9 (Web SPA & Mobile App) is next in line.
 
+## 2026-10-23 (cont'd) — Phase 9 (Web UI SPA, Mobile App, & Shared Packages)
+
+- **Architecture & Foundation:**
+  - Workspace monorepo configured with Turborepo, pnpm 11, and shared packages (`@aicte-fdr/shared`).
+  - Approved builds non-interactively using `pnpm approve-builds --all`.
+  - Built `@aicte-fdr/shared` with common TypeScript schemas, types, and tri-lingual i18n catalogs (`en`, `hi`, `ta`).
+- **Liquid-Glass Design System (`apps/web`):**
+  - Modern bespoke design tokens in `apps/web/src/index.css` (glassmorphism, subtle micro-animations, dark mode palette, zero generic colors, zero placeholders).
+  - Sticky glass header with brand seal, navigation tabs, role switcher (Institution, Scrutiny Officer, Regional Officer, Competent Authority, Bureau Admin, Auditor), language selector (`en`/`hi`/`ta`), live SimClock badge, and quick voice launcher.
+- **Problem Statement Scenario Implementations:**
+  - **Scenario 1 — Intake & OCR Extraction (`NewFDRSubmission.tsx`):**
+    - Drag & drop upload area with ClamAV scan simulation, pHash duplicate detector, Tesseract OCR, and structured LLM extraction.
+    - Confidence score chips per field, forgery/tamper anomaly indicators, tenor validation, and Scrutiny Officer confirm button to promote to L1.
+  - **Scenario 2 — Active Register & KPI Dashboard (`KPIBoard.tsx`):**
+    - Problem vs Solution metrics comparing legacy physical register manual tracking against automated AI oversight.
+    - Status counters (Active, Expiring, Matured, Forfeited) and evidence level distribution cards (L0 unverified, L1 OCR, L2 bank confirmed, L3 statement reconciled).
+    - Sortable, searchable register table with status badges and quick action buttons.
+  - **Scenario 3 — Bank Verification & Bank Statement UTR Reconciliation (`VerificationView.tsx`):**
+    - AICTE Nodal Bank Statement CSV upload with automatic transaction matching (exact credit amount + UTR matching) promoting instruments directly to L3 (Gold Standard).
+    - Bank confirmation letter generator with official statutory header, reference numbering, and print/PDF export.
+    - Bank reply upload for L2 validation with dispatch tracking.
+    - Side-by-side declared vs confirmed discrepancy diff view with one-click resolution and officer override.
+  - **Scenario 4 — Maturity Tracker & Reminders Inbox (`RemindersView.tsx`):**
+    - Escalation ladder timeline (T-90 In-App $\rightarrow$ T-60 Push $\rightarrow$ T-30 Voice $\rightarrow$ T-7 Daily Outbound $\rightarrow$ T-0 Expiry $\rightarrow$ Bureau Escalation).
+    - Quiet hours indicator banner (20:00–08:00 IST) suppressing outbound voice.
+    - Filterable inbox with [Acknowledge], [Snooze 1-7d], and [Simulate Voice Call] actions.
+  - **Scenario 5 — WebRTC Voice Agent Simulator & PIN Keypad (`VoiceCallModal.tsx`):**
+    - Animated audio waveform and Sarvam AI WebRTC audio stream simulator.
+    - Interactive 4-digit PIN keypad with attempt counter and 3-attempt 24h lockout defense.
+    - Live multi-lingual conversational transcript stream (English, Hindi, Tamil) with speaker chips.
+    - Real-time SHA-256 audit chaining for voice acknowledgements.
+  - **Scenario 6 — Release Request & Maker-Checker Dual Authorization (`ReleaseWorkflow.tsx`):**
+    - Automated statutory eligibility checklist citing AICTE APH Clause 6.46 (term served, 0 open discrepancies, scrutiny clearance, zero dues).
+    - 3-tier maker-checker authorization pipeline ensuring segregation of duties (Scrutiny Officer Maker $\rightarrow$ Regional Officer Checker $\rightarrow$ Competent Authority Sign-Off).
+    - Official release certificate generator with embedded cryptographic QR code verification seal and bank refund mandate.
+  - **Scenario 7 — Compliance Copilot & Text-to-SQL Analytics (`CopilotView.tsx`):**
+    - AICTE Approval Process Handbook RAG copilot with exact clause citations.
+    - Natural language Text-to-SQL analytics runner on allow-listed view data with sqlglot safety badges and tabular data rendering.
+  - **Cryptographic Audit Ledger & Tamper Detection (`AuditLogView.tsx`):**
+    - Visual explorer of SHA-256 linked blocks with previous hash links.
+    - Interactive "Simulate DB Bit-Flip" tamper demonstration proving end-to-end fraud detection when a historic block is modified.
+- **Mobile Companion App (`apps/mobile`):**
+  - Scaffolded React Native / Expo application sharing `@aicte-fdr/shared`.
+  - Full-screen incoming call notification simulation, biometric/PIN unlock keypad, maturity status tracker, and audit hash confirmation.
+- **Testing & Verification:**
+  - `apps/web`: 8 automated tests in `src/App.test.tsx` verifying all scenarios pass cleanly via Vitest + React Testing Library.
+  - `apps/web`: Production bundle built with zero TypeScript errors in 3.8s (`dist/assets/index-DeHgOCje.js`).
+  - `@aicte-fdr/shared`: TypeScript build passes with zero errors.
+- **Plan updated:** Phase 9 marked `[x]` in `docs/plan.md`.

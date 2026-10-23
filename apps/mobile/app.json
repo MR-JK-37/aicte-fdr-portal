@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "AICTE FDR Security Deposit",
+    "slug": "aicte-fdr-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#020617"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.aicte.fdr.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#020617"
+      },
+      "package": "org.aicte.fdr.mobile",
+      "permissions": ["RECORD_AUDIO", "VIBRATE", "USE_FULL_SCREEN_INTENT"]
+    }
+  }
+}
