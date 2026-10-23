@@ -65,11 +65,17 @@ scripts/        check_providers.py, deploy scripts, backup/restore
       agents are Phase 7/8's own job (scheduling and telephony
       respectively) and were not duplicated here. No Langfuse export yet
       (needs another external account).
-- [ ] **Phase 7 — Reminders/escalation/notifications.** Celery Beat 15-min +
+- [x] **Phase 7 — Reminders/escalation/notifications.** Celery Beat 15-min +
       sim clock, T-90/60/30/7/0 windows, full ladder (in-app→FCM→in-app AI
-      call→email→flagged PSTN/WhatsApp→Bureau).
-      Accept: sim-clock +300d fires full ladder; idempotent, quiet hours,
-      localized text.
+      call→email→flagged PSTN/WhatsApp→Bureau). FCM push fails closed
+      (no Firebase project configured — needs an external account, not
+      done this session); every other step is real. Consolidated
+      services/worker into services/api (see progress.md — the original
+      split couldn't actually run DB-aware tasks).
+      Accept met: sim-clock +300d fires full ladder (tested); idempotent
+      (tested); quiet hours respected (tested, incl. edge cases);
+      localized text en/hi/ta (templated, not LLM-generated — facts stay
+      exact).
 - [ ] **Phase 8 — Voice agent.** Pipecat + Sarvam (Bhashini/AI4Bharat
       fallback), FCM-triggered full-screen call UI → WebRTC, disclosure→
       consent→PIN→brief→Q&A→confirm→audit. speak_amount/speak_date en/hi/ta.

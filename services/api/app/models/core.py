@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Enum, ForeignKey, Numeric, String
+from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -69,8 +69,13 @@ class Instrument(Base):
     # Declared UTR for ONLINE_SD instruments, used by the AICTE
     # bank-statement reconciliation (ledger -> L3) matcher.
     utr: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    issue_date: Mapped[datetime | None]
-    maturity_date: Mapped[datetime | None]
+    # timezone=True: these are compared directly against app.sim_clock.now()
+    # (timezone-aware) in app/reminders/scheduler.py — a naive/aware
+    # mismatch raises TypeError, caught by a cross-session reload test
+    # (in-process ladder tests never round-tripped through the DB, so
+    # they didn't surface it).
+    issue_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    maturity_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     tenor_months: Mapped[int | None]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
@@ -132,15 +137,23 @@ class ScrutinyObservation(Base):
 
 class Reminder(Base):
     __tablename__ = "reminders"
+    __table_args__ = (UniqueConstraint("instrument_id", "window", name="uq_reminder_instrument_window"),)
 
     id: Mapped[uuid.UUID] = uuid_pk()
     institution_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("institutions.id"))
     instrument_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("instruments.id"))
     window: Mapped[str] = mapped_column(String(16))
     channel: Mapped[str] = mapped_column(String(32))
-    scheduled_for: Mapped[datetime]
-    sent_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="pending")
+    # Escalation ladder state (app/reminders/ladder.py): ladder_step indexes
+    # app.reminders.ladder.LADDER_STEPS; last_step_at is sim-clock time (not
+    # wall-clock) so the "advance sim clock +300 days -> full ladder fires"
+    # acceptance behaviour works.
+    ladder_step: Mapped[int] = mapped_column(default=0)
+    last_step_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
@@ -196,6 +209,10 @@ class AppUser(Base):
     email: Mapped[str] = mapped_column(String(256), unique=True)
     full_name: Mapped[str] = mapped_column(String(256))
     role: Mapped[AppRole] = mapped_column(Enum(AppRole, name="app_role"))
+    # Phase 7: localised notification text and quiet-hours suppression.
+    preferred_language: Mapped[str] = mapped_column(String(8), default="en")
+    quiet_hours_start: Mapped[int] = mapped_column(default=21)  # 24h local hour, inclusive
+    quiet_hours_end: Mapped[int] = mapped_column(default=8)  # 24h local hour, exclusive
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 

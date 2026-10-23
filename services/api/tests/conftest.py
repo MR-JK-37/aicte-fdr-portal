@@ -21,6 +21,7 @@ _VOLATILE_TABLES = [
     "escalations", "reminders", "release_requests", "penalties",
     "scrutiny_observations", "discrepancies", "verification_records",
     "documents", "audit_log", "instruments", "app_users", "trusts", "institutions",
+    "sim_clock", "aph_clause_chunks",
 ]
 
 

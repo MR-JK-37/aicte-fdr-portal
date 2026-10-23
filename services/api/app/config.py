@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     # set (app/agents/insight.py). Never used for anything else.
     readonly_database_url: str = "postgresql+psycopg://fdr_readonly:fdr_readonly_dev_password@localhost:5432/fdr"
     garage_bucket: str = "fdr-documents"
+    # Mailpit in dev (real SMTP transaction, caught locally, never sent
+    # out) — a real production SMTP relay is a deploy-time config swap,
+    # not a code change (app/reminders/email.py just does smtplib.send).
+    smtp_host: str = "localhost"
+    smtp_port: int = 1025
+    production_telephony_enabled: bool = False
     clamav_host: str = "localhost"
     clamav_port: int = 3310
 

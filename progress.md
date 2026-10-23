@@ -489,6 +489,105 @@
 - Release-eligibility's checkpointer is single-process in-memory, not
   yet Postgres-backed for multi-worker correctness.
 
+## 2026-10-23 (cont'd) — Phase 7 (reminders/escalation/notifications)
+
+- **Structural fix required first:** `services/worker` (Phase 1) was a
+  standalone minimal Celery project with no access to the API's models,
+  DB sessions, or business logic — it genuinely could not implement a
+  reminder ladder. Consolidated the Celery app into `services/api`
+  (`app/celery_app.py`); worker/beat now build from the api context and
+  run `celery -A app.celery_app worker/beat`. `services/worker` removed.
+  Also found and fixed: `Celery.autodiscover_tasks()` is lazy and only
+  fires on a real worker's bootstrap sequence — calling it (even with
+  `.finalize()`) in a plain script left the reminder task unregistered.
+  Verified via a direct import check before trusting it; switched to an
+  explicit `import app.reminders.tasks` instead.
+- **Dependency conflict, resolved not ignored:** `redis>=8.1.0` (added in
+  Phase 6a for the LLM gateway's Valkey client) conflicts with
+  `celery[redis]>=5.6.3`'s pinned transport dependency range. `uv`
+  resolved to `celery==5.3.1` + `redis-py==8.1.0` to satisfy both — not
+  trusted blindly: smoke-tested a real task round-trip (broker connect,
+  task dispatch, result backend read) over that exact combination before
+  building anything on top of it.
+- Sim clock (`app/sim_clock.py`): real wall-clock + a stored offset.
+  Every reminder/escalation time calculation uses this, never
+  `datetime.now()` — which is what makes "sim-clock +300 days fires the
+  full ladder" true without actually waiting.
+- Scheduler (`app/reminders/scheduler.py`): computes due T-90/60/30/7/0
+  windows per instrument against the sim clock, idempotently (unique
+  constraint on instrument+window), and drives the real
+  ACTIVE→EXPIRING→MATURED transitions Phase 3's lifecycle built the
+  "system" pseudo-role for.
+- Ladder (`app/reminders/ladder.py`): in_app → push → voice_call → email
+  → pstn_whatsapp → regulation_bureau, each step gated on a sim-clock
+  escalation delay since the last step. Idempotent via
+  `NotificationLog.idempotency_key` (instrument+window+step). Quiet
+  hours suppress push/voice_call only (the two that actually interrupt
+  someone).
+  - **Push (FCM):** real `firebase-admin` integration, not a mock — but
+    **no Firebase project is configured in this session** (would need
+    another external account/login, same pattern as Groq in Phase 6a).
+    Fails closed and loud (`PushNotConfiguredError` with the exact env
+    var name missing), never silently pretends to send.
+  - **Voice call:** records a real `CallSession` row
+    (`status="pending_voice_agent"`) as the trigger Phase 8's voice
+    worker will pick up — Phase 8 isn't built yet, so this is as far as
+    this phase correctly goes, not a fake "call placed" claim.
+  - **Email:** real SMTP transaction against Mailpit (new Compose
+    service, `axllent/mailpit`) — genuinely sent and caught locally,
+    verified in tests by querying Mailpit's own HTTP API for the
+    received message, not just "no exception was raised".
+  - **PSTN/WhatsApp:** explicitly SIMULATED/disabled by default
+    (`production_telephony_enabled` flag), per the brief and per real
+    constraints (licensed CPaaS + TRAI robocall intimation needed in
+    production — Blueprint.txt's zero-cost boundaries table).
+  - **Regulation Bureau:** writes a real `Escalation` row — the ladder's
+    terminal step.
+- i18n (`app/reminders/i18n.py`): en/hi/ta templates, human-written (not
+  LLM-translated at request time) — matches the project-wide rule that
+  the LLM never originates a fact a user sees; amounts/dates/deadlines
+  must be exact.
+- **Three real bugs found by tests, not assumed away:**
+  1. A naive-vs-aware `datetime` `TypeError` that only surfaced on a
+     cross-session DB round-trip (`Instrument.maturity_date` /
+     `Reminder.last_step_at` etc. were plain `TIMESTAMP`, while
+     `sim_clock.now()` returns timezone-aware UTC) — the in-memory
+     ladder tests never round-tripped through Postgres, so they didn't
+     catch it; the Celery-task test (fresh `SessionLocal()` per call,
+     matching real production behaviour) did. Fixed by making the six
+     sim-clock-compared columns `timestamptz` (migration `99e054f9b33f`),
+     which in turn required dropping and recreating the Phase 6b Insight
+     views (`v_instrument_summary`/`v_reminder_summary`) around the
+     `ALTER COLUMN` — Postgres refuses to retype a column a view
+     depends on.
+  2. A quiet-hours edge case: `start == end` meant "always quiet" via
+     the wraparound branch, when it should mean a zero-width window
+     ("never quiet") — found while writing a test for exactly this case,
+     fixed, and covered with three dedicated boundary tests
+     (zero-width, non-wrapping, wrapping-past-midnight).
+  3. `audit_log`'s Phase 2 immutability (and its FK to `institutions`)
+     means an institution that has generated any audit trail can never
+     be deleted — correct, intentional behaviour for a real audit
+     system, but it broke a test's cleanup logic that tried to delete
+     one; fixed the test to only clean up its own leaf-level mutable
+     rows and leave the permanent audit artifacts, same as every other
+     test that commits.
+- Tests: 27 new (193 fast total). Verified stable across 2 consecutive
+  full-suite runs.
+
+### Known gaps / deferred (tracked, not forgotten)
+
+- **FCM push needs a Firebase project** — not set up this session. The
+  send path is real and tested against the "not configured" failure
+  mode; a real device token also doesn't exist yet (no mobile client has
+  registered one — Phase 9's job).
+- Voice call step only records the trigger; Phase 8 owns actually
+  placing it.
+- PSTN/WhatsApp is feature-flagged off by design — real production
+  telephony needs a licensed CPaaS account, out of scope for this build.
+- No HTTP endpoint for acknowledging a reminder yet (`acknowledge_reminder`
+  exists as a function; Phase 9 wires it to a button).
+
 ### Unverified / to confirm later
 
 - Exact current free-tier limits for Groq/OpenRouter/Workers AI/Sarvam will

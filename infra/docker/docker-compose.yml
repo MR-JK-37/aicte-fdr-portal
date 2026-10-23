@@ -122,11 +122,19 @@ services:
 
   worker:
     build:
-      context: ../../services/worker
+      context: ../../services/api
     restart: unless-stopped
+    command: ["uv", "run", "celery", "-A", "app.celery_app", "worker", "--loglevel=INFO"]
     environment:
       VALKEY_URL: redis://valkey:6379/0
       DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@db:5432/fdr
+      READONLY_DATABASE_URL: postgresql+psycopg://fdr_readonly:fdr_readonly_dev_password@db:5432/fdr
+      GARAGE_ENDPOINT: http://garage:3900
+      GARAGE_BUCKET: fdr-documents
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
     depends_on:
       valkey:
         condition: service_healthy
@@ -135,7 +143,7 @@ services:
 
   beat:
     build:
-      context: ../../services/worker
+      context: ../../services/api
     restart: unless-stopped
     command: ["uv", "run", "celery", "-A", "app.celery_app", "beat", "--loglevel=INFO"]
     environment:
@@ -146,6 +154,18 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # web UI
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8025/livez"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   caddy:
     image: caddy:2-alpine
