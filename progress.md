@@ -9,6 +9,17 @@
   pin 3.12 via `uv` for backend per spec), uv 0.11.32, Docker 29.8.0, Docker
   Compose 5.5.1. All present, no installs needed.
 - Starting Phase 1 (Foundation): monorepo scaffold + Docker Compose.
+- **Phase 1 complete and verified.** Full stack (`db`, `valkey`, `garage`,
+  `keycloak`, `api`, `worker`, `beat`, `caddy`) comes up clean via
+  `docker compose -f infra/docker/docker-compose.yml up -d`. Confirmed live:
+  `GET /health` on the API (200, `{"status":"ok"}`), the same route proxied
+  through Caddy at `:8081/health` and `:8081/api/health` (200), Garage admin
+  health (`fully operational`), Keycloak booted and serving its login
+  redirect (302) on `:8080`. Committed as `bd98148`.
+- Host port collisions found with *other unrelated projects already running
+  on this machine* (fraudshield-postgres on 5433, etc.) — remapped Postgres
+  to host port 5434 only; no other host's containers were touched or
+  stopped.
 
 ### Verified findings (changes from blueprint's assumptions)
 
