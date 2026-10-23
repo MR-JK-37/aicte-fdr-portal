@@ -93,6 +93,48 @@
 - `agent_runs` / `sim_clock` have no RLS (internal system tables; the API
   layer, not the DB, gates access to them) — intentional, not an oversight.
 
+## 2026-10-23 (cont'd) — Phase 3
+
+- Lifecycle state machine (`app/lifecycle.py`): explicit allow-list graph
+  (`TRANSITIONS`) of (from_status -> to_status -> allowed roles); anything
+  not in the graph raises `IllegalTransitionError` unconditionally — no
+  default-allow path. Every transition requires a non-empty `reason` and
+  writes a hash-chained audit entry via `append_audit_entry`. "system" is a
+  pseudo-role for the automated ACTIVE->EXPIRING->MATURED transitions
+  Celery Beat will drive in Phase 7 against the sim clock.
+- Shortfall checker (`app/rules/shortfall.py`) and penalty calculator
+  (`app/rules/penalties.py`) are **fully config-driven**
+  (`config/table_1_4.yaml`, `config/penalties.yaml`) rather than
+  hard-coded, because the source blueprint itself flags the real Table 1.4
+  amounts, the leased-campus multiplier, and the APH penalty rate
+  (10%/20%/50%?) as **unresolved open questions for AICTE**
+  (Blueprint.txt §17 item 1, §15 risk register) — not something to guess
+  and ship as fact. Both config files carry an explicit placeholder
+  warning; `calculate_penalty()` always returns `conflict_flagged: true`
+  while the config says so, so the UI can show a banner instead of
+  presenting a guessed rate as authoritative. Swapping in real AICTE
+  figures later touches only these two YAML files.
+- Release-eligibility checklist (`app/rules/release.py`): term-served,
+  no-open-discrepancies, no-pending-scrutiny-observations, no-unpaid-
+  penalties. The term-served rule cites "APH 2024-27, cl. 6.46" — the one
+  citation the blueprint actually quotes (as the Compliance RAG agent's
+  example format, line 371); the other three rules cite
+  `"citation_pending"` rather than an invented clause number, since real
+  clause sourcing is the Phase 6 Compliance RAG agent's job, not this
+  checker's.
+- Maker-checker (`assert_maker_checker`): approver must hold
+  `competent_authority`, must not be the release requester, and must not
+  be the scrutiny officer who handled that instrument's file (added
+  `release_requests.scrutiny_officer_id` + `penalties.status` +
+  `scrutiny_observations.status` columns via migration `f7dc9ddd76e3` to
+  make these checks meaningful — they didn't exist after Phase 2).
+- Tests: 52 new tests (58 total). Lifecycle tests are exhaustive, not
+  spot-checks: every edge in `TRANSITIONS` is tested for its allowed
+  role(s) *and* for rejection by every other role; every (from, to) pair
+  **not** in the graph (>50 pairs) is asserted illegal in a single
+  parametrized sweep — this is what "covers every transition" in the
+  acceptance criterion actually required, not a handful of examples.
+
 ### Unverified / to confirm later
 
 - Exact current free-tier limits for Groq/OpenRouter/Workers AI/Sarvam will

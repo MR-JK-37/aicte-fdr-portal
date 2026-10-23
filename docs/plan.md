@@ -34,7 +34,7 @@ scripts/        check_providers.py, deploy scripts, backup/restore
       RLS per role. Keycloak OIDC + mandatory TOTP for officers.
       Accept: pytest proves cross-tenant reads blocked; audit chain verifier
       detects tampering.
-- [ ] **Phase 3 — Core workflows.** Lifecycle state machine, rules engine,
+- [x] **Phase 3 — Core workflows.** Lifecycle state machine, rules engine,
       shortfall checker, release-eligibility checker w/ clause citations,
       maker-checker release approval.
       Accept: unit tests cover every transition + penalty path.

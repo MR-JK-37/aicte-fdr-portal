@@ -123,6 +123,7 @@ class ScrutinyObservation(Base):
     instrument_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("instruments.id"))
     officer_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("app_users.id"), nullable=True)
     observation: Mapped[str] = mapped_column(String(2048))
+    status: Mapped[str] = mapped_column(String(32), default="open")
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
@@ -161,6 +162,9 @@ class ReleaseRequest(Base):
     requested_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("app_users.id"), nullable=True)
     maker_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("app_users.id"), nullable=True)
     checker_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("app_users.id"), nullable=True)
+    # The scrutiny officer who handled this instrument's file — the maker-
+    # checker rule forbids this same person from approving its release.
+    scrutiny_officer_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("app_users.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="pending")
     reason: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
@@ -176,6 +180,7 @@ class Penalty(Base):
     type: Mapped[str] = mapped_column(String(64))
     amount: Mapped[float] = mapped_column(Numeric(14, 2))
     reason: Mapped[str] = mapped_column(String(1024))
+    status: Mapped[str] = mapped_column(String(32), default="unpaid")
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 

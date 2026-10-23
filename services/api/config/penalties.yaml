@@ -1,0 +1,19 @@
+# PLACEHOLDER VALUES. The source blueprint flags the APH penalty rule
+# (10%/20%/50%?) as genuinely ambiguous/unresolved — "Which APH penalty
+# rule is authoritative?" is listed as an open question for AICTE
+# (Blueprint.txt, section 17, item 1; section 15 risk register). This file
+# is the single place real rates get plugged in once that's answered; the
+# calculator always reports `conflict_flagged: true` while this file holds
+# placeholders, so the UI can show a banner rather than presenting a
+# guessed number as authoritative.
+#
+# Bands are days-overdue thresholds (inclusive lower bound) -> penalty rate
+# applied to the shortfall/overdue amount.
+conflict_flagged: true
+bands:
+  - min_days_overdue: 0
+    rate: 0.10
+  - min_days_overdue: 30
+    rate: 0.20
+  - min_days_overdue: 90
+    rate: 0.50

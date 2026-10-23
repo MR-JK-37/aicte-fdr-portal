@@ -1,0 +1,21 @@
+# PLACEHOLDER VALUES — NOT VERIFIED AGAINST A CURRENT AICTE APPROVAL PROCESS
+# HANDBOOK (APH). The source blueprint for this project explicitly flags
+# Table 1.4's real figures and the leased-campus multiplier as an open
+# question to resolve with AICTE (Blueprint.txt, section 17, item 1) rather
+# than a number this build has verified. Do not use these amounts for any
+# real determination; they exist so the shortfall-checker's *logic* (lookup
+# by programme type, multiply by intake/seats, apply the leased multiplier,
+# sum per institution, diff against declared instruments) can be built and
+# tested now, with real figures swapped in via this file alone once AICTE
+# confirms them.
+#
+# Amounts are per-programme base security deposit, in INR.
+programme_base_amounts:
+  DIPLOMA: 500000
+  UG_DEGREE: 1000000
+  PG_DEGREE: 1500000
+  PHD: 2000000
+
+# Multiplier applied to the required total when the institution's campus
+# land is leased rather than owned. Also unverified (APH conflict).
+leased_multiplier: 2.0
