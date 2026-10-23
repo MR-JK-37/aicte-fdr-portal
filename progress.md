@@ -269,6 +269,122 @@
   ONLINE_SD path through mock_bank_api + bank_statement is complete; the
   BG path's verification service is a smaller follow-up, not built here).
 
+## 2026-10-23 (cont'd) — Phase 6a (LLM gateway)
+
+- **First external account this project needed.** User logged into Groq
+  (console.groq.com) via the Claude-in-Chrome browser extension (after
+  an initial connection issue — extension needed installing + a browser
+  restart, then reconnected). Created a dedicated API key
+  ("AICTE-FDR-Portal") rather than reusing an existing key from another
+  project. The key value was blocked from being read via JS
+  (`javascript_tool`) by Claude Code's own credential-materialization
+  safety check — correct behaviour — so the user copied/pasted it
+  directly into chat, and it went straight into `.env` (gitignored,
+  confirmed via `git status` never tracked) without being echoed back
+  in any reply.
+- **Verified Groq live before writing a line of gateway code**, per "never
+  hard-code unverified IDs": `GET /v1/models` (11 real models — notably
+  `openai/gpt-oss-120b`/`-20b` for general tasks,
+  `openai/gpt-oss-safeguard-20b` for the safety task class, and
+  `meta-llama/llama-prompt-guard-2-86m` — an actual purpose-built
+  injection-classifier model, not a prompt hack) and a real chat
+  completion, reading the live rate-limit headers
+  (`x-ratelimit-limit-requests: 1000`, `x-ratelimit-limit-tokens: 8000`
+  for openai/gpt-oss-20b on this account) rather than guessing from
+  docs. All of this is recorded in `config/llm_providers.yaml` with a
+  `verified: true`/`verified_on` field; every other provider
+  (OpenRouter, Cerebras, Mistral, Workers AI, NVIDIA NIM, HF, Sarvam,
+  Gemini, local Ollama) is a structurally-correct placeholder explicitly
+  marked `verified: false` with an empty `models` list — not guessed
+  IDs — to be filled in by `scripts/check_providers.py` once keyed.
+- **Deliberate deviation from the spec: regex redaction, not Presidio.**
+  presidio-analyzer requires spaCy + a language model (~500MB+), which
+  works against this build's own 2 OCPU/12GB Oracle Always Free deploy
+  target. `app/llm_gateway/redaction.py` reuses and extends Phase 4's
+  regex redactor (IFSC, PAN, Aadhaar, mobile, GSTIN, account numbers) with
+  an instrument-number pattern. Institution-name redaction is NOT
+  implemented (would need NER or a name-list lookup) — flagged as a real
+  gap below, not silently dropped. Same `redact()`/`rehydrate()` function
+  signatures, so a real Presidio layer is a drop-in swap later.
+- **Tier S (sensitive-agent) correctly routes to the human queue, not to
+  Groq**, even though Groq is the only keyed provider: Groq's data
+  retention policy is "unknown — not confirmed" in this session, so
+  `tier_eligibility: ["P"]` only. `routing.get_chain("sensitive-agent",
+  tier="S")` returns an empty chain in this environment by design — this
+  is the brief's fail-closed behaviour working as intended, not a bug.
+  Verified by test. Gemini is hard-coded `tier_eligibility: ["P"]` with
+  an explicit note never to use it for Tier S, per the brief's explicit
+  instruction about Gemini's free tier training on prompts.
+- Resilience (`resilience.py`): Valkey-backed token bucket (per-provider,
+  fixed-window), circuit breaker (open 60s after 3 failures), 24h
+  response cache keyed by a normalised prompt hash, backoff with jitter.
+  `gateway.py` orchestrates: redact -> route -> cache check -> call with
+  retry -> on 429 honour `Retry-After` -> on schema mismatch, one repair
+  retry then cross-provider re-ask -> on total exhaustion, fail closed to
+  `human_review_required` (logged to `agent_runs`, never a guessed
+  answer). Valkey's port was previously only reachable inside the Docker
+  network; exposed `6379:6379` on the host (and in CI) so tests can
+  exercise it directly — same pattern as Phase 1-5's other services.
+- `app/llm_gateway/injection.py`: prompt-injection defence for OCR'd
+  document text. Real classifier call to Groq's
+  `meta-llama/llama-prompt-guard-2-86m` with a regex-heuristic fallback
+  when no provider is keyed — never raises, since a defensive check must
+  not itself become an availability risk for the pipeline it protects.
+- **Three real bugs found by tests/live calls, not assumed away:**
+  1. `verify_chain`-style identity-map bug was Phase 2; this phase's
+     equivalent: the gateway forced `json_mode=True` on *every* call
+     regardless of whether a response_schema was requested. Groq's API
+     requires "JSON" to be mentioned in the prompt when
+     `response_format=json_object` is set, so a plain-text call
+     (`voice-intent`, "reply with exactly the word: OK") failed outright.
+     Only caught because `test_live_groq_call_end_to_end` hits the real
+     API instead of a mock — the entire mocked suite was green while this
+     was broken. Fixed by threading `json_mode` through explicitly, true
+     only when a schema is actually requested.
+  2. Valkey state (circuit breaker, token bucket, cache) has no
+     per-session reset, unlike Postgres — a circuit deliberately tripped
+     by `test_circuit_breaker_skips_provider_after_repeated_failures`
+     leaked into the next tests in the *same* run (60s TTL comfortably
+     outlives milliseconds between tests), causing two later tests to see
+     zero HTTP calls despite fresh, unique request content. Fixed with a
+     function-scoped autouse fixture in `test_llm_gateway.py` plus a
+     session-scoped flush in `conftest.py` for cross-invocation pollution.
+  3. The file's own `_groq_key` autouse fixture (which pins a fake key for
+     the mocked tests) was also overwriting the *real* key for the one
+     live test in the same file, making it fail with the real circuit
+     opening from real 401s. Fixed by capturing the real key at module
+     load (before any fixture runs) and the live test explicitly
+     restoring it via `monkeypatch`.
+- `scripts/check_providers.py`: run against the live environment, correctly
+  reports Groq as reachable with its 11 live models, every unkeyed
+  provider as "NO KEY CONFIGURED" (not silently skipped), and flags when
+  a provider has a key but `llm_providers.yaml` still says unverified.
+- Tests: 41 new (142 fast total + the still-separate 100-doc benchmark),
+  including one real (not mocked) call to the live Groq API, opt-in via
+  `GROQ_API_KEY_LIVE_TEST=1` so normal runs and CI-without-a-secret don't
+  depend on network/quota.
+
+### Known gaps / deferred (tracked, not forgotten)
+
+- **Phase 6b (LangGraph agents) is not built yet** — this phase was the
+  gateway/infrastructure half only. No Document Intelligence, Forgery,
+  Verification, Maturity/Reminder, Escalation, Compliance RAG,
+  Release-eligibility, Insight (text2sql), or Voice agent exists yet;
+  they're the next real chunk of work, each a thin LangGraph wrapper
+  calling `llm_gateway.generate()`.
+- No Langfuse wiring — would need another external account/signup not
+  yet done. The gateway logs every call to `agent_runs` regardless
+  (provider, model, tokens, latency, status), so the data Langfuse would
+  visualise already exists in Postgres; Langfuse itself is a dashboard
+  layer on top, deferred.
+- Institution-name redaction not implemented (regex can't do NER).
+- `embeddings` task class has an empty chain (no embeddings-capable
+  provider keyed yet) — real gap for the Compliance RAG agent's pgvector
+  indexing in Phase 6b, not hidden.
+- Only one provider (Groq) is actually keyed; the ordered-fallback-chain
+  behaviour the spec describes is implemented and tested via mocks, but
+  has no second real provider to fail over to in practice yet.
+
 ### Unverified / to confirm later
 
 - Exact current free-tier limits for Groq/OpenRouter/Workers AI/Sarvam will

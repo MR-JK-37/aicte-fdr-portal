@@ -1,6 +1,7 @@
 import os
 
 import pytest
+import redis
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -10,6 +11,7 @@ TEST_DATABASE_URL = os.environ.get(
 SUPERUSER_DATABASE_URL = os.environ.get(
     "SUPERUSER_DATABASE_URL", "postgresql+psycopg://fdr:fdr@localhost:5434/fdr"
 )
+VALKEY_URL = os.environ.get("VALKEY_URL", "redis://localhost:6379/0")
 
 # Tables these tests write to that must start each test session empty.
 # Reference/structural tables (banks, branches) are intentionally excluded
@@ -38,6 +40,19 @@ def _reset_db_once_per_session():
     with engine.begin() as conn:
         conn.execute(text(f"TRUNCATE {', '.join(_VOLATILE_TABLES)} RESTART IDENTITY CASCADE"))
     engine.dispose()
+
+    # Same problem, same fix, for the LLM gateway's Valkey-backed state
+    # (circuit breakers, token buckets, response cache): without this, a
+    # circuit tripped by one failing run stays "open" into the next
+    # `pytest` invocation (60s TTL — long enough to span two closely
+    # spaced local runs) and silently makes later tests skip the provider
+    # they're meant to be exercising. Found exactly this way: a cache/
+    # circuit test that passed in isolation failed when run as part of a
+    # second consecutive suite run, with zero HTTP calls made at all.
+    redis_client = redis.Redis.from_url(VALKEY_URL)
+    for key in redis_client.scan_iter("llm_*"):
+        redis_client.delete(key)
+    redis_client.close()
 
 
 @pytest.fixture(scope="session")

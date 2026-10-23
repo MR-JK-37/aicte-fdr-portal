@@ -48,13 +48,16 @@ scripts/        check_providers.py, deploy scripts, backup/restore
 - [x] **Phase 5 — Verification (SIMULATED bank side).** Mock bank-confirmation
       API + mock SFMS/NeSL. Real: AICTE bank-statement CSV import w/ UTR match.
       Accept: declared-vs-confirmed diff view; evidence badges.
-- [ ] **Phase 6 — LLM gateway + agents.** `llm_gateway` module, provider
-      registry, discovery/health-check, routing/fallback, resilience
-      (buckets, breaker, backoff, cache, repair-retry, human queue),
-      redaction (Presidio+custom), Langfuse traces. LangGraph agents:
-      Document Intelligence, Forgery, Verification, Maturity/Reminder,
-      Escalation, Compliance RAG, Release-eligibility (interrupt), Insight
-      (text2sql), Voice.
+- [x] **Phase 6a — LLM gateway.** `llm_gateway` module, provider registry,
+      discovery/health-check (`scripts/check_providers.py`), routing/
+      fallback, resilience (buckets, breaker, backoff, cache, repair-retry,
+      human queue), redaction (regex, not Presidio — see progress.md).
+      Verified live against Groq (real key, real API). Langfuse traces and
+      the LangGraph agents are **not yet built** — see Phase 6b below.
+- [ ] **Phase 6b — LangGraph agents.** Document Intelligence, Forgery,
+      Verification, Maturity/Reminder, Escalation, Compliance RAG,
+      Release-eligibility (interrupt), Insight (text2sql), Voice — each
+      wired to call `llm_gateway.generate()`. Langfuse trace export.
       Accept: evals for extraction/RAG/text2sql/prompt-injection in CI.
 - [ ] **Phase 7 — Reminders/escalation/notifications.** Celery Beat 15-min +
       sim clock, T-90/60/30/7/0 windows, full ladder (in-app→FCM→in-app AI

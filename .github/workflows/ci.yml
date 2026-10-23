@@ -25,6 +25,15 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      valkey:
+        image: valkey/valkey:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       MIGRATION_DATABASE_URL: postgresql+psycopg://fdr:fdr@localhost:5432/fdr
       DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5432/fdr
@@ -35,6 +44,10 @@ jobs:
       GARAGE_SECRET_KEY: devsecretkeydevsecretkey
       CLAMAV_HOST: localhost
       CLAMAV_PORT: "3310"
+      VALKEY_URL: redis://localhost:6379/0
+      # Optional: set a GROQ_API_KEY repository secret to also run the one
+      # live-provider integration test; it self-skips when absent.
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7

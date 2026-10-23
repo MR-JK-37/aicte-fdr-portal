@@ -1,0 +1,173 @@
+# LLM provider registry. Loaded by app/llm_gateway/registry.py.
+#
+# Verification status of each entry is explicit via `verified`. Only
+# `groq` has been hit live (model list + a real completion) in this
+# session — see progress.md for the exact verification commands/output.
+# Every other provider is a config placeholder: real, structurally
+# correct, matching the OpenAI-compatible wire format where applicable,
+# but its model IDs/limits are NOT hard-coded facts — they are what
+# scripts/check_providers.py will discover and overwrite at startup/CI
+# time once a key is supplied, per the brief's "never hard-code
+# unverified IDs" rule. Do not treat an unverified entry's `models` list
+# as ground truth.
+
+providers:
+  groq:
+    verified: true
+    verified_on: "2026-10-23"
+    base_url: "https://api.groq.com/openai/v1"
+    openai_compatible: true
+    key_env_var: GROQ_API_KEY
+    model_list_endpoint: "/models"
+    # Verified live via GET /models and a real chat completion (see
+    # progress.md). Context/output windows and features are copied
+    # directly from that response, not guessed.
+    models:
+      - id: "openai/gpt-oss-120b"
+        context_window: 131072
+        max_output_tokens: 65536
+        capabilities: {tools: true, json_mode: true, vision: false, structured_outputs: true, reasoning: true}
+      - id: "openai/gpt-oss-20b"
+        context_window: 131072
+        max_output_tokens: 65536
+        capabilities: {tools: true, json_mode: true, vision: false, structured_outputs: true, reasoning: true}
+      - id: "openai/gpt-oss-safeguard-20b"
+        context_window: 131072
+        max_output_tokens: 65536
+        capabilities: {tools: true, json_mode: true, vision: false, structured_outputs: true, reasoning: true}
+        role: "safety-classifier"
+      - id: "qwen/qwen3.8-27b"
+        context_window: 131072
+        max_output_tokens: 16384
+        capabilities: {tools: true, json_mode: true, vision: true, structured_outputs: false, reasoning: false}
+      - id: "meta-llama/llama-prompt-guard-2-86m"
+        context_window: 512
+        max_output_tokens: 512
+        capabilities: {tools: false, json_mode: true, vision: false, structured_outputs: false, reasoning: false}
+        role: "prompt-injection-classifier"
+    # Verified live from response headers on a real request with THIS
+    # account's key (openai/gpt-oss-20b): x-ratelimit-limit-requests=1000,
+    # x-ratelimit-limit-tokens=8000, reset windows ~1min/~1s. Limits are
+    # commonly per-model and per-account-tier on Groq — re-verify with
+    # check_providers.py rather than trusting this snapshot long-term.
+    limits:
+      rpm: 1000
+      tpm: 8000
+      verified_against_model: "openai/gpt-oss-20b"
+    data_policy:
+      retains_prompts: "unknown — not confirmed against Groq's current ToS in this session"
+      trains_on_prompts: "unknown — not confirmed against Groq's current ToS in this session"
+      region: "unknown"
+    tier_eligibility: ["P"]  # Tier S (sensitive-agent) needs a confirmed no-retention policy; not confirmed here.
+
+  openrouter:
+    verified: false
+    base_url: "https://openrouter.ai/api/v1"
+    openai_compatible: true
+    key_env_var: OPENROUTER_API_KEY
+    model_list_endpoint: "/models"
+    models: []  # discovered at startup by check_providers.py once a key exists
+    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
+    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
+    tier_eligibility: ["P"]
+    note: "No key configured yet. :free-suffixed models are the zero-cost tier; confirm per-model limits at request time, OpenRouter's free-tier limits vary by model and change without notice."
+
+  cerebras:
+    verified: false
+    base_url: "https://api.cerebras.ai/v1"
+    openai_compatible: true
+    key_env_var: CEREBRAS_API_KEY
+    model_list_endpoint: "/models"
+    models: []
+    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
+    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
+    tier_eligibility: ["P"]
+    note: "No key configured yet."
+
+  mistral:
+    verified: false
+    base_url: "https://api.mistral.ai/v1"
+    openai_compatible: true
+    key_env_var: MISTRAL_API_KEY
+    model_list_endpoint: "/models"
+    models: []
+    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
+    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
+    tier_eligibility: ["P"]
+    note: "No key configured yet."
+
+  cloudflare_workers_ai:
+    verified: false
+    base_url: "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1"
+    openai_compatible: true
+    key_env_var: CLOUDFLARE_API_TOKEN
+    model_list_endpoint: null  # Workers AI lists models via the dashboard/REST catalog, not an OpenAI /models route
+    models: []
+    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
+    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
+    tier_eligibility: ["P"]
+    note: "No key/account configured yet. base_url needs {account_id} substituted."
+
+  nvidia_nim:
+    verified: false
+    base_url: "https://integrate.api.nvidia.com/v1"
+    openai_compatible: true
+    key_env_var: NVIDIA_NIM_API_KEY
+    model_list_endpoint: "/models"
+    models: []
+    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
+    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
+    tier_eligibility: ["P"]
+    note: "No key configured yet."
+
+  huggingface:
+    verified: false
+    base_url: "https://router.huggingface.co/v1"
+    openai_compatible: true
+    key_env_var: HUGGINGFACE_API_KEY
+    model_list_endpoint: null
+    models: []
+    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
+    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
+    tier_eligibility: ["P"]
+    note: "No key configured yet."
+
+  sarvam:
+    verified: false
+    base_url: "https://api.sarvam.ai"
+    openai_compatible: false  # Sarvam's chat API is OpenAI-compatible but STT/TTS are not — see Phase 8
+    key_env_var: SARVAM_API_KEY
+    model_list_endpoint: null
+    models: []
+    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
+    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "India (claimed, unverified in this session)"}
+    tier_eligibility: ["P"]
+    note: "No key configured yet. Primary Indic STT/TTS provider for Phase 8, not a general chat completion provider for this gateway."
+
+  gemini:
+    verified: false
+    base_url: "https://generativelanguage.googleapis.com/v1beta/openai"
+    openai_compatible: true
+    key_env_var: GEMINI_API_KEY
+    model_list_endpoint: "/models"
+    models: []
+    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
+    data_policy:
+      retains_prompts: true
+      trains_on_prompts: true
+      region: "unverified"
+    tier_eligibility: ["P"]  # Tier P ONLY — never Tier S. The brief is explicit: Gemini's free tier uses
+                              # prompts to improve Google products, so it must never see real institution data.
+    note: "No key configured yet. HARD RULE: never route sensitive-agent/extraction tasks with real institution data here, even once a key exists — Tier P (public/synthetic data) only."
+
+  ollama_local:
+    verified: false
+    base_url: "http://localhost:11434/v1"
+    openai_compatible: true
+    key_env_var: null  # local, no key
+    model_list_endpoint: "/models"
+    models: []
+    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
+    data_policy: {retains_prompts: false, trains_on_prompts: false, region: "local"}
+    tier_eligibility: ["S", "P"]
+    note: "Not installed/running in this environment. Would be the Tier S first hop (local, zero data leaves the host) once set up on the deploy target."

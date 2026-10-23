@@ -23,6 +23,8 @@ services:
     restart: unless-stopped
     volumes:
       - valkey_data:/data
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
@@ -45,7 +47,9 @@ services:
       - "3900:3900"
       - "3903:3903"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3903/health"]
+      # wget/curl don't exist in this minimal image; `garage status` talks
+      # to the node's own RPC port and exits non-zero if it can't connect.
+      test: ["CMD", "/garage", "status"]
       interval: 5s
       timeout: 5s
       retries: 10
