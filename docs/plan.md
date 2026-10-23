@@ -38,7 +38,9 @@ scripts/        check_providers.py, deploy scripts, backup/restore
       shortfall checker, release-eligibility checker w/ clause citations,
       maker-checker release approval.
       Accept: unit tests cover every transition + penalty path.
-- [ ] **Phase 4 — Documents & AI extraction.** Upload→quarantine→AV/magic-byte/
+- [x] **Phase 4 — Documents & AI extraction** (extraction step uses a
+      placeholder deterministic extractor pending the Phase 6 LLM gateway
+      — see progress.md). Upload→quarantine→AV/magic-byte/
       sanitize→hash/pHash→encrypted store→OCR→redact→LLM→Pydantic→rules→L1
       confirm. Forgery/duplicate signals.
       Accept: 100 synthetic FDRs, 8 layouts, ≥95% field accuracy; seeded

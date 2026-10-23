@@ -30,11 +30,54 @@ jobs:
       DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5432/fdr
       TEST_DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5432/fdr
       SUPERUSER_DATABASE_URL: postgresql+psycopg://fdr:fdr@localhost:5432/fdr
+      GARAGE_ENDPOINT: http://localhost:3900
+      GARAGE_ACCESS_KEY: devaccesskey
+      GARAGE_SECRET_KEY: devsecretkeydevsecretkey
+      CLAMAV_HOST: localhost
+      CLAMAV_PORT: "3310"
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
+      - name: Install OCR/PDF system packages
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr poppler-utils libmagic1
+      # Garage and ClamAV need a custom command/mounted config that GitHub
+      # Actions' `services:` containers don't support, so they're started
+      # directly rather than as service containers (same images/flags as
+      # infra/docker/docker-compose.yml).
+      - name: Start Garage (S3-compatible storage)
+        run: |
+          cat > /tmp/garage.toml <<EOF
+          metadata_dir = "/var/lib/garage/meta"
+          data_dir = "/var/lib/garage/data"
+          db_engine = "sqlite"
+          replication_factor = 1
+          rpc_bind_addr = "[::]:3901"
+          rpc_public_addr = "127.0.0.1:3901"
+          rpc_secret = "$(openssl rand -hex 32)"
+          [s3_api]
+          s3_region = "garage"
+          api_bind_addr = "[::]:3900"
+          root_domain = ".s3.garage.localhost"
+          [admin]
+          api_bind_addr = "[::]:3903"
+          admin_token = "$(openssl rand -base64 32)"
+          metrics_token = "$(openssl rand -base64 32)"
+          EOF
+          docker run -d --name garage -p 3900:3900 \
+            -e GARAGE_DEFAULT_ACCESS_KEY=devaccesskey \
+            -e GARAGE_DEFAULT_SECRET_KEY=devsecretkeydevsecretkey \
+            -e GARAGE_DEFAULT_BUCKET=fdr-documents \
+            -v /tmp/garage.toml:/etc/garage.toml:ro \
+            dxflrs/garage:v2.4.1 /garage server --single-node --default-bucket
+          for i in $(seq 1 30); do curl -sf http://localhost:3900 >/dev/null 2>&1 && break || sleep 2; done
+        working-directory: .
+      - name: Start ClamAV
+        run: |
+          docker run -d --name clamav -p 3310:3310 clamav/clamav:stable
+          for i in $(seq 1 90); do (echo PING | nc -w 3 localhost 3310 | grep -q PONG) && break || sleep 20; done
+        working-directory: .
       - run: uv sync --frozen
       - run: uv run ruff check .
       - run: uv run alembic upgrade head

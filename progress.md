@@ -135,6 +135,85 @@
   parametrized sweep — this is what "covers every transition" in the
   acceptance criterion actually required, not a handful of examples.
 
+## 2026-10-23 (cont'd) — Phase 4
+
+- **Deliberate reordering decision:** the brief's Phase 4 pipeline step
+  "LLM gateway" belongs to Phase 6 (multi-provider, needs API keys this
+  build doesn't have — the first real external-account dependency in the
+  whole project). Rather than block Phase 4 on that, the extraction step
+  is built behind a `FDRExtractor` protocol (`app/documents/extraction.py`)
+  with `RegexFDRExtractor` as the Phase 4 stand-in — deterministic
+  label:-value line matching, not an LLM call. Phase 6 adds
+  `LLMGatewayExtractor` implementing the same interface; nothing else in
+  the pipeline changes when that swap happens.
+- **MinIO found archived again, mid-build:** `minio/minio` images are now
+  fully pulled from Docker Hub (confirmed: `docker pull minio/minio:latest`
+  and the previously-pinned release tag both now 404/"repository does not
+  exist"). This happened *during* this session, after Phase 1 had already
+  pinned a specific release tag — meaning even a pinned tag stopped being
+  pullable. Already mitigated by the Phase 1 switch to Garage, which is
+  unaffected; flagging because it's evidence the MinIO archival is an
+  active, not just historical, risk — don't re-introduce it later.
+- Full pipeline (`app/documents/`): `security_scan.py` (magic-byte
+  detection via libmagic — rejects content/declared-type mismatches, e.g.
+  a renamed script; **real** ClamAV scan via `clamd`, fail-closed if the
+  scanner is unreachable — ran against the live `clamav/clamav:stable`
+  container, not mocked), `hashing.py` (SHA-256 + perceptual hash via
+  `imagehash`), `ocr.py` (real Tesseract OCR + `pdf2image` rasterisation,
+  not PaddleOCR — chosen for container footprint on the 2 OCPU/12GB
+  Oracle target), `redaction.py` (regex PII tokenise/rehydrate —
+  Presidio-based version is Phase 6's job per the LLM gateway spec; same
+  function signatures so the swap is drop-in), `extraction.py` (Pydantic
+  schema + `RegexFDRExtractor`), `validation.py` (IFSC format, maturity =
+  issue + tenor, amount-figures-vs-words, positive-amount), `forgery.py`
+  (cross-institution duplicate instrument number — must run with
+  bureau-side RLS context to see across institutions at all; duplicate
+  pHash; suspicious PDF producer/creator metadata), `pipeline.py`
+  (orchestrates all of the above, writes an audit entry per stage whether
+  it passes or fails, and stores the sanitised file in **Garage**, not a
+  mock — verified by reading the object back out).
+  `confirm_extraction()` is a separate, explicit, role-gated
+  (scrutiny_officer/verifier only) step — evidence_level only reaches L1
+  on a human decision, never automatically from the pipeline, per "officer
+  confirms (L1)" in the brief.
+- **Encryption gap, not claimed as done:** the brief says "encrypted
+  store"; this build writes to Garage over plain `put_object` with no
+  server-side encryption configured. Garage does support SSE-C/age-based
+  encryption, but wiring it up is deferred — tracked here rather than
+  silently dropped.
+- Synthetic FDR benchmark (`tests/test_extraction_accuracy.py` +
+  `tests/fixtures.py`): 100 Faker-generated FDRs across exactly 8 layout
+  templates (reportlab-rendered), run through real OCR + extraction.
+  **Measured: 98.7% overall field accuracy (691/700)**, clearing the
+  brief's >=95% target — but see the caveat in that test file's docstring:
+  this is clean synthetic text via a deterministic regex extractor, not
+  real scanned documents (AICTE hasn't supplied samples — Blueprint.txt
+  §17 item 2) via the real LLM extractor. Found and fixed one real bug
+  surfaced by this benchmark: `tests/fixtures.py`'s amount-words generator
+  initially emitted digit counts ("Rupees 5 Lakh Only") while
+  `validation.py`'s word-number parser expects spelled-out words ("Five
+  Lakh") — caught by a failing pipeline-integration test, not assumed
+  correct.
+- Added `clamav` (clamav/clamav:stable) to Compose, `GARAGE_BUCKET`/
+  `CLAMAV_HOST`/`CLAMAV_PORT` env wiring, and system packages
+  (tesseract-ocr, poppler-utils, libmagic1) to the API Dockerfile and CI.
+  CI starts Garage and ClamAV as plain `docker run` steps (not GH Actions
+  `services:` containers) because both need a custom command/mounted
+  config that service containers don't support.
+- Tests: 25 new (105 total: 80 fast + the 100-doc benchmark, ~3min). All
+  run against the live Postgres/Garage/ClamAV, not mocks.
+
+### Known gaps / deferred (tracked, not forgotten)
+
+- Server-side encryption at rest for documents in Garage — not configured.
+- No HTTP upload endpoint yet (pre-signed PUT flow exists in
+  `app/storage.py` but isn't wired into a FastAPI router) — that's Phase 9
+  web-UI wiring, not a Phase 4 gap per se, but noting it since "pre-signed
+  upload" is literally named in the brief's Phase 4 pipeline description.
+- `RegexFDRExtractor` → real LLM-gateway extractor swap: Phase 6, blocked
+  on provider API keys (needs your login/signup on at least one of
+  Groq/OpenRouter/Cerebras/Mistral).
+
 ### Unverified / to confirm later
 
 - Exact current free-tier limits for Groq/OpenRouter/Workers AI/Sarvam will

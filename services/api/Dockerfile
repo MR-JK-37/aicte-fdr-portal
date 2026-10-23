@@ -1,5 +1,11 @@
 FROM python:3.12-slim
 
+# tesseract-ocr/poppler-utils: local OCR + PDF rasterisation (app/documents/ocr.py).
+# libmagic1: real-content MIME detection (app/documents/security_scan.py).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr poppler-utils libmagic1 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir uv
 
 WORKDIR /app

@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     garage_secret_key: str = "devsecretkeydevsecretkey"
     keycloak_url: str = "http://localhost:8080"
     keycloak_realm: str = "fdr-portal"
+    garage_bucket: str = "fdr-documents"
+    clamav_host: str = "localhost"
+    clamav_port: int = 3310
 
 
 settings = Settings()

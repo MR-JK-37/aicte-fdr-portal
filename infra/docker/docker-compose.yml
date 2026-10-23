@@ -50,6 +50,20 @@ services:
       timeout: 5s
       retries: 10
 
+  clamav:
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    volumes:
+      - clamav_data:/var/lib/clamav
+    ports:
+      - "3310:3310"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "echo PING | nc -w 3 localhost 3310 | grep -q PONG"]
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 1800s
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.1
     restart: unless-stopped
@@ -84,7 +98,10 @@ services:
       DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@db:5432/fdr
       VALKEY_URL: redis://valkey:6379/0
       GARAGE_ENDPOINT: http://garage:3900
+      GARAGE_BUCKET: fdr-documents
       KEYCLOAK_URL: http://keycloak:8080
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
     ports:
       - "8000:8000"
     depends_on:
@@ -138,3 +155,4 @@ volumes:
   valkey_data:
   garage_meta:
   garage_data:
+  clamav_data:
