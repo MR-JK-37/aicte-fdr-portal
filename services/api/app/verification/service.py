@@ -9,15 +9,12 @@ are role-gated and require a human actor, change evidence_level, and each
 one writes an audit entry.
 """
 
-from decimal import Decimal
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.audit import append_audit_entry
 from app.models.core import Document, Instrument, VerificationRecord
 from app.models.enums import EvidenceLevel
-from app.verification import mock_bank_api
 from app.verification.bank_statement import MatchResult
 
 VERIFIER_ROLES = frozenset({"verifier"})
@@ -26,38 +23,22 @@ VERIFIER_ROLES = frozenset({"verifier"})
 def request_bank_confirmation(
     session: Session, instrument: Instrument, *, requested_by: str | None
 ) -> VerificationRecord:
-    """Calls the SIMULATED bank-confirmation API and records the (signed,
-    simulated) response as evidence. Does not change evidence_level."""
-    response = mock_bank_api.request_confirmation(
-        instrument.instrument_number, ifsc=None, declared_amount=Decimal(instrument.amount)
+    """Requests a real bank confirmation for this instrument.
+
+    There is no real bank-confirmation integration yet (Phase 3 builds
+    the real bank-verifier-portal + statement-import workflow). Per
+    CLAUDE.md non-negotiable #1/#3, this must never fabricate a
+    "confirmed" response — so until that integration exists, this raises
+    rather than returning a fake success. Callers should instead route
+    institutions/verifiers to the manual bank-statement import path
+    (app.verification.bank_statement) or the real portal once it ships.
+    """
+    raise NotImplementedError(
+        "Real bank-confirmation integration is not implemented. Use the "
+        "bank-statement import workflow (app.verification.bank_statement) "
+        "or the bank-verifier portal once it is built — never a simulated "
+        "confirmation."
     )
-    record = VerificationRecord(
-        institution_id=instrument.institution_id,
-        instrument_id=instrument.id,
-        level=EvidenceLevel.L2_BANK_CONFIRMED,
-        source="mock_bank_api",
-        confirmed_amount=response.confirmed_amount,
-        raw_payload={
-            "simulated": True,
-            "confirmed": response.confirmed,
-            "bank_reference": response.bank_reference,
-            "signature": response.signature,
-            "payload": response.payload,
-            "latency_ms": response.latency_ms,
-        },
-    )
-    session.add(record)
-    session.flush()
-    append_audit_entry(
-        session,
-        action="verification.bank_confirmation_requested",
-        entity_type="instrument",
-        entity_id=str(instrument.id),
-        after={"source": "mock_bank_api", "confirmed": response.confirmed, "simulated": True},
-        actor_id=requested_by,
-        institution_id=str(instrument.institution_id),
-    )
-    return record
 
 
 def confirm_bank_verification(
@@ -80,7 +61,7 @@ def confirm_bank_verification(
     if verification_record.instrument_id != instrument.id:
         raise ValueError("verification record does not belong to this instrument")
     if verification_record.confirmed_amount is None:
-        raise ValueError("verification record has no confirmed amount — the mock bank reply was not a confirmation")
+        raise ValueError("verification record has no confirmed amount — the bank reply was not a confirmation")
 
     evidence = session.get(Document, evidence_document_id)
     if evidence is None or evidence.instrument_id != instrument.id:

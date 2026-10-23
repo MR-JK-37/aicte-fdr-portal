@@ -28,23 +28,31 @@ def _make_instrument(db_session):
     return instrument
 
 
-def test_request_bank_confirmation_never_raises_evidence_level(db_session):
+def test_request_bank_confirmation_is_not_implemented(db_session):
+    """There is no real bank-confirmation integration yet. This must
+    raise — never fabricate a "confirmed" response (CLAUDE.md #1/#3)."""
     instrument = _make_instrument(db_session)
     assert instrument.evidence_level == EvidenceLevel.L0_DECLARED
 
-    record = request_bank_confirmation(db_session, instrument, requested_by=None)
-    db_session.flush()
+    with pytest.raises(NotImplementedError):
+        request_bank_confirmation(db_session, instrument, requested_by=None)
 
-    assert record.source == "mock_bank_api"
-    assert record.raw_payload["simulated"] is True
-    # The call itself — an automated/simulated check, not a human action —
-    # must never move the evidence level per the brief's explicit rule.
     assert instrument.evidence_level == EvidenceLevel.L0_DECLARED
 
 
 def test_confirm_bank_verification_requires_verifier_role(db_session):
     instrument = _make_instrument(db_session)
-    record = request_bank_confirmation(db_session, instrument, requested_by=None)
+    from app.models.core import VerificationRecord
+
+    record = VerificationRecord(
+        institution_id=instrument.institution_id,
+        instrument_id=instrument.id,
+        level=EvidenceLevel.L2_BANK_CONFIRMED,
+        source="bank_verifier_reply",
+        confirmed_amount=500000,
+        raw_payload={},
+    )
+    db_session.add(record)
     doc = Document(
         institution_id=instrument.institution_id,
         instrument_id=instrument.id,
@@ -76,7 +84,7 @@ def test_confirm_bank_verification_requires_evidence_document(db_session):
         institution_id=instrument.institution_id,
         instrument_id=instrument.id,
         level=EvidenceLevel.L2_BANK_CONFIRMED,
-        source="mock_bank_api",
+        source="bank_verifier_reply",
         confirmed_amount=500000,
         raw_payload={},
     )
@@ -103,7 +111,7 @@ def test_confirm_bank_verification_succeeds_and_promotes_to_l2(db_session):
         institution_id=instrument.institution_id,
         instrument_id=instrument.id,
         level=EvidenceLevel.L2_BANK_CONFIRMED,
-        source="mock_bank_api",
+        source="bank_verifier_reply",
         confirmed_amount=500000,
         raw_payload={},
     )
@@ -138,7 +146,7 @@ def test_confirm_ledger_reconciliation_requires_csv_source(db_session):
         institution_id=instrument.institution_id,
         instrument_id=instrument.id,
         level=EvidenceLevel.L3_LEDGER_RECONCILED,
-        source="mock_bank_api",
+        source="bank_verifier_reply",
         confirmed_amount=500000,
         raw_payload={},
     )
