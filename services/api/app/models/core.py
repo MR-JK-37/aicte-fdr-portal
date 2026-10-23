@@ -213,6 +213,9 @@ class AppUser(Base):
     preferred_language: Mapped[str] = mapped_column(String(8), default="en")
     quiet_hours_start: Mapped[int] = mapped_column(default=21)  # 24h local hour, inclusive
     quiet_hours_end: Mapped[int] = mapped_column(default=8)  # 24h local hour, exclusive
+    # Phase 8: Call PIN authentication and 24h lockout
+    call_pin_hash: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    call_pin_locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
@@ -257,9 +260,10 @@ class CallSession(Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     institution_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("institutions.id"), nullable=True)
     app_user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("app_users.id"), nullable=True)
+    reminder_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("reminders.id"), nullable=True)
     language: Mapped[str] = mapped_column(String(8), default="en")
     status: Mapped[str] = mapped_column(String(32), default="ringing")
     pin_attempts: Mapped[int] = mapped_column(default=0)
     transcript: Mapped[dict] = mapped_column(JSONB, default=dict)
-    started_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    ended_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

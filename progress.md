@@ -581,17 +581,88 @@
   send path is real and tested against the "not configured" failure
   mode; a real device token also doesn't exist yet (no mobile client has
   registered one — Phase 9's job).
-- Voice call step only records the trigger; Phase 8 owns actually
-  placing it.
 - PSTN/WhatsApp is feature-flagged off by design — real production
   telephony needs a licensed CPaaS account, out of scope for this build.
 - No HTTP endpoint for acknowledging a reminder yet (`acknowledge_reminder`
   exists as a function; Phase 9 wires it to a button).
 
-### Unverified / to confirm later
+## 2026-10-23 (cont'd) — Phase 8 (AI Voice-Call Agent)
 
-- Exact current free-tier limits for Groq/OpenRouter/Workers AI/Sarvam will
-  be checked live against provider docs in Phase 6 (`check_providers.py`),
-  not assumed from the blueprint's point-in-time numbers.
-- Oracle Always Free Arm allowance (2 OCPU/12GB per blueprint) — confirm at
-  Phase 10 deploy time against Oracle's current console.
+- **Pre-work baseline fixes:**
+  - Resolved port and environment mismatch in test suite: `.env` was at repo
+    root but unlinked in `services/api`; `TEST_DATABASE_URL` in `conftest.py`
+    fell back to `fdr:fdr` (superuser), which bypassed RLS and caused
+    `test_rls.py` failures; `READONLY_DATABASE_URL` was missing from `.env`.
+    Symlinked `.env`, corrected `TEST_DATABASE_URL` fallback to `fdr_app`,
+    and added `READONLY_DATABASE_URL` on host port 5434. All 193 baseline
+    tests passed.
+- **Database & Alembic migration `a8347cd6b959`:**
+  - Added `call_pin_hash: String(256)` and `call_pin_locked_until: DateTime(tz)`
+    to `app_users`.
+  - Added `reminder_id: UUID` foreign key (`fk_call_sessions_reminder_id_reminders`)
+    to `call_sessions`, and converted `started_at` / `ended_at` to timezone-aware.
+  - Migration generated and applied cleanly against Postgres on port 5434.
+- **Spoken formatters (`app/voice/formatters.py`):**
+  - `speak_amount(amount_paise, lang)`: Indian numbering system (crores, lakhs,
+    thousands, hundreds, rupees, paise) for English, Hindi (Devanagari), and
+    Tamil (Tamil script). Verified exact blueprint benchmarks:
+    - ₹1,25,00,000 -> "one crore twenty-five lakh rupees" (en), "एक करोड़ पच्चीस लाख रुपये" (hi), "ஒரு கோடியே இருபத்தைந்து லட்சம் ரூபாய்" (ta).
+  - Handled Decimal/Numeric conversion from DB amounts safely.
+  - `speak_date(d, lang)`: Natural localized dates in en/hi/ta (e.g. "14 November 2026" / "14 नवंबर 2026" / "14 நவம்பர் 2026").
+  - `speak_fdr_digits(instrument_number, lang)`: Digit-by-digit reading of the
+    last 4 digits only, restricted to post-PIN verification.
+- **Call PIN security & lockout (`app/voice/security.py`):**
+  - PBKDF2-HMAC-SHA256 with 100,000 iterations and cryptographic salt.
+  - Maximum 3 PIN attempts per call session. On 3rd failure, locks voice
+    channel for 24 hours (`call_pin_locked_until = as_of + 24h`), sets session
+    status to "locked", and logs an immutable `voice_channel_locked` row in
+    `audit_log`.
+  - Locked users are blocked from authentication before lock expiry even if
+    supplying the correct PIN.
+- **Deterministic dialogue state machine (`app/voice/dialogue.py`, `app/voice/templates.py`):**
+  - States: `GREET_DISCLOSE` -> `VERIFY_PIN` -> `BRIEF` -> `MENU_QA` -> `CONFIRM_ACK` -> `CLOSE`.
+  - **Pre-PIN privacy guardrail:** asking for institutions, amounts, or
+    details before PIN verification returns a privacy refusal; no financial
+    data is ever spoken pre-PIN.
+  - **Social engineering defense:** requests to update bank account details,
+    change IFSC, or ask for OTPs/passwords are refused immediately across all
+    states.
+  - **Permitted actions:** list institutions, read details, acknowledge
+    (gated by explicit yes/no confirmation), snooze (bounded strictly between
+    1 and 7 days), escalate to Regulation Bureau, change language dynamically
+    (en/hi/ta), and stop calls (revokes consent in `ConsentRecord`).
+  - Acknowledgements write hash-chained audit rows with `actor_type="user"`
+    and `channel="voice"`.
+- **Outbound call triggers & API router (`app/voice/calls.py`, `app/voice/router.py`, `app/main.py`):**
+  - Enforces mandatory user consent (`ConsentRecord` for `automated_voice_calls`).
+  - Checks quiet hours against `sim_clock.now(session)`.
+  - Mints time-bound cryptographic WebRTC session room tokens (`mint_room_token`,
+    `verify_room_token`).
+  - Dispatches high-priority FCM call data push messages.
+  - Endpoints added: `POST /api/v1/calls/trigger`, `GET /api/v1/calls/{id}`,
+    `POST /api/v1/calls/{id}/turn`, `POST /api/v1/calls/{id}/dtmf`,
+    `POST /api/v1/calls/{id}/webrtc/offer`, `POST /api/v1/calls/{id}/pstn`,
+    `POST /api/v1/calls/{id}/hangup`.
+  - PSTN adapter flagged behind `production_telephony_enabled` per TRAI
+    robocall intimation & 1600-series requirements (Blueprint.txt §5.1 & §5.2).
+- **Pipecat & Sarvam bot integration (`app/voice/bot.py`, `services/voice/bot.py`):**
+  - `VoiceBotConfig` with `allow_interruptions=True` (barge-in support).
+  - Portal tools binding for Pipecat function calling (`verify_pin`,
+    `get_call_brief`, `list_institutions`, `read_details`, `ack`, `snooze`,
+    `escalate`, `set_language`).
+  - Fails closed and loud (`SarvamNotConfiguredError`) when `SARVAM_API_KEY` is
+    missing.
+- **Tests:** 21 new tests across 5 modules (`test_voice_formatters.py`,
+  `test_voice_security.py`, `test_voice_dialogue.py`, `test_voice_calls_api.py`,
+  `test_voice_bot_pipeline.py`).
+  Total suite: **215 passed, 1 skipped, 0 failed in 228s**.
+- **Plan updated:** Phase 1 and Phase 8 marked `[x]` in `docs/plan.md`.
+
+### Known gaps / deferred (tracked, not forgotten)
+
+- **FCM push needs a Firebase project** (carried over from Phase 7).
+- Real-time cloud speech synthesis/recognition needs a `SARVAM_API_KEY` (fails
+  closed and loud; mock/dialogue mode fully operational and tested).
+- Production PSTN calling is feature-flagged off (requires CPaaS + TRAI 1600 registration).
+- Phase 9 (Web SPA & Mobile App) is next in line.
+

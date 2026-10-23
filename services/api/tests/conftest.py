@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 TEST_DATABASE_URL = os.environ.get(
-    "TEST_DATABASE_URL", "postgresql+psycopg://fdr:fdr@localhost:5434/fdr"
+    "TEST_DATABASE_URL", "postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5434/fdr"
 )
 SUPERUSER_DATABASE_URL = os.environ.get(
     "SUPERUSER_DATABASE_URL", "postgresql+psycopg://fdr:fdr@localhost:5434/fdr"

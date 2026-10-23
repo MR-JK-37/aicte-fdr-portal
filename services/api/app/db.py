@@ -24,3 +24,12 @@ def set_app_context(session: Session, role: str, institution_id: str | None, use
         {"iid": institution_id or ""},
     )
     session.execute(text("SELECT set_config('app.user_id', :uid, true)"), {"uid": user_id or ""})
+
+
+def get_db():
+    """FastAPI dependency yielding a database session."""
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()

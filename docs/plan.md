@@ -22,7 +22,7 @@ scripts/        check_providers.py, deploy scripts, backup/restore
 
 ## Phases (status)
 
-- [ ] **Phase 1 — Foundation.** Turborepo+pnpm root, uv-managed Python services,
+- [x] **Phase 1 — Foundation.** Turborepo+pnpm root, uv-managed Python services,
       Docker Compose (db, valkey, minio, keycloak, api, worker, beat, caddy),
       GitHub Actions CI, pre-commit, `.env.example` handling.
       Accept: `docker compose up` works; `/health` is green.
@@ -76,7 +76,7 @@ scripts/        check_providers.py, deploy scripts, backup/restore
       (tested); quiet hours respected (tested, incl. edge cases);
       localized text en/hi/ta (templated, not LLM-generated — facts stay
       exact).
-- [ ] **Phase 8 — Voice agent.** Pipecat + Sarvam (Bhashini/AI4Bharat
+- [x] **Phase 8 — Voice agent.** Pipecat + Sarvam (Bhashini/AI4Bharat
       fallback), FCM-triggered full-screen call UI → WebRTC, disclosure→
       consent→PIN→brief→Q&A→confirm→audit. speak_amount/speak_date en/hi/ta.
       Accept: live call en/hi/ta over mobile data, interruptions work, wrong
