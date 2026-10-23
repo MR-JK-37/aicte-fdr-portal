@@ -69,7 +69,7 @@ class Instrument(Base):
     # Declared UTR for ONLINE_SD instruments, used by the AICTE
     # bank-statement reconciliation (ledger -> L3) matcher.
     utr: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    # timezone=True: these are compared directly against app.sim_clock.now()
+    # timezone=True: these are compared directly against clock.now()
     # (timezone-aware) in app/reminders/scheduler.py — a naive/aware
     # mismatch raises TypeError, caught by a cross-session reload test
     # (in-process ladder tests never round-tripped through the DB, so
@@ -148,9 +148,9 @@ class Reminder(Base):
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="pending")
     # Escalation ladder state (app/reminders/ladder.py): ladder_step indexes
-    # app.reminders.ladder.LADDER_STEPS; last_step_at is sim-clock time (not
-    # wall-clock) so the "advance sim clock +300 days -> full ladder fires"
-    # acceptance behaviour works.
+    # app.reminders.ladder.LADDER_STEPS; last_step_at is the injected
+    # Clock's time at the last step, so tests can time-travel their own
+    # clock fixture without any production code depending on that.
     ladder_step: Mapped[int] = mapped_column(default=0)
     last_step_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -213,9 +213,6 @@ class AppUser(Base):
     preferred_language: Mapped[str] = mapped_column(String(8), default="en")
     quiet_hours_start: Mapped[int] = mapped_column(default=21)  # 24h local hour, inclusive
     quiet_hours_end: Mapped[int] = mapped_column(default=8)  # 24h local hour, exclusive
-    # Phase 8: Call PIN authentication and 24h lockout
-    call_pin_hash: Mapped[str | None] = mapped_column(String(256), nullable=True)
-    call_pin_locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
@@ -252,18 +249,3 @@ class NotificationLog(Base):
     status: Mapped[str] = mapped_column(String(32), default="queued")
     idempotency_key: Mapped[str] = mapped_column(String(128), unique=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
-
-
-class CallSession(Base):
-    __tablename__ = "call_sessions"
-
-    id: Mapped[uuid.UUID] = uuid_pk()
-    institution_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("institutions.id"), nullable=True)
-    app_user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("app_users.id"), nullable=True)
-    reminder_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("reminders.id"), nullable=True)
-    language: Mapped[str] = mapped_column(String(8), default="en")
-    status: Mapped[str] = mapped_column(String(32), default="ringing")
-    pin_attempts: Mapped[int] = mapped_column(default=0)
-    transcript: Mapped[dict] = mapped_column(JSONB, default=dict)
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

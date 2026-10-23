@@ -1,9 +1,8 @@
-from app.models.audit import AgentRun, AuditLog, SimClock
+from app.models.audit import AgentRun, AuditLog
 from app.models.core import (
     AppUser,
     Bank,
     Branch,
-    CallSession,
     ConsentRecord,
     DeviceToken,
     Discrepancy,
@@ -28,7 +27,6 @@ __all__ = [
     "AuditLog",
     "Bank",
     "Branch",
-    "CallSession",
     "ConsentRecord",
     "DeviceToken",
     "Discrepancy",
@@ -41,7 +39,6 @@ __all__ = [
     "ReleaseRequest",
     "Reminder",
     "ScrutinyObservation",
-    "SimClock",
     "Trust",
     "VerificationRecord",
 ]
