@@ -9,12 +9,12 @@ Follows Blueprint.txt §16.8 and §5.3:
 - Interruption handling enabled (barge-in cancels TTS output).
 """
 
-from dataclasses import dataclass
 import os
-from typing import Any, Callable
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 from app.voice.dialogue import DialogueState, VoiceDialogueManager
-from app.voice.templates import render_voice_template
 
 
 class SarvamNotConfiguredError(Exception):

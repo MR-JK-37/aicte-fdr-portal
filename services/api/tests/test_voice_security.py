@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta, timezone
 import uuid
+from datetime import UTC, datetime, timedelta
 
-import pytest
 from sqlalchemy import select
 
 from app.models.audit import AuditLog
@@ -51,7 +50,7 @@ def test_pin_failure_locks_after_3_attempts(db_session):
     db_session.add(call_session)
     db_session.commit()
 
-    now = datetime(2026, 10, 23, 10, 0, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 10, 23, 10, 0, 0, tzinfo=UTC)
 
     # Attempt 1: wrong PIN
     ok, reason = verify_user_call_pin(db_session, user, call_session, "0000", now)

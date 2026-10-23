@@ -2,12 +2,11 @@
 and PSTN adapter (flagged per Blueprint.txt §5.1 & §5.2).
 """
 
-from datetime import datetime, timezone
 import hashlib
 import hmac
 import os
-import secrets
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -41,7 +40,7 @@ def _in_quiet_hours(user: AppUser, as_of: datetime) -> bool:
 def mint_room_token(session_id: uuid.UUID, ttl_seconds: int = 120, current_timestamp: int | None = None) -> str:
     """Generates a cryptographic time-bound WebRTC session room token."""
     secret = os.environ.get("CALL_TOKEN_SECRET", "dev_voice_room_secret_key")
-    now_ts = current_timestamp if current_timestamp is not None else int(datetime.now(timezone.utc).timestamp())
+    now_ts = current_timestamp if current_timestamp is not None else int(datetime.now(UTC).timestamp())
     expires_at = now_ts + ttl_seconds
     data = f"{session_id}:{expires_at}"
     sig = hmac.new(secret.encode("utf-8"), data.encode("utf-8"), hashlib.sha256).hexdigest()
@@ -59,7 +58,7 @@ def verify_room_token(token: str, current_timestamp: int | None = None) -> tuple
     expected_sig = hmac.new(secret.encode("utf-8"), data.encode("utf-8"), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(sig, expected_sig):
         return False, "invalid_signature"
-    now_ts = current_timestamp if current_timestamp is not None else int(datetime.now(timezone.utc).timestamp())
+    now_ts = current_timestamp if current_timestamp is not None else int(datetime.now(UTC).timestamp())
     if int(expires_at_str) < now_ts:
         return False, "expired"
     return True, session_id_str

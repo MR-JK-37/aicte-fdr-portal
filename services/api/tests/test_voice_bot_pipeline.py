@@ -1,10 +1,17 @@
-from datetime import datetime, timezone
 import os
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 
-from app.models.core import AppRole, AppUser, CallSession, Institution, Instrument, Reminder
+from app.models.core import (
+    AppRole,
+    AppUser,
+    CallSession,
+    Institution,
+    Instrument,
+    Reminder,
+)
 from app.models.enums import InstrumentType
 from app.voice.bot import (
     SarvamNotConfiguredError,
@@ -39,7 +46,7 @@ def bot_fixture(db_session):
         type=InstrumentType.FDR,
         instrument_number="FDR-BOT-4455",
         amount=50000000,  # 50 Lakh
-        maturity_date=datetime(2026, 12, 1, 0, 0, 0, tzinfo=timezone.utc),
+        maturity_date=datetime(2026, 12, 1, 0, 0, 0, tzinfo=UTC),
     )
     db_session.add(fdr)
     db_session.flush()
@@ -49,7 +56,7 @@ def bot_fixture(db_session):
         instrument_id=fdr.id,
         window="T-30",
         channel="voice_call",
-        scheduled_for=datetime(2026, 10, 23, 10, 0, 0, tzinfo=timezone.utc),
+        scheduled_for=datetime(2026, 10, 23, 10, 0, 0, tzinfo=UTC),
     )
     db_session.add(rem)
     db_session.flush()
@@ -88,8 +95,8 @@ def test_assert_sarvam_unconfigured():
 
 
 def test_portal_tools_binding(db_session, bot_fixture):
-    inst, user, fdr, rem, call_session = bot_fixture
-    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=timezone.utc)
+    _inst, user, _fdr, _rem, call_session = bot_fixture
+    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=UTC)
     dm = VoiceDialogueManager(db_session, call_session, user, as_of)
     tools = build_portal_tools(dm)
 

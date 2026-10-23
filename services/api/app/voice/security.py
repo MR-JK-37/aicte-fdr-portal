@@ -7,11 +7,10 @@ Per Blueprint.txt §5.4 and §5.5:
 - Lock event recorded in immutable hash-chained audit_log.
 """
 
-from datetime import datetime, timedelta
 import hashlib
 import hmac
-import os
 import secrets
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 

@@ -12,7 +12,6 @@ Follows Blueprint.txt §5.4 & §5.5:
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
-import uuid
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session

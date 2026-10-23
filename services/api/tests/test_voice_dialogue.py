@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import select
@@ -48,7 +48,7 @@ def voice_fixture(db_session):
         type=InstrumentType.FDR,
         instrument_number="FDR-98765432",
         amount=1250000000,  # ₹1.25 Cr
-        maturity_date=datetime(2026, 11, 14, 0, 0, 0, tzinfo=timezone.utc),
+        maturity_date=datetime(2026, 11, 14, 0, 0, 0, tzinfo=UTC),
     )
     db_session.add(fdr)
     db_session.flush()
@@ -58,7 +58,7 @@ def voice_fixture(db_session):
         instrument_id=fdr.id,
         window="T-30",
         channel="voice_call",
-        scheduled_for=datetime(2026, 10, 23, 10, 0, 0, tzinfo=timezone.utc),
+        scheduled_for=datetime(2026, 10, 23, 10, 0, 0, tzinfo=UTC),
     )
     db_session.add(rem)
     db_session.flush()
@@ -79,8 +79,8 @@ def voice_fixture(db_session):
 
 
 def test_initial_greeting_and_pre_pin_privacy(db_session, voice_fixture):
-    inst, user, fdr, rem, call_session = voice_fixture
-    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=timezone.utc)
+    _inst, user, _fdr, _rem, call_session = voice_fixture
+    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=UTC)
     dm = VoiceDialogueManager(db_session, call_session, user, as_of)
 
     # 1. Bot greeting and disclosure
@@ -97,8 +97,8 @@ def test_initial_greeting_and_pre_pin_privacy(db_session, voice_fixture):
 
 
 def test_social_engineering_defense(db_session, voice_fixture):
-    inst, user, fdr, rem, call_session = voice_fixture
-    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=timezone.utc)
+    _inst, user, _fdr, _rem, call_session = voice_fixture
+    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=UTC)
     dm = VoiceDialogueManager(db_session, call_session, user, as_of)
 
     # Social engineering attempt to update bank details
@@ -109,8 +109,8 @@ def test_social_engineering_defense(db_session, voice_fixture):
 
 
 def test_full_ack_dialogue_flow_and_audit(db_session, voice_fixture):
-    inst, user, fdr, rem, call_session = voice_fixture
-    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=timezone.utc)
+    _inst, user, _fdr, rem, call_session = voice_fixture
+    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=UTC)
     dm = VoiceDialogueManager(db_session, call_session, user, as_of)
 
     # 1. Correct PIN
@@ -158,8 +158,8 @@ def test_full_ack_dialogue_flow_and_audit(db_session, voice_fixture):
 
 
 def test_snooze_bounded_and_audit(db_session, voice_fixture):
-    inst, user, fdr, rem, call_session = voice_fixture
-    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=timezone.utc)
+    _inst, user, _fdr, rem, call_session = voice_fixture
+    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=UTC)
     dm = VoiceDialogueManager(db_session, call_session, user, as_of)
 
     dm.handle_input("5678")  # Authenticate
@@ -186,8 +186,8 @@ def test_snooze_bounded_and_audit(db_session, voice_fixture):
 
 
 def test_language_switching_dynamically(db_session, voice_fixture):
-    inst, user, fdr, rem, call_session = voice_fixture
-    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=timezone.utc)
+    _inst, user, _fdr, _rem, call_session = voice_fixture
+    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=UTC)
     dm = VoiceDialogueManager(db_session, call_session, user, as_of)
 
     # Switch to Hindi
@@ -204,8 +204,8 @@ def test_language_switching_dynamically(db_session, voice_fixture):
 
 
 def test_stop_calls_revokes_consent(db_session, voice_fixture):
-    inst, user, fdr, rem, call_session = voice_fixture
-    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=timezone.utc)
+    _inst, user, _fdr, _rem, call_session = voice_fixture
+    as_of = datetime(2026, 10, 23, 10, 0, 0, tzinfo=UTC)
     dm = VoiceDialogueManager(db_session, call_session, user, as_of)
 
     turn = dm.handle_input("stop calls please")
@@ -220,7 +220,7 @@ def test_stop_calls_revokes_consent(db_session, voice_fixture):
             ConsentRecord.consent_type == "automated_voice_calls",
         )
     ).scalar_one()
-    assert consent.revoked_at.replace(tzinfo=timezone.utc) == as_of
+    assert consent.revoked_at.replace(tzinfo=UTC) == as_of
 
     # Verify audit log
     audit_entry = db_session.execute(

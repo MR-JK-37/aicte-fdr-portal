@@ -1,14 +1,11 @@
-from datetime import datetime, timezone
 import uuid
 
-from fastapi.testclient import TestClient
 import pytest
-from sqlalchemy import select
+from fastapi.testclient import TestClient
 
 from app.db import get_db
 from app.main import app
-from app.models.core import AppRole, AppUser, CallSession, ConsentRecord, Institution
-from app.voice.calls import mint_room_token
+from app.models.core import AppRole, AppUser, ConsentRecord, Institution
 from app.voice.security import set_user_pin
 
 
@@ -60,14 +57,14 @@ def client_fixture(db_session):
 
 
 def test_trigger_call_requires_consent(client_fixture):
-    client, inst, user_with_consent, user_no_consent = client_fixture
+    client, _inst, _user_with_consent, user_no_consent = client_fixture
     resp = client.post("/api/v1/calls/trigger", json={"user_id": str(user_no_consent.id)})
     assert resp.status_code == 403
     assert "User has not granted active consent" in resp.json()["detail"]
 
 
 def test_trigger_call_success_and_webrtc_offer(client_fixture, db_session):
-    client, inst, user_with_consent, user_no_consent = client_fixture
+    client, _inst, user_with_consent, _user_no_consent = client_fixture
     resp = client.post("/api/v1/calls/trigger", json={"user_id": str(user_with_consent.id)})
     assert resp.status_code == 201
     data = resp.json()
@@ -102,7 +99,7 @@ def test_trigger_call_success_and_webrtc_offer(client_fixture, db_session):
 
 
 def test_dtmf_entry_and_dialogue_turn(client_fixture):
-    client, inst, user_with_consent, user_no_consent = client_fixture
+    client, _inst, user_with_consent, _user_no_consent = client_fixture
     resp = client.post("/api/v1/calls/trigger", json={"user_id": str(user_with_consent.id)})
     session_id = resp.json()["session_id"]
 
@@ -125,7 +122,7 @@ def test_dtmf_entry_and_dialogue_turn(client_fixture):
 
 
 def test_pstn_simulation_notice(client_fixture):
-    client, inst, user_with_consent, user_no_consent = client_fixture
+    client, _inst, user_with_consent, _user_no_consent = client_fixture
     resp = client.post("/api/v1/calls/trigger", json={"user_id": str(user_with_consent.id)})
     session_id = resp.json()["session_id"]
 
@@ -138,7 +135,7 @@ def test_pstn_simulation_notice(client_fixture):
 
 
 def test_hangup_endpoint(client_fixture):
-    client, inst, user_with_consent, user_no_consent = client_fixture
+    client, _inst, user_with_consent, _user_no_consent = client_fixture
     resp = client.post("/api/v1/calls/trigger", json={"user_id": str(user_with_consent.id)})
     session_id = resp.json()["session_id"]
 

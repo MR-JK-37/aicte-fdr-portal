@@ -1,7 +1,5 @@
 """FastAPI router for voice call sessions, WebRTC signaling, DTMF, and dialogue turns."""
 
-from datetime import datetime, timezone
-from typing import Any
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -14,7 +12,6 @@ from app.sim_clock import now as sim_now
 from app.voice.calls import (
     CallConsentRequiredError,
     CallSuppressedQuietHoursError,
-    mint_room_token,
     start_outbound_call,
     start_pstn_call,
     verify_room_token,
@@ -144,9 +141,9 @@ def webrtc_offer(
 
     # SmallWebRTC / Pipecat WebRTC SDP Answer format
     simulated_answer_sdp = (
-        f"v=0\r\no=- 0 0 IN IP4 127.0.0.1\r\ns=AICTE Voice WebRTC\r\nt=0 0\r\n"
-        f"m=audio 9 UDP/TLS/RTP/SAVPF 111\r\nc=IN IP4 127.0.0.1\r\n"
-        f"a=rtpmap:111 opus/48000/2\r\na=sendrecv\r\n"
+        "v=0\r\no=- 0 0 IN IP4 127.0.0.1\r\ns=AICTE Voice WebRTC\r\nt=0 0\r\n"
+        "m=audio 9 UDP/TLS/RTP/SAVPF 111\r\nc=IN IP4 127.0.0.1\r\n"
+        "a=rtpmap:111 opus/48000/2\r\na=sendrecv\r\n"
     )
     return {
         "sdp": simulated_answer_sdp,

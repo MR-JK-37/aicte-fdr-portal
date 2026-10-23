@@ -219,7 +219,7 @@ def _number_to_words_ta(n: int, has_following: bool = False) -> str:
     return " ".join(parts)
 
 
-def speak_amount(amount_paise: int | float | Any, lang: str = "en") -> str:
+def speak_amount(amount_paise: float | Any, lang: str = "en") -> str:
     """Renders amount in paise into natural spoken words in Indian currency.
 
     Examples:
@@ -303,7 +303,7 @@ def speak_fdr_digits(instrument_number: str, lang: str = "en") -> str:
     return "ending in " + " ".join(words)
 
 
-def format_currency_in(amount_paise: int | float | Any) -> str:
+def format_currency_in(amount_paise: float | Any) -> str:
     """Formats an amount in paise to Indian lakh/crore grouped ₹ currency."""
     amount_int = int(amount_paise)
     rupees = amount_int // 100

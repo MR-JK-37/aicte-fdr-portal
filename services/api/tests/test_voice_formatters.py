@@ -1,7 +1,5 @@
 from datetime import date
 
-import pytest
-
 from app.voice.formatters import (
     format_currency_in,
     speak_amount,
