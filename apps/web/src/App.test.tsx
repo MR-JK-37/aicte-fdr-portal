@@ -47,7 +47,7 @@ describe('AICTE Security Deposit Portal - 6 Scenarios Acceptance Tests', () => {
     const voiceBtn = screen.getByRole('button', { name: /AI Voice Call/i });
     fireEvent.click(voiceBtn);
 
-    expect(screen.getByText(/AICTE Autonomous Voice Bot/i)).toBeDefined();
+    expect(screen.getByText(/AICTE Autonomous Voice Assistant/i)).toBeDefined();
     expect(screen.getByText(/Sarvam AI \(WebRTC\)/i)).toBeDefined();
     expect(screen.getByText(/Establishing WebRTC Audio Link/i)).toBeDefined();
   });

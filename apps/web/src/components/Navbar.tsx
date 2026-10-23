@@ -36,23 +36,23 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="glass-panel" style={{ borderRadius: '0 0 16px 16px', borderTop: 'none', padding: '12px 24px', position: 'sticky', top: 0, zIndex: 40, backdropFilter: 'blur(20px)' }}>
+    <header className="glass-panel" style={{ borderRadius: '0 0 20px 20px', borderTop: 'none', padding: '14px 28px', position: 'sticky', top: 0, zIndex: 40, backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(0, 238, 255, 0.25)', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(59, 10, 107, 0.4)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         {/* Logo and Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 16px rgba(6, 182, 212, 0.4)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, #3b0a6b, #00eeff)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 238, 255, 0.45)' }}>
             <Shield size={24} color="#fff" />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '18px', letterSpacing: '-0.02em', background: 'linear-gradient(to right, #ffffff, #cbd5e1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontFamily: 'var(--font-serif)', fontWeight: 700, fontSize: '20px', letterSpacing: '-0.02em', background: 'linear-gradient(135deg, #ffffff 30%, #ede4f9 70%, #00eeff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 AICTE FDR Portal
               </span>
-              <span style={{ fontSize: '10px', background: 'rgba(6, 182, 212, 0.2)', color: '#22d3ee', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+              <span style={{ fontSize: '10px', background: 'rgba(59, 10, 107, 0.6)', color: '#00eeff', border: '1px solid rgba(0, 238, 255, 0.4)', padding: '2px 8px', borderRadius: 6, fontWeight: 700, letterSpacing: '0.05em' }}>
                 ZERO-COST SPEC
               </span>
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '11px', color: '#c4b5fd', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
               Regulation Bureau • Security Deposit Management
             </div>
           </div>
@@ -115,14 +115,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '6px 14px',
-              borderRadius: 8,
-              background: 'linear-gradient(135deg, #10b981, #059669)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
+              padding: '7px 14px',
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, #3b0a6b 0%, #00eeff 100%)',
+              border: '1px solid rgba(0, 238, 255, 0.6)',
               color: '#ffffff',
               fontSize: '12px',
               fontWeight: 700,
               cursor: 'pointer',
+              boxShadow: '0 0 20px rgba(0, 238, 255, 0.4)',
             }}
           >
             <PhoneCall size={14} />

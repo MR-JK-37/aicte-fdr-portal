@@ -184,22 +184,51 @@ export const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-xl glass-card border border-indigo-500/30 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div
+      className="modal-overlay"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        background: 'rgba(5, 5, 5, 0.88)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+      }}
+    >
+      <div
+        className="glass-card"
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '560px',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          borderRadius: '20px',
+          background: 'rgba(11, 6, 20, 0.95)',
+          border: '1px solid rgba(0, 238, 255, 0.35)',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(59, 10, 107, 0.6), inset 0 0 20px rgba(0, 238, 255, 0.05)',
+        }}
+      >
         {/* Top bar */}
-        <div className="p-4 bg-slate-900/90 border-b border-slate-700/60 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 animate-pulse">
-              <PhoneCall className="w-5 h-5" />
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(0, 238, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(90deg, rgba(59, 10, 107, 0.3), rgba(0, 238, 255, 0.05))' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 22, background: 'linear-gradient(135deg, #3b0a6b, #00eeff)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(0, 238, 255, 0.5)' }}>
+              <PhoneCall size={20} color="#ffffff" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-100 text-sm">AICTE Autonomous Voice Bot</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontFamily: 'var(--font-serif)', fontWeight: 700, fontSize: '15px', color: '#ffffff', letterSpacing: '-0.01em' }}>AICTE Autonomous Voice Assistant</span>
+                <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: 'rgba(0, 238, 255, 0.15)', color: '#00eeff', border: '1px solid rgba(0, 238, 255, 0.35)' }}>
                   Sarvam AI (WebRTC)
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p style={{ fontSize: '11px', color: '#c4b5fd', marginTop: '2px' }}>
                 Connected • FDR #{instrument.instrument_number} ({instrument.institution_name})
               </p>
             </div>
