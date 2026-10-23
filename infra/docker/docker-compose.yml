@@ -63,13 +63,25 @@ services:
       db:
         condition: service_healthy
 
+  migrate:
+    build:
+      context: ../../services/api
+    restart: "no"
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    environment:
+      MIGRATION_DATABASE_URL: postgresql+psycopg://fdr:fdr@db:5432/fdr
+      DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@db:5432/fdr
+    depends_on:
+      db:
+        condition: service_healthy
+
   api:
     build:
       context: ../../services/api
     restart: unless-stopped
     environment:
       ENV: dev
-      DATABASE_URL: postgresql+psycopg://fdr:fdr@db:5432/fdr
+      DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@db:5432/fdr
       VALKEY_URL: redis://valkey:6379/0
       GARAGE_ENDPOINT: http://garage:3900
       KEYCLOAK_URL: http://keycloak:8080
@@ -80,6 +92,8 @@ services:
         condition: service_healthy
       valkey:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   worker:
     build:
@@ -87,9 +101,12 @@ services:
     restart: unless-stopped
     environment:
       VALKEY_URL: redis://valkey:6379/0
+      DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@db:5432/fdr
     depends_on:
       valkey:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   beat:
     build:
@@ -98,9 +115,12 @@ services:
     command: ["uv", "run", "celery", "-A", "app.celery_app", "beat", "--loglevel=INFO"]
     environment:
       VALKEY_URL: redis://valkey:6379/0
+      DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@db:5432/fdr
     depends_on:
       valkey:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   caddy:
     image: caddy:2-alpine

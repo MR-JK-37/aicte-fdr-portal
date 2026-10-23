@@ -26,7 +26,7 @@ scripts/        check_providers.py, deploy scripts, backup/restore
       Docker Compose (db, valkey, minio, keycloak, api, worker, beat, caddy),
       GitHub Actions CI, pre-commit, `.env.example` handling.
       Accept: `docker compose up` works; `/health` is green.
-- [ ] **Phase 2 — Data, auth, audit.** Full schema (institutions, trusts,
+- [x] **Phase 2 — Data, auth, audit.** Full schema (institutions, trusts,
       instruments, banks/branches, documents, verification_records,
       discrepancies, scrutiny_observations, reminders, escalations,
       release_requests, penalties, app_users, device_tokens, consent_records,

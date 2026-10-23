@@ -11,6 +11,25 @@ jobs:
     defaults:
       run:
         working-directory: services/api
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fdr
+          POSTGRES_PASSWORD: fdr
+          POSTGRES_DB: fdr
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fdr -d fdr"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      MIGRATION_DATABASE_URL: postgresql+psycopg://fdr:fdr@localhost:5432/fdr
+      DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5432/fdr
+      TEST_DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5432/fdr
+      SUPERUSER_DATABASE_URL: postgresql+psycopg://fdr:fdr@localhost:5432/fdr
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v7
@@ -18,6 +37,7 @@ jobs:
           python-version: "3.12"
       - run: uv sync --frozen
       - run: uv run ruff check .
+      - run: uv run alembic upgrade head
       - run: uv run pytest
 
   web-build:
