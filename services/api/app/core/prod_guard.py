@@ -15,12 +15,10 @@ import re
 # Catches any env var whose name starts with one of these prefixes,
 # regardless of what follows (e.g. the demo-mode toggle, a mock
 # provider selector, a fake-success flag, or anything named "simulate*").
-_FORBIDDEN_PREFIXES = ("DEM" + "O", "MOC" + "K", "FAK" + "E", "SIMULAT")
+_FORBIDDEN_PREFIXES = ("DEMO", "MOCK", "FAKE", "SIMULAT")
 _FORBIDDEN_NAME_RE = re.compile(r"^(?:" + "|".join(_FORBIDDEN_PREFIXES) + r")\w*$")
 
-# Built from parts so this file never contains the literal combined
-# token as plain text (see the project's forbidden-patterns lint).
-_CLOCK_OVERRIDE_VAR = "SIMULAT" + "ED_CLOCK"
+_CLOCK_OVERRIDE_VAR = "SIMULATED_CLOCK"
 
 _TRUTHY = {"1", "true", "yes", "on"}
 
