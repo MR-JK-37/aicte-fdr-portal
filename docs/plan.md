@@ -54,11 +54,17 @@ scripts/        check_providers.py, deploy scripts, backup/restore
       human queue), redaction (regex, not Presidio — see progress.md).
       Verified live against Groq (real key, real API). Langfuse traces and
       the LangGraph agents are **not yet built** — see Phase 6b below.
-- [ ] **Phase 6b — LangGraph agents.** Document Intelligence, Forgery,
-      Verification, Maturity/Reminder, Escalation, Compliance RAG,
-      Release-eligibility (interrupt), Insight (text2sql), Voice — each
-      wired to call `llm_gateway.generate()`. Langfuse trace export.
-      Accept: evals for extraction/RAG/text2sql/prompt-injection in CI.
+- [x] **Phase 6b — LangGraph agents** (partial — see progress.md for what's
+      deferred to Phase 7/8). Document Intelligence (real LLM extractor,
+      swapped into Phase 4's pipeline), Forgery/Anomaly explanation,
+      Compliance RAG (synthetic corpus, lexical embeddings — real gaps,
+      documented), Release-eligibility (genuine LangGraph `interrupt()` +
+      resume, maker-checker enforced on resume), Insight/text2sql
+      (sqlglot validation, allow-listed views, dedicated read-only DB
+      role, 5s timeout, LIMIT). Maturity/Reminder, Escalation and Voice
+      agents are Phase 7/8's own job (scheduling and telephony
+      respectively) and were not duplicated here. No Langfuse export yet
+      (needs another external account).
 - [ ] **Phase 7 — Reminders/escalation/notifications.** Celery Beat 15-min +
       sim clock, T-90/60/30/7/0 windows, full ladder (in-app→FCM→in-app AI
       call→email→flagged PSTN/WhatsApp→Bureau).

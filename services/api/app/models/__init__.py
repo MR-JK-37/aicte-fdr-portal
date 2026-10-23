@@ -19,9 +19,11 @@ from app.models.core import (
     Trust,
     VerificationRecord,
 )
+from app.models.rag import AphClauseChunk
 
 __all__ = [
     "AgentRun",
+    "AphClauseChunk",
     "AppUser",
     "AuditLog",
     "Bank",

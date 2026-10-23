@@ -385,6 +385,110 @@
   behaviour the spec describes is implemented and tested via mocks, but
   has no second real provider to fail over to in practice yet.
 
+## 2026-10-23 (cont'd) — Phase 6b (LangGraph agents)
+
+- **Infra change required first:** `pgvector` (for the Compliance RAG
+  agent's clause embeddings) needs the Postgres `vector` extension, which
+  the plain `postgres:16-alpine` image doesn't ship. Swapped `db` to
+  `pgvector/pgvector:pg16` (verified pullable) in both Compose and CI.
+  This meant recreating the `db` volume from scratch (Keycloak is
+  unaffected — it runs its own embedded dev DB, not this Postgres) and
+  re-running all migrations clean, which also re-proved the whole
+  migration chain from `b35cb080c98c` works end to end on a fresh image.
+- **Document Intelligence** (`app/agents/document_intelligence.py`):
+  `LLMGatewayExtractor` implements the exact same `FDRExtractor` protocol
+  Phase 4's `RegexFDRExtractor` was always a placeholder for — this is
+  the real swap Phase 4 flagged as blocked on Phase 6. Calls
+  `llm_gateway.generate()` with `task_class="extraction"`, a Pydantic
+  schema, and no tool/function-calling access (the brief's "no-tool
+  extraction agents" prompt-injection defence). Falls back to an
+  all-empty `FDRExtractedFields()` on gateway failure rather than
+  raising mid-pipeline — downstream validation/officer-confirm already
+  treats missing fields as needing review.
+- **Forgery/Anomaly** (`forgery_explain.py`): turns Phase 4's
+  already-computed validation flags/forgery signals into plain language.
+  Never invents a flag — only explains what deterministic code already
+  found — and falls back to the raw flag text (not silence) if the LLM
+  call fails.
+- **Compliance RAG** (`rag.py` + `embeddings.py` + `seed_aph_clauses.py`):
+  real pgvector storage/cosine-distance retrieval, a hard code-level
+  refusal gate below a distance threshold (not a prompt instruction the
+  model could ignore), and citation-only answering. Two real, documented
+  gaps make this agent's *content* not production-grade while its
+  *mechanics* are: (1) no embeddings-capable provider is keyed (Groq
+  doesn't serve one), so `embeddings.py` is a local deterministic lexical
+  hash — same interface as a real model, swappable later; (2) the seeded
+  clause corpus is explicitly SYNTHETIC PLACEHOLDER text (real APH text
+  isn't available — Blueprint.txt §17 item 2), with `synthetic_placeholder`
+  stored per-row and the LLM prompt instructed to disclose it.
+  **Real bug found and fixed via a failing test:** the raw bag-of-words
+  cosine embedding let stopword overlap ("the", "on") from a short,
+  wrong clause outrank a longer, genuinely relevant one — a real test
+  asking "when can the security deposit be released on maturity"
+  retrieved the penalty clause instead of the release clause. Fixed with
+  a minimal stopword filter (still lexical, not semantic — just stops
+  the crudest false positive class).
+- **Release-eligibility** (`release_eligibility.py`): a genuine
+  LangGraph `StateGraph` with a real `interrupt()` call at the approval
+  node — verified by directly probing `app.invoke()`'s return shape
+  before writing any agent code (`__interrupt__` key with the payload,
+  confirmed via a throwaway script) rather than assuming the API shape
+  from memory. Resume is checked through the same
+  `assert_maker_checker` the direct Phase 5 API path uses, so a scrutiny
+  officer still can't approve their own file even via this route.
+  **Real design bug caught by the first test run:** the agent's
+  transition call assumed `MATURED -> RELEASED` was legal; Phase 3's
+  actual lifecycle graph requires `RELEASE_REQUESTED` first. The test
+  fixtures, not the lifecycle rules, were wrong — fixed by starting
+  review instruments at `RELEASE_REQUESTED`, which is also what the real
+  workflow does (institution requests release, *then* competent
+  authority reviews).
+  **Known limitation, flagged not hidden:** uses a single process-wide
+  `MemorySaver()` checkpointer — correct within one API process, but a
+  resume landing on a different worker process in a multi-worker deploy
+  would see no record of the paused thread. A Postgres-backed
+  checkpointer (`langgraph-checkpoint-postgres`) is the real fix,
+  deferred.
+- **Insight / text2sql** (`insight.py`): every constraint in the brief's
+  spec is independently enforced and tested, not just described —
+  sqlglot parse validation, single-SELECT-only, allow-listed-view-only
+  (`v_instrument_summary`/`v_reminder_summary`, migration
+  `a63a3efb737c`), automatic `LIMIT` injection, a dedicated `fdr_readonly`
+  DB role (SELECT-only grants, no base-table access at all) with a 5s
+  `statement_timeout`. Tested defence-in-depth: even bypassing the
+  Python-side validation, the DB role itself refuses a write
+  ("permission denied") against the real database, not a mock.
+  **Test bug (not agent bug) caught on the first run:** the original
+  write-denial test targeted the view itself, which Postgres refuses to
+  DELETE from for a structural reason ("not automatically updatable")
+  before permission is even checked — moved the test to a base table to
+  actually prove the role-level grant boundary it was meant to prove.
+- Tests: 30 new (172 fast total + the still-separate 100-doc benchmark).
+  Also found and fixed one pre-existing test flakiness, unrelated to
+  Phase 6 logic: `test_pipeline_integration.py` asserted exact OCR
+  digit-match on a random instrument number, which occasionally fails
+  on genuine Tesseract misreads (the same ~1.3% error class
+  `test_extraction_accuracy.py` already measures and documents) — fixed
+  by asserting on `bank_name` (letters, not digit-prone) instead,
+  verified stable across 3 consecutive full-suite runs.
+
+### Known gaps / deferred (tracked, not forgotten)
+
+- **Maturity/Reminder and Escalation agents are Phase 7's job** (Celery
+  Beat scheduling against the sim clock) — not duplicated here to avoid
+  building the same logic twice in two phases.
+- **Voice agent is Phase 8's job** (needs Sarvam, another external
+  account) — not started.
+- No Langfuse trace export — same reasoning as Phase 6a: another
+  external account not yet set up; `agent_runs` already has everything
+  Langfuse would visualise.
+- Compliance RAG's embeddings and corpus are both placeholders (see
+  above) — real content requires either an embeddings-capable provider
+  key or AICTE supplying actual APH text, neither available in this
+  session.
+- Release-eligibility's checkpointer is single-process in-memory, not
+  yet Postgres-backed for multi-worker correctness.
+
 ### Unverified / to confirm later
 
 - Exact current free-tier limits for Groq/OpenRouter/Workers AI/Sarvam will

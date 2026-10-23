@@ -2,7 +2,10 @@ name: fdr-portal
 
 services:
   db:
-    image: postgres:16-alpine
+    # pgvector/pgvector:pg16 = official postgres:16 + the pgvector
+    # extension pre-installed, needed for the Compliance RAG agent's
+    # clause-chunk embeddings (Phase 6b). Verified pullable/available.
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
       POSTGRES_USER: fdr
@@ -100,6 +103,7 @@ services:
     environment:
       ENV: dev
       DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@db:5432/fdr
+      READONLY_DATABASE_URL: postgresql+psycopg://fdr_readonly:fdr_readonly_dev_password@db:5432/fdr
       VALKEY_URL: redis://valkey:6379/0
       GARAGE_ENDPOINT: http://garage:3900
       GARAGE_BUCKET: fdr-documents

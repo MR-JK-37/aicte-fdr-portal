@@ -13,7 +13,7 @@ jobs:
         working-directory: services/api
     services:
       postgres:
-        image: postgres:16-alpine
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: fdr
           POSTGRES_PASSWORD: fdr
@@ -39,6 +39,7 @@ jobs:
       DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5432/fdr
       TEST_DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5432/fdr
       SUPERUSER_DATABASE_URL: postgresql+psycopg://fdr:fdr@localhost:5432/fdr
+      READONLY_DATABASE_URL: postgresql+psycopg://fdr_readonly:fdr_readonly_dev_password@localhost:5432/fdr
       GARAGE_ENDPOINT: http://localhost:3900
       GARAGE_ACCESS_KEY: devaccesskey
       GARAGE_SECRET_KEY: devsecretkeydevsecretkey

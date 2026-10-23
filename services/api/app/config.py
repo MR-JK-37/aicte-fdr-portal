@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     garage_secret_key: str = "devsecretkeydevsecretkey"
     keycloak_url: str = "http://localhost:8080"
     keycloak_realm: str = "fdr-portal"
+    # Insight (text2sql) agent only — SELECT-only on an allow-listed view
+    # set (app/agents/insight.py). Never used for anything else.
+    readonly_database_url: str = "postgresql+psycopg://fdr_readonly:fdr_readonly_dev_password@localhost:5432/fdr"
     garage_bucket: str = "fdr-documents"
     clamav_host: str = "localhost"
     clamav_port: int = 3310
