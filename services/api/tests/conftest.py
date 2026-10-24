@@ -31,6 +31,7 @@ _VOLATILE_TABLES = [
     "discrepancies",
     "verification_records",
     "documents",
+    "audit_checkpoints",
     "audit_log",
     "instruments",
     "app_users",

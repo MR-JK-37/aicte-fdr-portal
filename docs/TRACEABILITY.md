@@ -14,7 +14,7 @@ Claude Code updates the **Tests** and **Status** columns as work lands. A requir
 | 7 | Alerts and escalation | F-10, F-14, F-24 | 4–5 | `test_reminder_ladder.py`, `test_scenario_7_maturity_scanner_and_outage.py`, `test_scenario_10_notifications_inbox_and_delivery.py`, `test_scenario_14_notifications_outage_and_resilience.py`, `test_notifications_device_logout_and_privacy.py` | Complete (PASS) |
 | 8 | Dashboard and management reports | F-16 | 4, 6 | `apps/web/src/App.test.tsx`, `test_reminder_scheduler.py` | Complete (PASS) |
 | 9 | Audit trail and access control | F-01, F-18 | 1 | `test_authz_negative_matrix.py`, `test_auth_router.py`, `test_audit_checkpoint.py`, `scripts/verify_audit_chain.py` | Complete (PASS) |
-| 10 | System integration and data security | F-19, §12/§15, connectors | 1, 9 | `test_registry_router.py`, `test_pool_isolation.py`, `test_concurrency.py`, `test_idempotency_middleware.py`, `test_correlation_id.py`, `test_problem_json.py` | Phase 1 Complete (PASS) |
+| 10 | System integration and data security | F-19, §12/§15, connectors | 1, 9 | `test_registry_router.py`, `test_pool_isolation.py`, `test_concurrency.py`, `test_idempotency_middleware.py`, `test_correlation_id.py`, `test_problem_json.py`, `test_security_matrix.py`, `test_scenario_13_restore_drill.py`, `test_scenario_14_chaos_lite.py` | Complete (PASS) |
 
 ## 2. PS 26265 test scenarios
 | Scenario | MP | Phase | Automated test | Status |
@@ -41,8 +41,8 @@ Claude Code updates the **Tests** and **Status** columns as work lands. A requir
 | 10 | Inbox persists if push fails; invalid token cleaned; no fabricated "delivered" | §10 | 5 | `test_scenario_10_notifications_inbox_and_delivery.py`, `test_notifications_device_logout_and_privacy.py` | Complete (PASS) |
 | 11 | Prod config refuses demo/fake/sim/test creds | §17.4 | 0 | `test_prod_guard.py` | Complete (PASS) |
 | 12 | Audit tamper denied; checkpoint verification detects change | F-18 | 1 | `test_audit_checkpoint.py`, `scripts/verify_audit_chain.py` | Complete (PASS) |
-| 13 | Backup restore reconciles hashes/counts/keys | §18 | 9 | — | Not started |
-| 14 | Outage/bounce/timeout/restart/failover → controlled states + alerts | §10, §18 | 5, 9 | `test_scenario_14_notifications_outage_and_resilience.py` | Phase 5 Complete (PASS) |
+| 13 | Backup restore reconciles hashes/counts/keys | §18 | 9 | `test_scenario_13_restore_drill.py`, `scripts/restore_drill.py` | Complete (PASS) |
+| 14 | Outage/bounce/timeout/restart/failover → controlled states + alerts | §10, §18 | 5, 9 | `test_scenario_14_notifications_outage_and_resilience.py`, `test_scenario_14_chaos_lite.py`, `test_ai_failover.py` | Complete (PASS) |
 
 
 ## 4. SPEC section → MP coverage map
