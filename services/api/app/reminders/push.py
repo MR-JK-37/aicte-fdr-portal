@@ -25,7 +25,9 @@ class PushNotConfiguredError(Exception):
 def _app() -> firebase_admin.App:
     raw = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
     if not raw:
-        raise PushNotConfiguredError("FIREBASE_SERVICE_ACCOUNT_JSON is not set — no Firebase project configured")
+        raise PushNotConfiguredError(
+            "FIREBASE_SERVICE_ACCOUNT_JSON is not set — no Firebase project configured"
+        )
     cred = credentials.Certificate(json.loads(raw))
     return firebase_admin.initialize_app(cred, name="fdr-portal")
 
@@ -51,7 +53,9 @@ def send_push(
         android=messaging.AndroidConfig(priority="high" if high_priority else "normal"),
         apns=messaging.APNSConfig(
             headers={"apns-priority": "10" if high_priority else "5"},
-            payload=messaging.APNSPayload(aps=messaging.Aps(content_available=high_priority)),
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(content_available=high_priority)
+            ),
         ),
     )
     return messaging.send(message, app=app)

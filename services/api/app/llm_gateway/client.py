@@ -35,11 +35,18 @@ def call_chat_completion(
     timeout_seconds: float = 30.0,
 ) -> CompletionResult:
     if not provider.openai_compatible:
-        raise ProviderCallError(f"provider '{provider.name}' is not OpenAI-compatible; use its dedicated client")
+        raise ProviderCallError(
+            f"provider '{provider.name}' is not OpenAI-compatible; use its dedicated client"
+        )
     if not provider.has_key:
-        raise ProviderCallError(f"provider '{provider.name}' has no API key configured ({provider.key_env_var})")
+        raise ProviderCallError(
+            f"provider '{provider.name}' has no API key configured ({provider.key_env_var})"
+        )
 
-    headers = {"Authorization": f"Bearer {provider.api_key}", "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {provider.api_key}",
+        "Content-Type": "application/json",
+    }
     payload: dict = {"model": model_id, "messages": messages}
     if json_mode:
         payload["response_format"] = {"type": "json_object"}
@@ -47,7 +54,10 @@ def call_chat_completion(
     start = time.monotonic()
     try:
         response = httpx.post(
-            f"{provider.base_url}/chat/completions", headers=headers, json=payload, timeout=timeout_seconds
+            f"{provider.base_url}/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=timeout_seconds,
         )
     except httpx.RequestError as exc:
         raise ProviderCallError(f"{provider.name}: request failed: {exc}") from exc
@@ -57,7 +67,9 @@ def call_chat_completion(
         retry_after = float(response.headers.get("Retry-After", "1"))
         raise RateLimitedError(retry_after)
     if response.status_code >= 400:
-        raise ProviderCallError(f"{provider.name}: HTTP {response.status_code}: {response.text[:500]}")
+        raise ProviderCallError(
+            f"{provider.name}: HTTP {response.status_code}: {response.text[:500]}"
+        )
 
     data = response.json()
     choice = data["choices"][0]["message"]["content"]

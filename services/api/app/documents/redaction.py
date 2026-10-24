@@ -28,6 +28,7 @@ def redact(text: str) -> tuple[str, dict[str, str]]:
     redacted = text
     counters: dict[str, int] = {}
     for label, pattern in PATTERNS.items():
+
         def _sub(match: re.Match, label=label) -> str:
             counters[label] = counters.get(label, 0) + 1
             token = f"<<{label}_{counters[label]}>>"

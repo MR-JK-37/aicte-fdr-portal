@@ -69,7 +69,10 @@ def test_institution_without_context_sees_nothing(engine, db_session):
     db_session.add(inst)
     db_session.flush()
     instrument = Instrument(
-        institution_id=inst.id, type=InstrumentType.FDR, instrument_number="FDR-C-001", amount=1
+        institution_id=inst.id,
+        type=InstrumentType.FDR,
+        instrument_number="FDR-C-001",
+        amount=1,
     )
     db_session.add(instrument)
     db_session.commit()

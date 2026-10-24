@@ -44,7 +44,7 @@ from starlette.responses import Response
 
 from app.db import SessionLocal
 from app.idempotency.models import IdempotencyKey
-from app.problem_json import build_problem_response
+from app.problem_json import UnauthenticatedError, build_problem_response
 
 STATE_CHANGING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 IDEMPOTENCY_KEY_HEADER = "Idempotency-Key"
@@ -76,9 +76,21 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
         # cached response by reusing their Idempotency-Key value).
         user_id = getattr(request.state, "user_id", None)
         if user_id is None:
-            raise UnauthenticatedError(
+            # Built directly rather than raised: this middleware runs
+            # outside FastAPI's exception-handler stack (those only
+            # catch exceptions from routing/endpoints, not from another
+            # middleware's own dispatch), so raising UnauthenticatedError
+            # here would surface as a generic 500, not this 401.
+            err = UnauthenticatedError(
                 "Idempotency-Key handling requires an authenticated user_id; "
                 "none is present on request.state yet (authorise() pending)"
+            )
+            return build_problem_response(
+                status_code=err.status_code,
+                code=err.code,
+                title=err.title,
+                detail=err.detail,
+                correlation_id=correlation_id,
             )
 
         session = SessionLocal()
@@ -114,7 +126,9 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
 
             if response.status_code <= _CACHEABLE_MAX_STATUS:
-                response_body = b"".join([chunk async for chunk in response.body_iterator])
+                response_body = b"".join(
+                    [chunk async for chunk in response.body_iterator]
+                )
                 _store_response(
                     session,
                     key=key,

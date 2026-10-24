@@ -18,18 +18,32 @@ from app.documents.extraction import RegexFDRExtractor
 from app.documents.ocr import extract_text
 from tests.fixtures import LAYOUTS, random_fdr_fields, render_fdr_pdf
 
-FIELD_KEYS = ["instrument_number", "bank_name", "ifsc", "amount", "issue_date", "maturity_date", "tenor_months"]
+FIELD_KEYS = [
+    "instrument_number",
+    "bank_name",
+    "ifsc",
+    "amount",
+    "issue_date",
+    "maturity_date",
+    "tenor_months",
+]
 
 
 def _fields_match(expected: dict, got) -> dict[str, bool]:
     results = {}
-    results["instrument_number"] = got.instrument_number == expected["instrument_number"]
+    results["instrument_number"] = (
+        got.instrument_number == expected["instrument_number"]
+    )
     results["bank_name"] = got.bank_name == expected["bank_name"]
     results["ifsc"] = got.ifsc == expected["ifsc"]
     results["amount"] = got.amount is not None and int(got.amount) == expected["amount"]
-    results["issue_date"] = got.issue_date is not None and got.issue_date.strftime("%d-%m-%Y") == expected["issue_date"]
+    results["issue_date"] = (
+        got.issue_date is not None
+        and got.issue_date.strftime("%d-%m-%Y") == expected["issue_date"]
+    )
     results["maturity_date"] = (
-        got.maturity_date is not None and got.maturity_date.strftime("%d-%m-%Y") == expected["maturity_date"]
+        got.maturity_date is not None
+        and got.maturity_date.strftime("%d-%m-%Y") == expected["maturity_date"]
     )
     results["tenor_months"] = got.tenor_months == expected["tenor_months"]
     return results
@@ -61,11 +75,15 @@ def test_extraction_benchmark_across_all_layouts():
     overall_correct = sum(correct.values())
     overall_accuracy = overall_correct / overall_total
 
-    report_lines = [f"Extraction accuracy over {n_docs} synthetic FDRs, {len(LAYOUTS)} layouts:"]
+    report_lines = [
+        f"Extraction accuracy over {n_docs} synthetic FDRs, {len(LAYOUTS)} layouts:"
+    ]
     for key in FIELD_KEYS:
         acc = correct[key] / total[key] if total[key] else 0.0
         report_lines.append(f"  {key}: {correct[key]}/{total[key]} ({acc:.1%})")
-    report_lines.append(f"  OVERALL: {overall_correct}/{overall_total} ({overall_accuracy:.1%})")
+    report_lines.append(
+        f"  OVERALL: {overall_correct}/{overall_total} ({overall_accuracy:.1%})"
+    )
     print("\n".join(report_lines))
 
     # Matches the brief's literal acceptance threshold. Measured at 98.7%

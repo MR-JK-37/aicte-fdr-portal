@@ -1,4 +1,8 @@
-from app.documents.security_scan import check_magic_bytes, sanitise_pdf
+from app.documents.security_scan import (
+    check_magic_bytes,
+    sanitise_pdf,
+    scan_for_malware,
+)
 from tests.fixtures import random_fdr_fields, render_fdr_pdf
 
 
@@ -34,3 +38,22 @@ def test_sanitise_pdf_rejects_garbage():
     result, sanitised = sanitise_pdf(b"not a pdf at all")
     assert result.passed is False
     assert sanitised is None
+
+
+def test_clamav_detects_eicar_test_signature():
+    eicar = b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
+    result = scan_for_malware(eicar)
+    assert result.passed is False
+    assert "malware signature detected" in result.reason
+    assert "Eicar" in result.reason
+
+
+def test_magic_bytes_rejects_zip_bomb():
+    # Standard zip file header PK\x03\x04
+    zip_bomb_header = b"PK\x03\x04" + b"\x00" * 100
+    result = check_magic_bytes(zip_bomb_header, "application/pdf")
+    assert result.passed is False
+    assert (
+        "not an allowed document type" in result.reason
+        or "does not match" in result.reason
+    )

@@ -1,0 +1,4 @@
+/* @aicte-fdr/design-tokens css entry — thin re-export of /design/tokens.css.
+   Do not duplicate values; edit /design/tokens.css (and keep tokens.ts in
+   sync; design/check_tokens.py enforces parity + contrast in CI). */
+@import "../../../design/tokens.css";

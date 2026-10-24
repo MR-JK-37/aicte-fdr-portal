@@ -10,6 +10,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aicte-fdr/design-tokens": "workspace:*",
+    "@aicte-fdr/i18n": "workspace:*",
+    "@aicte-fdr/schemas": "workspace:*",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
     "react": "^19.0.0",

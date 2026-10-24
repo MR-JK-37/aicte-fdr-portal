@@ -15,14 +15,40 @@ from reportlab.pdfgen import canvas
 
 fake = Faker("en_IN")
 
-BANKS = ["State Bank of India", "HDFC Bank", "ICICI Bank", "Punjab National Bank", "Axis Bank"]
+BANKS = [
+    "State Bank of India",
+    "HDFC Bank",
+    "ICICI Bank",
+    "Punjab National Bank",
+    "Axis Bank",
+]
 
 
 _ONES = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"]
 _TEENS = [
-    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen",
+    "Ten",
+    "Eleven",
+    "Twelve",
+    "Thirteen",
+    "Fourteen",
+    "Fifteen",
+    "Sixteen",
+    "Seventeen",
+    "Eighteen",
+    "Nineteen",
 ]
-_TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+_TENS = [
+    "",
+    "",
+    "Twenty",
+    "Thirty",
+    "Forty",
+    "Fifty",
+    "Sixty",
+    "Seventy",
+    "Eighty",
+    "Ninety",
+]
 
 
 def _two_digit_words(n: int) -> str:
@@ -71,44 +97,84 @@ def random_fdr_fields(seed: int | None = None) -> dict:
 # wording — "8 layouts" per the brief's acceptance criterion.
 LAYOUTS = [
     [
-        ("FDR No.", "instrument_number"), ("Bank Name", "bank_name"), ("IFSC Code", "ifsc"),
-        ("Amount (Rs.)", "amount"), ("Amount (words)", "amount_words"),
-        ("Date of Issue", "issue_date"), ("Date of Maturity", "maturity_date"), ("Tenor (months)", "tenor_months"),
+        ("FDR No.", "instrument_number"),
+        ("Bank Name", "bank_name"),
+        ("IFSC Code", "ifsc"),
+        ("Amount (Rs.)", "amount"),
+        ("Amount (words)", "amount_words"),
+        ("Date of Issue", "issue_date"),
+        ("Date of Maturity", "maturity_date"),
+        ("Tenor (months)", "tenor_months"),
     ],
     [
-        ("Instrument Number", "instrument_number"), ("Bank Name", "bank_name"), ("IFSC", "ifsc"),
-        ("Amount (INR)", "amount"), ("Amount (words)", "amount_words"),
-        ("Issue Date", "issue_date"), ("Maturity Date", "maturity_date"), ("Tenor (months)", "tenor_months"),
+        ("Instrument Number", "instrument_number"),
+        ("Bank Name", "bank_name"),
+        ("IFSC", "ifsc"),
+        ("Amount (INR)", "amount"),
+        ("Amount (words)", "amount_words"),
+        ("Issue Date", "issue_date"),
+        ("Maturity Date", "maturity_date"),
+        ("Tenor (months)", "tenor_months"),
     ],
     [
-        ("Receipt No", "instrument_number"), ("Bank Name", "bank_name"), ("IFSC Code", "ifsc"),
-        ("Amount (figures)", "amount"), ("Date of Issue", "issue_date"),
-        ("Date of Maturity", "maturity_date"), ("Tenor", "tenor_months"), ("Amount (words)", "amount_words"),
+        ("Receipt No", "instrument_number"),
+        ("Bank Name", "bank_name"),
+        ("IFSC Code", "ifsc"),
+        ("Amount (figures)", "amount"),
+        ("Date of Issue", "issue_date"),
+        ("Date of Maturity", "maturity_date"),
+        ("Tenor", "tenor_months"),
+        ("Amount (words)", "amount_words"),
     ],
     [
-        ("FDR Number", "instrument_number"), ("IFSC Code", "ifsc"), ("Bank Name", "bank_name"),
-        ("Issue Date", "issue_date"), ("Maturity Date", "maturity_date"),
-        ("Amount (Rs.)", "amount"), ("Amount (words)", "amount_words"), ("Tenor (months)", "tenor_months"),
+        ("FDR Number", "instrument_number"),
+        ("IFSC Code", "ifsc"),
+        ("Bank Name", "bank_name"),
+        ("Issue Date", "issue_date"),
+        ("Maturity Date", "maturity_date"),
+        ("Amount (Rs.)", "amount"),
+        ("Amount (words)", "amount_words"),
+        ("Tenor (months)", "tenor_months"),
     ],
     [
-        ("Instrument No.", "instrument_number"), ("Bank Name", "bank_name"), ("IFSC", "ifsc"),
-        ("Date of Issue", "issue_date"), ("Date of Maturity", "maturity_date"),
-        ("Amount (INR)", "amount"), ("Tenor (months)", "tenor_months"), ("Amount (words)", "amount_words"),
+        ("Instrument No.", "instrument_number"),
+        ("Bank Name", "bank_name"),
+        ("IFSC", "ifsc"),
+        ("Date of Issue", "issue_date"),
+        ("Date of Maturity", "maturity_date"),
+        ("Amount (INR)", "amount"),
+        ("Tenor (months)", "tenor_months"),
+        ("Amount (words)", "amount_words"),
     ],
     [
-        ("FDR No.", "instrument_number"), ("IFSC Code", "ifsc"), ("Bank Name", "bank_name"),
-        ("Amount (figures)", "amount"), ("Amount (words)", "amount_words"),
-        ("Tenor (months)", "tenor_months"), ("Date of Issue", "issue_date"), ("Date of Maturity", "maturity_date"),
+        ("FDR No.", "instrument_number"),
+        ("IFSC Code", "ifsc"),
+        ("Bank Name", "bank_name"),
+        ("Amount (figures)", "amount"),
+        ("Amount (words)", "amount_words"),
+        ("Tenor (months)", "tenor_months"),
+        ("Date of Issue", "issue_date"),
+        ("Date of Maturity", "maturity_date"),
     ],
     [
-        ("Receipt Number", "instrument_number"), ("Bank Name", "bank_name"), ("IFSC Code", "ifsc"),
-        ("Amount (Rs.)", "amount"), ("Date of Issue", "issue_date"), ("Date of Maturity", "maturity_date"),
-        ("Tenor (months)", "tenor_months"), ("Amount (words)", "amount_words"),
+        ("Receipt Number", "instrument_number"),
+        ("Bank Name", "bank_name"),
+        ("IFSC Code", "ifsc"),
+        ("Amount (Rs.)", "amount"),
+        ("Date of Issue", "issue_date"),
+        ("Date of Maturity", "maturity_date"),
+        ("Tenor (months)", "tenor_months"),
+        ("Amount (words)", "amount_words"),
     ],
     [
-        ("FDR No.", "instrument_number"), ("Bank Name", "bank_name"), ("IFSC", "ifsc"),
-        ("Amount (words)", "amount_words"), ("Amount (Rs.)", "amount"),
-        ("Date of Issue", "issue_date"), ("Date of Maturity", "maturity_date"), ("Tenor (months)", "tenor_months"),
+        ("FDR No.", "instrument_number"),
+        ("Bank Name", "bank_name"),
+        ("IFSC", "ifsc"),
+        ("Amount (words)", "amount_words"),
+        ("Amount (Rs.)", "amount"),
+        ("Date of Issue", "issue_date"),
+        ("Date of Maturity", "maturity_date"),
+        ("Tenor (months)", "tenor_months"),
     ],
 ]
 

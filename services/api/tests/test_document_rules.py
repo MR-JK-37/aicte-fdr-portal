@@ -44,19 +44,25 @@ def test_maturity_not_equal_issue_plus_tenor_flagged():
 
 
 def test_maturity_before_issue_flagged():
-    fields = FDRExtractedFields(issue_date=date(2024, 6, 1), maturity_date=date(2024, 1, 1))
+    fields = FDRExtractedFields(
+        issue_date=date(2024, 6, 1), maturity_date=date(2024, 1, 1)
+    )
     flags = validate_extracted_fields(fields)
     assert any(f.field == "maturity_date" and "after" in f.message for f in flags)
 
 
 def test_amount_words_mismatch_flagged():
-    fields = FDRExtractedFields(amount=Decimal(500000), amount_words="Rupees Ten Lakh Only")
+    fields = FDRExtractedFields(
+        amount=Decimal(500000), amount_words="Rupees Ten Lakh Only"
+    )
     flags = validate_extracted_fields(fields)
     assert any(f.field == "amount" for f in flags)
 
 
 def test_amount_words_match_not_flagged():
-    fields = FDRExtractedFields(amount=Decimal(500000), amount_words="Rupees Five Lakh Only")
+    fields = FDRExtractedFields(
+        amount=Decimal(500000), amount_words="Rupees Five Lakh Only"
+    )
     flags = validate_extracted_fields(fields)
     assert not any(f.field == "amount" for f in flags)
 

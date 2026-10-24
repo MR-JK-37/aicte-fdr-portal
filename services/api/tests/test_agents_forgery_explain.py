@@ -25,10 +25,18 @@ def test_flags_are_sent_to_llm_and_explanation_returned(db_session):
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
-        "choices": [{"message": {"content": "This document has two issues to check: an invalid IFSC and a duplicate image."}}],
+        "choices": [
+            {
+                "message": {
+                    "content": "This document has two issues to check: an invalid IFSC and a duplicate image."
+                }
+            }
+        ],
         "usage": {"prompt_tokens": 40, "completion_tokens": 15},
     }
-    with patch("app.llm_gateway.client.httpx.post", return_value=mock_response) as mock_post:
+    with patch(
+        "app.llm_gateway.client.httpx.post", return_value=mock_response
+    ) as mock_post:
         explanation = explain_flags(db_session, flags, signals)
     assert mock_post.call_count == 1
     assert "invalid IFSC" in explanation or "issues" in explanation

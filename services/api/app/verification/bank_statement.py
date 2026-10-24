@@ -43,7 +43,11 @@ def parse_statement_csv(csv_bytes: bytes) -> list[StatementLine]:
 
     lines: list[StatementLine] = []
     for row_number, raw_row in enumerate(reader, start=2):  # header is row 1
-        row = {normalised_fields[k]: v for k, v in raw_row.items() if k in normalised_fields}
+        row = {
+            normalised_fields[k]: v
+            for k, v in raw_row.items()
+            if k in normalised_fields
+        }
         try:
             amount = Decimal(str(row.get("amount", "")).replace(",", "").strip())
         except InvalidOperation:
@@ -71,7 +75,9 @@ def _parse_date(raw: str) -> date | None:
     return None
 
 
-def match_statement_lines(lines: list[StatementLine], instruments: list) -> list[MatchResult]:
+def match_statement_lines(
+    lines: list[StatementLine], instruments: list
+) -> list[MatchResult]:
     """`instruments` are ONLINE_SD-type Instrument rows (or any object
     with .id, .utr, .amount, .instrument_number) to match against."""
     results: list[MatchResult] = []
@@ -87,7 +93,10 @@ def _match_one(line: StatementLine, instruments: list) -> MatchResult:
             if instrument.utr and instrument.utr == line.utr:
                 if abs(Decimal(instrument.amount) - line.amount) <= AMOUNT_TOLERANCE:
                     return MatchResult(
-                        line, str(instrument.id), "exact_utr_amount", f"UTR {line.utr} and amount both match"
+                        line,
+                        str(instrument.id),
+                        "exact_utr_amount",
+                        f"UTR {line.utr} and amount both match",
                     )
                 return MatchResult(
                     line,
@@ -101,8 +110,14 @@ def _match_one(line: StatementLine, instruments: list) -> MatchResult:
     # exactly — weaker signal, used when the institution never recorded a
     # UTR on the instrument.
     for instrument in instruments:
-        narration_match = instrument.instrument_number and instrument.instrument_number in line.narration
-        amount_match = narration_match and abs(Decimal(instrument.amount) - line.amount) <= AMOUNT_TOLERANCE
+        narration_match = (
+            instrument.instrument_number
+            and instrument.instrument_number in line.narration
+        )
+        amount_match = (
+            narration_match
+            and abs(Decimal(instrument.amount) - line.amount) <= AMOUNT_TOLERANCE
+        )
         if amount_match:
             return MatchResult(
                 line,
@@ -111,4 +126,6 @@ def _match_one(line: StatementLine, instruments: list) -> MatchResult:
                 f"narration contains instrument number {instrument.instrument_number} and amount matches",
             )
 
-    return MatchResult(line, None, "no_match", "no instrument matched by UTR or narration+amount")
+    return MatchResult(
+        line, None, "no_match", "no instrument matched by UTR or narration+amount"
+    )

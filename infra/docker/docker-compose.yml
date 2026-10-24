@@ -120,13 +120,20 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  # Postgres-outbox consumer + DB-leased scheduler loop (MASTER_PROMPT
+  # §4.2/§10.2), replacing the former Celery worker/beat pair. One
+  # process, two loops: the outbox consumer runs in the foreground, the
+  # scheduler (old Celery Beat's job — the reminder ladder cadence) runs
+  # in a background thread guarded by a Postgres advisory lock so only
+  # one replica's scheduler thread is ever active (app.outbox.scheduler).
+  # Does not depend on valkey: nothing in this process needs a broker
+  # any more (see app.outbox.run_worker).
   worker:
     build:
       context: ../../services/api
     restart: unless-stopped
-    command: ["uv", "run", "celery", "-A", "app.celery_app", "worker", "--loglevel=INFO"]
+    command: ["uv", "run", "python", "-m", "app.outbox.run_worker"]
     environment:
-      VALKEY_URL: redis://valkey:6379/0
       DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@db:5432/fdr
       READONLY_DATABASE_URL: postgresql+psycopg://fdr_readonly:fdr_readonly_dev_password@db:5432/fdr
       GARAGE_ENDPOINT: http://garage:3900
@@ -136,21 +143,7 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
     depends_on:
-      valkey:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
-
-  beat:
-    build:
-      context: ../../services/api
-    restart: unless-stopped
-    command: ["uv", "run", "celery", "-A", "app.celery_app", "beat", "--loglevel=INFO"]
-    environment:
-      VALKEY_URL: redis://valkey:6379/0
-      DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@db:5432/fdr
-    depends_on:
-      valkey:
+      db:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully

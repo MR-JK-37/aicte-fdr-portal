@@ -85,7 +85,11 @@ def test_successful_call_returns_parsed_schema_and_logs_agent_run(db_session):
     assert result.parsed.name == "FDR001"
     assert result.provider == "groq"
 
-    run = db_session.execute(select(AgentRun).where(AgentRun.agent_name == "test-agent")).scalars().first()
+    run = (
+        db_session.execute(select(AgentRun).where(AgentRun.agent_name == "test-agent"))
+        .scalars()
+        .first()
+    )
     assert run is not None
     assert run.status == "ok"
     assert run.tokens_in == 10
@@ -103,16 +107,22 @@ def test_sensitive_agent_with_no_s_provider_goes_to_human_review(db_session):
     mock_post.assert_not_called()
     assert result.status == "human_review_required"
 
-    run = db_session.execute(
-        select(AgentRun).where(AgentRun.agent_name == "test-agent-sensitive")
-    ).scalars().first()
+    run = (
+        db_session.execute(
+            select(AgentRun).where(AgentRun.agent_name == "test-agent-sensitive")
+        )
+        .scalars()
+        .first()
+    )
     assert run.status == "human_review_required"
 
 
 def test_malformed_json_triggers_repair_retry_then_succeeds(db_session):
     bad = _mock_response(200, _chat_json("not valid json at all"))
     good = _mock_response(200, _chat_json('{"name": "FDR002", "amount": 7}'))
-    with patch("app.llm_gateway.client.httpx.post", side_effect=[bad, good]) as mock_post:
+    with patch(
+        "app.llm_gateway.client.httpx.post", side_effect=[bad, good]
+    ) as mock_post:
         result = generate(
             "extraction",
             [{"role": "user", "content": "extract fields"}],
@@ -144,7 +154,9 @@ def test_persistent_malformed_json_falls_through_to_human_review(db_session):
 
 def test_rate_limit_storm_honours_retry_after_then_eventually_queues(db_session):
     rate_limited = _mock_response(429, headers={"Retry-After": "2"})
-    with patch("app.llm_gateway.client.httpx.post", return_value=rate_limited) as mock_post:
+    with patch(
+        "app.llm_gateway.client.httpx.post", return_value=rate_limited
+    ) as mock_post:
         # voice-intent's chain has exactly one (provider, model) step, so
         # the call count below isolates the per-provider retry count from
         # chain depth (extraction's 2-step chain would double it).
@@ -176,7 +188,9 @@ def test_circuit_breaker_skips_provider_after_repeated_failures(db_session):
                 use_cache=False,
             )
 
-    with patch("app.llm_gateway.client.httpx.post", return_value=server_error) as mock_post:
+    with patch(
+        "app.llm_gateway.client.httpx.post", return_value=server_error
+    ) as mock_post:
         result = generate(
             "extraction",
             [{"role": "user", "content": "x"}],
@@ -192,12 +206,18 @@ def test_cache_hit_avoids_a_second_network_call(db_session):
     good = _mock_response(200, _chat_json('{"name": "FDR003", "amount": 1}'))
     messages = [{"role": "user", "content": f"extract fields {uuid.uuid4()}"}]
     with patch("app.llm_gateway.client.httpx.post", return_value=good) as mock_post:
-        first = generate("extraction", messages, response_schema=ToyFields, session=db_session)
+        first = generate(
+            "extraction", messages, response_schema=ToyFields, session=db_session
+        )
     assert mock_post.call_count == 1
     assert first.status == "ok"
 
-    with patch("app.llm_gateway.client.httpx.post", return_value=good) as mock_post_second:
-        second = generate("extraction", messages, response_schema=ToyFields, session=db_session)
+    with patch(
+        "app.llm_gateway.client.httpx.post", return_value=good
+    ) as mock_post_second:
+        second = generate(
+            "extraction", messages, response_schema=ToyFields, session=db_session
+        )
     mock_post_second.assert_not_called()
     assert second.status == "ok"
     assert second.parsed.name == "FDR003"
@@ -220,14 +240,21 @@ def test_pii_in_user_message_is_redacted_before_leaving_the_process(db_session):
     assert "SBIN0001234" not in sent_text
 
 
-@pytest.mark.skipif(not os.environ.get("GROQ_API_KEY_LIVE_TEST"), reason="set GROQ_API_KEY_LIVE_TEST=1 to hit the real Groq API")
+@pytest.mark.skipif(
+    not os.environ.get("GROQ_API_KEY_LIVE_TEST"),
+    reason="set GROQ_API_KEY_LIVE_TEST=1 to hit the real Groq API",
+)
 def test_live_groq_call_end_to_end(monkeypatch):
     """Not mocked: a real call to the real Groq API with this session's
     actual key, proving the gateway works against a live provider, not
     just mocks. Opt-in via GROQ_API_KEY_LIVE_TEST=1 so normal test runs
     (and CI without that flag) don't depend on network/quota."""
-    assert _REAL_GROQ_API_KEY, "GROQ_API_KEY_LIVE_TEST=1 was set but no real GROQ_API_KEY was found in the environment"
-    monkeypatch.setenv("GROQ_API_KEY", _REAL_GROQ_API_KEY)  # undo the file's autouse fake-key fixture for this test
+    assert _REAL_GROQ_API_KEY, (
+        "GROQ_API_KEY_LIVE_TEST=1 was set but no real GROQ_API_KEY was found in the environment"
+    )
+    monkeypatch.setenv(
+        "GROQ_API_KEY", _REAL_GROQ_API_KEY
+    )  # undo the file's autouse fake-key fixture for this test
     load_registry.cache_clear()
     result = generate(
         "voice-intent",

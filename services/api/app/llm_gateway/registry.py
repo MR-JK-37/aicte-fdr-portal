@@ -11,7 +11,9 @@ from pathlib import Path
 
 import yaml
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "llm_providers.yaml"
+CONFIG_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "config" / "llm_providers.yaml"
+)
 
 
 @dataclass

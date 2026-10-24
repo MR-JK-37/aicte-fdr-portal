@@ -36,11 +36,23 @@ class ChainStep:
 # (voice-intent) or as the cheaper second hop, and the dedicated
 # safety/prompt-injection models for their matching task classes.
 _TIER_P_CHAINS: dict[str, list[ChainStep]] = {
-    "extraction": [ChainStep("groq", "openai/gpt-oss-120b"), ChainStep("groq", "openai/gpt-oss-20b")],
-    "rag": [ChainStep("groq", "openai/gpt-oss-120b"), ChainStep("groq", "openai/gpt-oss-20b")],
-    "text2sql": [ChainStep("groq", "openai/gpt-oss-120b"), ChainStep("groq", "openai/gpt-oss-20b")],
+    "extraction": [
+        ChainStep("groq", "openai/gpt-oss-120b"),
+        ChainStep("groq", "openai/gpt-oss-20b"),
+    ],
+    "rag": [
+        ChainStep("groq", "openai/gpt-oss-120b"),
+        ChainStep("groq", "openai/gpt-oss-20b"),
+    ],
+    "text2sql": [
+        ChainStep("groq", "openai/gpt-oss-120b"),
+        ChainStep("groq", "openai/gpt-oss-20b"),
+    ],
     "voice-intent": [ChainStep("groq", "openai/gpt-oss-20b")],
-    "translation": [ChainStep("groq", "openai/gpt-oss-120b"), ChainStep("groq", "openai/gpt-oss-20b")],
+    "translation": [
+        ChainStep("groq", "openai/gpt-oss-120b"),
+        ChainStep("groq", "openai/gpt-oss-20b"),
+    ],
     "embeddings": [],  # No embeddings-capable provider has a key yet — a real gap, not hidden.
     "safety": [ChainStep("groq", "openai/gpt-oss-safeguard-20b")],
 }
@@ -56,7 +68,9 @@ def get_chain(task_class: str, *, tier: str) -> list[ChainStep]:
         # (local Ollama, or a future confirmed-no-retention provider)
         # are ever considered here.
         registry = load_registry()
-        s_eligible = [p for p in registry.values() if "S" in p.tier_eligibility and p.has_key]
+        s_eligible = [
+            p for p in registry.values() if "S" in p.tier_eligibility and p.has_key
+        ]
         return [ChainStep(p.name, p.models[0].id) for p in s_eligible if p.models]
 
     chain = _TIER_P_CHAINS.get(task_class, [])

@@ -58,7 +58,11 @@ def list_features(
     session: Session = Depends(get_db),
     _: None = Depends(_require_configure_integrations),
 ) -> list[FeatureRegistryEntry]:
-    return list(session.execute(select(FeatureRegistryEntry).order_by(FeatureRegistryEntry.key)).scalars().all())
+    return list(
+        session.execute(select(FeatureRegistryEntry).order_by(FeatureRegistryEntry.key))
+        .scalars()
+        .all()
+    )
 
 
 @router.get("/{key}", response_model=FeatureRegistryOut)
@@ -113,5 +117,7 @@ def list_health_checks(
             .where(ConnectorHealthCheck.feature_key == key)
             .order_by(ConnectorHealthCheck.checked_at.desc())
             .limit(50)
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     )

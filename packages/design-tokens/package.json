@@ -1,0 +1,22 @@
+{
+  "name": "@aicte-fdr/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Single source of truth re-export of /design/tokens.ts and /design/tokens.css for apps/web and apps/mobile. Does not duplicate values.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./css": "./css/tokens.css",
+    "./css/tokens.css": "./css/tokens.css"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}

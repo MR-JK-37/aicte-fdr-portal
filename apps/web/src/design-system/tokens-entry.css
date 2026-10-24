@@ -1,0 +1,5 @@
+/* Single entry point for the design-system CSS custom properties.
+   Re-exports @aicte-fdr/design-tokens (which itself re-exports
+   /design/tokens.css — never duplicate values, see that package's README).
+   Import this BEFORE primitives.css and before any Tailwind directives. */
+@import '@aicte-fdr/design-tokens/css/tokens.css';

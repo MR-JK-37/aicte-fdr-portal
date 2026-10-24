@@ -11,19 +11,53 @@ class Base(DeclarativeBase):
     pass
 
 
-def set_app_context(session: Session, role: str, institution_id: str | None, user_id: str | None = None) -> None:
+import json
+
+
+def set_app_context(
+    session: Session,
+    role: str = "",
+    institution_id: str | None = None,
+    user_id: str | None = None,
+    role_scope: dict | list | str | None = None,
+    assurance: dict | str | None = None,
+    is_local: bool = True,
+) -> None:
     """Sets the Postgres session GUCs that RLS policies key on.
 
-    Uses set_config(..., true) i.e. SET LOCAL semantics: scoped to the
-    current transaction. Callers must set this inside the same transaction
-    as the queries it is meant to protect.
+    Uses set_config(..., true) by default (SET LOCAL semantics, scoped to
+    the current transaction). When is_local=False, sets session-level GUCs.
     """
-    session.execute(text("SELECT set_config('app.role', :role, true)"), {"role": role})
     session.execute(
-        text("SELECT set_config('app.institution_id', :iid, true)"),
-        {"iid": institution_id or ""},
+        text("SELECT set_config('app.role', :role, :local)"),
+        {"role": str(role), "local": is_local},
     )
-    session.execute(text("SELECT set_config('app.user_id', :uid, true)"), {"uid": user_id or ""})
+    session.execute(
+        text("SELECT set_config('app.institution_id', :iid, :local)"),
+        {"iid": str(institution_id) if institution_id else "", "local": is_local},
+    )
+    session.execute(
+        text("SELECT set_config('app.user_id', :uid, :local)"),
+        {"uid": str(user_id) if user_id else "", "local": is_local},
+    )
+    scope_val = (
+        json.dumps(role_scope)
+        if isinstance(role_scope, (dict, list))
+        else (str(role_scope) if role_scope else "")
+    )
+    session.execute(
+        text("SELECT set_config('app.role_scope', :scope, :local)"),
+        {"scope": scope_val, "local": is_local},
+    )
+    assurance_val = (
+        json.dumps(assurance)
+        if isinstance(assurance, dict)
+        else (str(assurance) if assurance else "")
+    )
+    session.execute(
+        text("SELECT set_config('app.assurance', :assurance, :local)"),
+        {"assurance": assurance_val, "local": is_local},
+    )
 
 
 def get_db():

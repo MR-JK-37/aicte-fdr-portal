@@ -27,7 +27,9 @@ def _redis_client() -> redis.Redis:
 
 
 def normalise_prompt_key(provider: str, model: str, messages: list[dict]) -> str:
-    canonical = json.dumps({"provider": provider, "model": model, "messages": messages}, sort_keys=True)
+    canonical = json.dumps(
+        {"provider": provider, "model": model, "messages": messages}, sort_keys=True
+    )
     return "llm_cache:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
@@ -37,9 +39,15 @@ def get_cached_response(provider: str, model: str, messages: list[dict]) -> dict
     return json.loads(raw) if raw else None
 
 
-def set_cached_response(provider: str, model: str, messages: list[dict], response: dict) -> None:
+def set_cached_response(
+    provider: str, model: str, messages: list[dict], response: dict
+) -> None:
     client = _redis_client()
-    client.set(normalise_prompt_key(provider, model, messages), json.dumps(response), ex=CACHE_TTL_SECONDS)
+    client.set(
+        normalise_prompt_key(provider, model, messages),
+        json.dumps(response),
+        ex=CACHE_TTL_SECONDS,
+    )
 
 
 class CircuitOpenError(Exception):
@@ -93,6 +101,8 @@ def token_bucket_allow(provider: str, *, limit: int, window_seconds: int = 60) -
     return count <= limit
 
 
-def backoff_with_jitter(attempt: int, base_seconds: float = 0.5, max_seconds: float = 8.0) -> float:
+def backoff_with_jitter(
+    attempt: int, base_seconds: float = 0.5, max_seconds: float = 8.0
+) -> float:
     delay = min(max_seconds, base_seconds * (2**attempt))
     return random.uniform(0, delay)

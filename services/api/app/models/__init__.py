@@ -19,6 +19,13 @@ from app.models.core import (
     VerificationRecord,
 )
 from app.models.rag import AphClauseChunk
+from app.models.workflow import (
+    CaseAssignment,
+    CaseComment,
+    InstitutionOnboardingRequest,
+    InstrumentVersion,
+    StateTransition,
+)
 
 __all__ = [
     "AgentRun",
@@ -27,18 +34,23 @@ __all__ = [
     "AuditLog",
     "Bank",
     "Branch",
+    "CaseAssignment",
+    "CaseComment",
     "ConsentRecord",
     "DeviceToken",
     "Discrepancy",
     "Document",
     "Escalation",
     "Institution",
+    "InstitutionOnboardingRequest",
     "Instrument",
+    "InstrumentVersion",
     "NotificationLog",
     "Penalty",
     "ReleaseRequest",
     "Reminder",
     "ScrutinyObservation",
+    "StateTransition",
     "Trust",
     "VerificationRecord",
 ]

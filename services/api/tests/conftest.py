@@ -8,7 +8,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 TEST_DATABASE_URL = os.environ.get(
-    "TEST_DATABASE_URL", "postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5434/fdr"
+    "TEST_DATABASE_URL",
+    "postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5434/fdr",
 )
 SUPERUSER_DATABASE_URL = os.environ.get(
     "SUPERUSER_DATABASE_URL", "postgresql+psycopg://fdr:fdr@localhost:5434/fdr"
@@ -19,10 +20,22 @@ VALKEY_URL = os.environ.get("VALKEY_URL", "redis://localhost:6379/0")
 # Reference/structural tables (banks, branches) are intentionally excluded
 # — they're not what any test's assertions depend on being absent.
 _VOLATILE_TABLES = [
-    "notification_log", "device_tokens", "consent_records",
-    "escalations", "reminders", "release_requests", "penalties",
-    "scrutiny_observations", "discrepancies", "verification_records",
-    "documents", "audit_log", "instruments", "app_users", "trusts", "institutions",
+    "notification_log",
+    "device_tokens",
+    "consent_records",
+    "escalations",
+    "reminders",
+    "release_requests",
+    "penalties",
+    "scrutiny_observations",
+    "discrepancies",
+    "verification_records",
+    "documents",
+    "audit_log",
+    "instruments",
+    "app_users",
+    "trusts",
+    "institutions",
     "aph_clause_chunks",
 ]
 
@@ -41,7 +54,9 @@ def _reset_db_once_per_session():
     bug in the detector)."""
     engine = create_engine(SUPERUSER_DATABASE_URL, future=True)
     with engine.begin() as conn:
-        conn.execute(text(f"TRUNCATE {', '.join(_VOLATILE_TABLES)} RESTART IDENTITY CASCADE"))
+        conn.execute(
+            text(f"TRUNCATE {', '.join(_VOLATILE_TABLES)} RESTART IDENTITY CASCADE")
+        )
     engine.dispose()
 
     # Same problem, same fix, for the LLM gateway's Valkey-backed state
@@ -78,12 +93,19 @@ def db_session(engine):
     session.close()
 
 
-def session_as(engine, role: str, institution_id: str | None = None, user_id: str | None = None) -> Session:
+def session_as(
+    engine, role: str, institution_id: str | None = None, user_id: str | None = None
+) -> Session:
     Session_ = sessionmaker(bind=engine, future=True)
     session = Session_()
     session.execute(text("SELECT set_config('app.role', :v, false)"), {"v": role})
-    session.execute(text("SELECT set_config('app.institution_id', :v, false)"), {"v": institution_id or ""})
-    session.execute(text("SELECT set_config('app.user_id', :v, false)"), {"v": user_id or ""})
+    session.execute(
+        text("SELECT set_config('app.institution_id', :v, false)"),
+        {"v": institution_id or ""},
+    )
+    session.execute(
+        text("SELECT set_config('app.user_id', :v, false)"), {"v": user_id or ""}
+    )
     return session
 
 

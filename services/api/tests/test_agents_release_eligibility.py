@@ -10,7 +10,10 @@ from app.models.enums import AppRole, InstrumentStatus, InstrumentType
 
 
 def _make_instrument(db_session, status):
-    inst = Institution(aicte_code=f"RE-{uuid.uuid4().hex[:8]}", name="Release-Eligibility Test Institution")
+    inst = Institution(
+        aicte_code=f"RE-{uuid.uuid4().hex[:8]}",
+        name="Release-Eligibility Test Institution",
+    )
     db_session.add(inst)
     db_session.flush()
     instrument = Instrument(
@@ -44,12 +47,16 @@ def _make_users(db_session, institution_id):
 
 
 def test_ineligible_instrument_never_reaches_interrupt(db_session):
-    inst, instrument = _make_instrument(db_session, InstrumentStatus.ACTIVE)  # not yet matured
+    inst, instrument = _make_instrument(
+        db_session, InstrumentStatus.ACTIVE
+    )  # not yet matured
     rr = ReleaseRequest(institution_id=inst.id, instrument_id=instrument.id)
     db_session.add(rr)
     db_session.flush()
 
-    result = start_release_review(db_session, instrument, rr, thread_id=str(uuid.uuid4()))
+    result = start_release_review(
+        db_session, instrument, rr, thread_id=str(uuid.uuid4())
+    )
     assert "__interrupt__" not in result
     assert result["outcome"] == "not_eligible"
     assert instrument.status == InstrumentStatus.ACTIVE  # untouched
@@ -61,7 +68,9 @@ def test_eligible_instrument_pauses_for_human_approval(db_session):
     db_session.add(rr)
     db_session.flush()
 
-    result = start_release_review(db_session, instrument, rr, thread_id=str(uuid.uuid4()))
+    result = start_release_review(
+        db_session, instrument, rr, thread_id=str(uuid.uuid4())
+    )
     assert "__interrupt__" in result
     payload = result["__interrupt__"][0].value
     assert payload["instrument_id"] == str(instrument.id)

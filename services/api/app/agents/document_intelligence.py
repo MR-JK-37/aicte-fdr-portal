@@ -30,7 +30,9 @@ class LLMGatewayExtractor:
     FDRExtractedFields` contract — backed by a real LLM call instead of
     regex. Requires a DB session only to log the call to agent_runs."""
 
-    def __init__(self, session: Session | None = None, agent_name: str = "document-intelligence"):
+    def __init__(
+        self, session: Session | None = None, agent_name: str = "document-intelligence"
+    ):
         self.session = session
         self.agent_name = agent_name
 

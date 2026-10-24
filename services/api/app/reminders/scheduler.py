@@ -17,7 +17,13 @@ from app.models.core import Instrument, Reminder
 from app.models.enums import InstrumentStatus
 
 # (window label, days-before-maturity threshold), most-advance-notice first.
-WINDOWS: list[tuple[str, int]] = [("T-90", 90), ("T-60", 60), ("T-30", 30), ("T-7", 7), ("T-0", 0)]
+WINDOWS: list[tuple[str, int]] = [
+    ("T-90", 90),
+    ("T-60", 60),
+    ("T-30", 30),
+    ("T-7", 7),
+    ("T-0", 0),
+]
 
 
 @dataclass
@@ -32,12 +38,18 @@ def _days_remaining(maturity_date: datetime, as_of: datetime) -> int:
 
 def run_scheduler(session: Session, clock: Clock) -> SchedulerResult:
     as_of = clock.now()
-    instruments = session.execute(
-        select(Instrument).where(
-            Instrument.status.in_([InstrumentStatus.ACTIVE, InstrumentStatus.EXPIRING]),
-            Instrument.maturity_date.isnot(None),
+    instruments = (
+        session.execute(
+            select(Instrument).where(
+                Instrument.status.in_(
+                    [InstrumentStatus.ACTIVE, InstrumentStatus.EXPIRING]
+                ),
+                Instrument.maturity_date.isnot(None),
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     created: list[Reminder] = []
     transitions = 0
@@ -70,7 +82,10 @@ def run_scheduler(session: Session, clock: Clock) -> SchedulerResult:
             if days_remaining > threshold_days:
                 continue
             existing = session.execute(
-                select(Reminder).where(Reminder.instrument_id == instrument.id, Reminder.window == window_label)
+                select(Reminder).where(
+                    Reminder.instrument_id == instrument.id,
+                    Reminder.window == window_label,
+                )
             ).scalar_one_or_none()
             if existing is not None:
                 continue

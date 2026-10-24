@@ -15,7 +15,9 @@ class SchemaValidationResult:
         self.error = error
 
 
-def validate_json_response(raw_content: str, schema: type[BaseModel]) -> SchemaValidationResult:
+def validate_json_response(
+    raw_content: str, schema: type[BaseModel]
+) -> SchemaValidationResult:
     try:
         data = json.loads(raw_content)
     except json.JSONDecodeError as exc:
@@ -27,7 +29,9 @@ def validate_json_response(raw_content: str, schema: type[BaseModel]) -> SchemaV
     return SchemaValidationResult(True, parsed, None)
 
 
-def build_repair_prompt(original_messages: list[dict], bad_output: str, error: str, schema: type[BaseModel]) -> list[dict]:
+def build_repair_prompt(
+    original_messages: list[dict], bad_output: str, error: str, schema: type[BaseModel]
+) -> list[dict]:
     schema_json = json.dumps(schema.model_json_schema())
     repair_instruction = (
         "Your previous response did not match the required JSON schema.\n"
@@ -36,4 +40,8 @@ def build_repair_prompt(original_messages: list[dict], bad_output: str, error: s
         f"Your previous output was: {bad_output}\n"
         "Reply with ONLY valid JSON matching the schema, no other text."
     )
-    return [*original_messages, {"role": "assistant", "content": bad_output}, {"role": "user", "content": repair_instruction}]
+    return [
+        *original_messages,
+        {"role": "assistant", "content": bad_output},
+        {"role": "user", "content": repair_instruction},
+    ]

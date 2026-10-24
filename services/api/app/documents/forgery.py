@@ -44,7 +44,9 @@ def check_duplicate_instrument_number(
     return None
 
 
-def check_duplicate_phash(session: Session, phash: str, exclude_document_id) -> ForgerySignal | None:
+def check_duplicate_phash(
+    session: Session, phash: str, exclude_document_id
+) -> ForgerySignal | None:
     """Exact perceptual-hash match against a different document is a
     strong signal of the same scanned page being resubmitted (possibly
     for a different institution/instrument)."""

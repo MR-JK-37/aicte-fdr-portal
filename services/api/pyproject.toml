@@ -6,7 +6,6 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.20.1",
     "boto3>=1.43.118",
-    "celery[redis]>=5.3.1",
     "clamd>=1.0.2",
     "fastapi>=0.161.1",
     "firebase-admin>=7.7.0",
@@ -19,6 +18,8 @@ dependencies = [
     "psycopg[binary]>=3.3.6",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.16.1",
+    "pyjwt>=2.10.0",
+    "cryptography>=44.0.0",
     "pypdf>=6.21.2",
     "pytesseract>=0.3.13",
     "python-dateutil>=2.9.0.post0",
@@ -28,6 +29,8 @@ dependencies = [
     "sqlalchemy>=2.1.6",
     "sqlglot>=30.24.0",
     "uvicorn[standard]>=0.54.0",
+    "pyhanko>=0.38.0",
+    "python-multipart>=0.0.32",
 ]
 
 [dependency-groups]
@@ -50,4 +53,14 @@ extend-exclude = ["migrations/env.py", "migrations/versions"]
 # FastAPI's dependency-injection pattern (`Depends(...)` as a default
 # argument) is the idiomatic, documented way to use it — not the mutable-
 # default-argument footgun B008 exists to catch.
-extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body", "fastapi.Path"]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Body",
+    "fastapi.Path",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.File",
+    "app.auth.deps.require_permission",
+    "require_permission",
+]

@@ -14,10 +14,12 @@ from sqlalchemy.orm import Session
 
 from app.audit import append_audit_entry
 from app.models.core import Document, Instrument, VerificationRecord
-from app.models.enums import EvidenceLevel
+from app.models.enums import AppRole, EvidenceLevel
 from app.verification.bank_statement import MatchResult
 
-VERIFIER_ROLES = frozenset({"verifier"})
+VERIFIER_ROLES = frozenset(
+    {AppRole.FINANCE_VERIFIER.value, "finance_verifier", "verifier"}
+)
 
 
 def request_bank_confirmation(
@@ -61,11 +63,15 @@ def confirm_bank_verification(
     if verification_record.instrument_id != instrument.id:
         raise ValueError("verification record does not belong to this instrument")
     if verification_record.confirmed_amount is None:
-        raise ValueError("verification record has no confirmed amount — the bank reply was not a confirmation")
+        raise ValueError(
+            "verification record has no confirmed amount — the bank reply was not a confirmation"
+        )
 
     evidence = session.get(Document, evidence_document_id)
     if evidence is None or evidence.instrument_id != instrument.id:
-        raise ValueError("evidence document not found for this instrument — upload the bank reply first")
+        raise ValueError(
+            "evidence document not found for this instrument — upload the bank reply first"
+        )
 
     before_level = instrument.evidence_level
     instrument.evidence_level = EvidenceLevel.L2_BANK_CONFIRMED
@@ -88,7 +94,9 @@ def confirm_bank_verification(
     )
 
 
-def record_ledger_match(session: Session, instrument: Instrument, match: MatchResult) -> VerificationRecord:
+def record_ledger_match(
+    session: Session, instrument: Instrument, match: MatchResult
+) -> VerificationRecord:
     """Records a CSV-reconciliation match as evidence. Real (non-simulated)
     data — the AICTE bank statement itself — but still just evidence until
     a verifier confirms it; see confirm_ledger_reconciliation."""
@@ -130,13 +138,19 @@ def confirm_ledger_reconciliation(
     reason: str,
 ) -> None:
     if actor_role not in VERIFIER_ROLES:
-        raise PermissionError(f"role '{actor_role}' may not confirm ledger reconciliation")
+        raise PermissionError(
+            f"role '{actor_role}' may not confirm ledger reconciliation"
+        )
     if not reason or not reason.strip():
-        raise ValueError("a non-empty reason is required to confirm ledger reconciliation")
+        raise ValueError(
+            "a non-empty reason is required to confirm ledger reconciliation"
+        )
     if verification_record.instrument_id != instrument.id:
         raise ValueError("verification record does not belong to this instrument")
     if verification_record.source != "aicte_bank_statement_csv":
-        raise ValueError("ledger reconciliation requires a verification record sourced from the AICTE statement CSV")
+        raise ValueError(
+            "ledger reconciliation requires a verification record sourced from the AICTE statement CSV"
+        )
 
     before_level = instrument.evidence_level
     instrument.evidence_level = EvidenceLevel.L3_LEDGER_RECONCILED
@@ -161,4 +175,10 @@ def confirm_ledger_reconciliation(
 def list_online_sd_instruments(session: Session) -> list[Instrument]:
     from app.models.enums import InstrumentType
 
-    return list(session.execute(select(Instrument).where(Instrument.type == InstrumentType.ONLINE_SD)).scalars().all())
+    return list(
+        session.execute(
+            select(Instrument).where(Instrument.type == InstrumentType.ONLINE_SD)
+        )
+        .scalars()
+        .all()
+    )

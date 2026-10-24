@@ -46,9 +46,20 @@ class RagAnswer:
     sources: list[RetrievedChunk]
 
 
-def ingest_clause(session: Session, *, clause_id: str, title: str, text: str, synthetic_placeholder: bool = True) -> AphClauseChunk:
+def ingest_clause(
+    session: Session,
+    *,
+    clause_id: str,
+    title: str,
+    text: str,
+    synthetic_placeholder: bool = True,
+) -> AphClauseChunk:
     chunk = AphClauseChunk(
-        clause_id=clause_id, title=title, text=text, synthetic_placeholder=synthetic_placeholder, embedding=embed(text)
+        clause_id=clause_id,
+        title=title,
+        text=text,
+        synthetic_placeholder=synthetic_placeholder,
+        embedding=embed(text),
     )
     session.add(chunk)
     session.flush()
@@ -59,20 +70,32 @@ def retrieve(session: Session, query: str, *, top_k: int = 3) -> list[RetrievedC
     query_vector = embed(query)
     distance_expr = AphClauseChunk.embedding.cosine_distance(query_vector)
     rows = session.execute(
-        select(AphClauseChunk, distance_expr.label("distance")).order_by(distance_expr).limit(top_k)
+        select(AphClauseChunk, distance_expr.label("distance"))
+        .order_by(distance_expr)
+        .limit(top_k)
     ).all()
     return [
-        RetrievedChunk(row.AphClauseChunk.clause_id, row.AphClauseChunk.title, row.AphClauseChunk.text, row.distance, row.AphClauseChunk.synthetic_placeholder)
+        RetrievedChunk(
+            row.AphClauseChunk.clause_id,
+            row.AphClauseChunk.title,
+            row.AphClauseChunk.text,
+            row.distance,
+            row.AphClauseChunk.synthetic_placeholder,
+        )
         for row in rows
     ]
 
 
-def answer_compliance_question(session: Session, question: str, *, agent_name: str = "compliance-rag") -> RagAnswer:
+def answer_compliance_question(
+    session: Session, question: str, *, agent_name: str = "compliance-rag"
+) -> RagAnswer:
     retrieved = retrieve(session, question, top_k=3)
     if not retrieved or retrieved[0].distance > MAX_DISTANCE_THRESHOLD:
         return RagAnswer(REFUSAL_TEXT, refused=True, sources=retrieved)
 
-    context_blocks = "\n\n".join(f"[{c.clause_id}] {c.title}\n{c.text}" for c in retrieved)
+    context_blocks = "\n\n".join(
+        f"[{c.clause_id}] {c.title}\n{c.text}" for c in retrieved
+    )
     placeholder_notice = (
         " NOTE: these clauses are SYNTHETIC PLACEHOLDERS for development, not real APH text — say so explicitly."
         if any(c.synthetic_placeholder for c in retrieved)
@@ -88,7 +111,10 @@ def answer_compliance_question(session: Session, question: str, *, agent_name: s
                 + placeholder_notice
             ),
         },
-        {"role": "user", "content": f"Clauses:\n{context_blocks}\n\nQuestion: {question}"},
+        {
+            "role": "user",
+            "content": f"Clauses:\n{context_blocks}\n\nQuestion: {question}",
+        },
     ]
     result = generate("rag", messages, agent_name=agent_name, session=session)
     if result.status != "ok":

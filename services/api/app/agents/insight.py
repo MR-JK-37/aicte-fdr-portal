@@ -64,7 +64,9 @@ def validate_sql(raw_sql: str) -> str:
         raise SqlValidationError(f"could not parse SQL: {exc}") from exc
 
     if len(statements) != 1:
-        raise SqlValidationError(f"expected exactly one statement, got {len(statements)}")
+        raise SqlValidationError(
+            f"expected exactly one statement, got {len(statements)}"
+        )
     stmt = statements[0]
     if stmt is None or stmt.key != "select":
         raise SqlValidationError("only a single SELECT statement is permitted")
@@ -72,7 +74,9 @@ def validate_sql(raw_sql: str) -> str:
     referenced = {table.name for table in stmt.find_all(sqlglot.exp.Table)}
     disallowed = referenced - ALLOWED_VIEWS
     if disallowed:
-        raise SqlValidationError(f"query references non-allow-listed table(s): {sorted(disallowed)}")
+        raise SqlValidationError(
+            f"query references non-allow-listed table(s): {sorted(disallowed)}"
+        )
 
     if stmt.args.get("limit") is None:
         stmt = stmt.limit(DEFAULT_LIMIT)
@@ -89,14 +93,18 @@ def execute_validated_sql(sql: str) -> InsightResult:
     return InsightResult(sql=sql, rows=rows, row_count=len(rows))
 
 
-def ask(session: Session, question: str, *, agent_name: str = "insight") -> InsightResult:
+def ask(
+    session: Session, question: str, *, agent_name: str = "insight"
+) -> InsightResult:
     messages = [
         {"role": "system", "content": TEXT2SQL_SYSTEM_PROMPT},
         {"role": "user", "content": question},
     ]
     gen_result = generate("text2sql", messages, agent_name=agent_name, session=session)
     if gen_result.status != "ok" or not gen_result.content:
-        raise SqlValidationError("the text2sql model call did not succeed — see agent_runs for detail")
+        raise SqlValidationError(
+            "the text2sql model call did not succeed — see agent_runs for detail"
+        )
 
     validated_sql = validate_sql(gen_result.content)
     return execute_validated_sql(validated_sql)

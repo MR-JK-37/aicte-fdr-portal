@@ -79,7 +79,10 @@ def generate(
     use_cache: bool = True,
 ) -> GatewayResult:
     redacted_messages = [
-        {**m, "content": redaction.redact(m["content"])[0]} if m.get("role") == "user" else m for m in messages
+        {**m, "content": redaction.redact(m["content"])[0]}
+        if m.get("role") == "user"
+        else m
+        for m in messages
     ]
     token_map: dict[str, str] = {}
     for m in messages:
@@ -104,7 +107,9 @@ def generate(
             latency_ms=None,
             status="human_review_required",
         )
-        return GatewayResult("human_review_required", None, None, None, None, token_map, attempts)
+        return GatewayResult(
+            "human_review_required", None, None, None, None, token_map, attempts
+        )
 
     original_redacted_messages = redacted_messages
 
@@ -112,18 +117,34 @@ def generate(
         provider = registry[step.provider]
 
         if resilience.is_circuit_open(step.provider):
-            attempts.append({"provider": step.provider, "model": step.model, "skipped": "circuit_open"})
+            attempts.append(
+                {
+                    "provider": step.provider,
+                    "model": step.model,
+                    "skipped": "circuit_open",
+                }
+            )
             continue
 
         rpm = provider.limits.get("rpm")
         if not resilience.token_bucket_allow(step.provider, limit=rpm):
-            attempts.append({"provider": step.provider, "model": step.model, "skipped": "rate_bucket_exhausted"})
+            attempts.append(
+                {
+                    "provider": step.provider,
+                    "model": step.model,
+                    "skipped": "rate_bucket_exhausted",
+                }
+            )
             continue
 
         if use_cache:
-            cached = resilience.get_cached_response(step.provider, step.model, original_redacted_messages)
+            cached = resilience.get_cached_response(
+                step.provider, step.model, original_redacted_messages
+            )
             if cached is not None:
-                attempts.append({"provider": step.provider, "model": step.model, "cache_hit": True})
+                attempts.append(
+                    {"provider": step.provider, "model": step.model, "cache_hit": True}
+                )
                 _log_agent_run(
                     session,
                     agent_name=agent_name,
@@ -138,14 +159,26 @@ def generate(
                 )
                 parsed = None
                 if response_schema:
-                    validation = validate_json_response(cached["content"], response_schema)
+                    validation = validate_json_response(
+                        cached["content"], response_schema
+                    )
                     parsed = validation.parsed
                 return GatewayResult(
-                    "ok", cached["content"], parsed, step.provider, step.model, token_map, attempts
+                    "ok",
+                    cached["content"],
+                    parsed,
+                    step.provider,
+                    step.model,
+                    token_map,
+                    attempts,
                 )
 
         result = _call_with_retry(
-            provider, step.model, original_redacted_messages, attempts, json_mode=response_schema is not None
+            provider,
+            step.model,
+            original_redacted_messages,
+            attempts,
+            json_mode=response_schema is not None,
         )
         if result is None:
             continue  # exhausted this provider's retries; try the next one in the chain
@@ -154,18 +187,34 @@ def generate(
             validation = validate_json_response(result.content, response_schema)
             if not validation.ok:
                 repair_messages = build_repair_prompt(
-                    original_redacted_messages, result.content, validation.error, response_schema
+                    original_redacted_messages,
+                    result.content,
+                    validation.error,
+                    response_schema,
                 )
                 repair_result = _call_with_retry(
-                    provider, step.model, repair_messages, attempts, json_mode=True, label="repair"
+                    provider,
+                    step.model,
+                    repair_messages,
+                    attempts,
+                    json_mode=True,
+                    label="repair",
                 )
                 if repair_result is not None:
-                    repair_validation = validate_json_response(repair_result.content, response_schema)
+                    repair_validation = validate_json_response(
+                        repair_result.content, response_schema
+                    )
                     if repair_validation.ok:
                         result = repair_result
                         validation = repair_validation
                 if not validation.ok:
-                    attempts.append({"provider": step.provider, "model": step.model, "schema_invalid": True})
+                    attempts.append(
+                        {
+                            "provider": step.provider,
+                            "model": step.model,
+                            "schema_invalid": True,
+                        }
+                    )
                     resilience.record_failure(step.provider)
                     continue  # cross-provider re-ask: try the next provider in the chain
             parsed = validation.parsed
@@ -178,7 +227,11 @@ def generate(
                 step.provider,
                 step.model,
                 original_redacted_messages,
-                {"content": result.content, "tokens_in": result.tokens_in, "tokens_out": result.tokens_out},
+                {
+                    "content": result.content,
+                    "tokens_in": result.tokens_in,
+                    "tokens_out": result.tokens_out,
+                },
             )
         _log_agent_run(
             session,
@@ -192,7 +245,9 @@ def generate(
             latency_ms=result.latency_ms,
             status="ok",
         )
-        return GatewayResult("ok", result.content, parsed, step.provider, step.model, token_map, attempts)
+        return GatewayResult(
+            "ok", result.content, parsed, step.provider, step.model, token_map, attempts
+        )
 
     # Every provider in the chain failed or was skipped — fail-closed to
     # the human review queue rather than returning a guessed/empty answer.
@@ -208,7 +263,9 @@ def generate(
         latency_ms=None,
         status="human_review_required",
     )
-    return GatewayResult("human_review_required", None, None, None, None, token_map, attempts)
+    return GatewayResult(
+        "human_review_required", None, None, None, None, token_map, attempts
+    )
 
 
 def _call_with_retry(
@@ -223,15 +280,38 @@ def _call_with_retry(
 ):
     for attempt in range(max_retries + 1):
         try:
-            result = call_chat_completion(provider, model_id, messages, json_mode=json_mode)
-            attempts.append({"provider": provider.name, "model": model_id, label: True, "attempt": attempt})
+            result = call_chat_completion(
+                provider, model_id, messages, json_mode=json_mode
+            )
+            attempts.append(
+                {
+                    "provider": provider.name,
+                    "model": model_id,
+                    label: True,
+                    "attempt": attempt,
+                }
+            )
             return result
         except resilience.RateLimitedError as exc:
             wait = min(exc.retry_after_seconds, 10.0)
-            attempts.append({"provider": provider.name, "model": model_id, "rate_limited": True, "retry_after": wait})
+            attempts.append(
+                {
+                    "provider": provider.name,
+                    "model": model_id,
+                    "rate_limited": True,
+                    "retry_after": wait,
+                }
+            )
             time.sleep(wait)
         except ProviderCallError as exc:
-            attempts.append({"provider": provider.name, "model": model_id, "error": str(exc), "attempt": attempt})
+            attempts.append(
+                {
+                    "provider": provider.name,
+                    "model": model_id,
+                    "error": str(exc),
+                    "attempt": attempt,
+                }
+            )
             resilience.record_failure(provider.name)
             if attempt < max_retries:
                 time.sleep(resilience.backoff_with_jitter(attempt))

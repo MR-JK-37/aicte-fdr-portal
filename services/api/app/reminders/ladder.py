@@ -63,17 +63,32 @@ def _institution_contacts(session: Session, institution_id) -> list[AppUser]:
 
     return list(
         session.execute(
-            select(AppUser).where(AppUser.institution_id == institution_id, AppUser.role == AppRole.INSTITUTION)
-        ).scalars().all()
+            select(AppUser).where(
+                AppUser.institution_id == institution_id,
+                AppUser.role == AppRole.INSTITUTION_SUBMITTER,
+            )
+        )
+        .scalars()
+        .all()
     )
 
 
-def _log_notification(session: Session, *, reminder: Reminder, channel: str, template: str, payload: dict, app_user_id=None) -> bool:
+def _log_notification(
+    session: Session,
+    *,
+    reminder: Reminder,
+    channel: str,
+    template: str,
+    payload: dict,
+    app_user_id=None,
+) -> bool:
     """Returns False (no-op) if this exact step was already logged for
     this reminder — the idempotency the brief requires."""
     idempotency_key = f"{reminder.instrument_id}:{reminder.window}:{channel}"
     existing = session.execute(
-        select(NotificationLog).where(NotificationLog.idempotency_key == idempotency_key)
+        select(NotificationLog).where(
+            NotificationLog.idempotency_key == idempotency_key
+        )
     ).scalar_one_or_none()
     if existing is not None:
         return False
@@ -92,7 +107,13 @@ def _log_notification(session: Session, *, reminder: Reminder, channel: str, tem
     return True
 
 
-def _execute_step(session: Session, reminder: Reminder, instrument: Instrument, step: str, as_of: datetime) -> LadderStepResult:
+def _execute_step(
+    session: Session,
+    reminder: Reminder,
+    instrument: Instrument,
+    step: str,
+    as_of: datetime,
+) -> LadderStepResult:
     contacts = _institution_contacts(session, reminder.institution_id)
     primary = contacts[0] if contacts else None
     language = primary.preferred_language if primary else i18n.DEFAULT_LANGUAGE
@@ -107,10 +128,16 @@ def _execute_step(session: Session, reminder: Reminder, instrument: Instrument, 
 
     if step == "in_app":
         logged = _log_notification(
-            session, reminder=reminder, channel="in_app", template="reminder.maturity_window",
-            payload={"message": message}, app_user_id=primary.id if primary else None,
+            session,
+            reminder=reminder,
+            channel="in_app",
+            template="reminder.maturity_window",
+            payload={"message": message},
+            app_user_id=primary.id if primary else None,
         )
-        return LadderStepResult(str(reminder.id), step, logged, "logged" if logged else "already sent")
+        return LadderStepResult(
+            str(reminder.id), step, logged, "logged" if logged else "already sent"
+        )
 
     if step == "push":
         if primary and _in_quiet_hours(primary, as_of):
@@ -121,36 +148,65 @@ def _execute_step(session: Session, reminder: Reminder, instrument: Instrument, 
             # exercised in tests with a stub token; a real token would
             # flow in via app.models.core.DeviceToken once Phase 9 wires
             # push registration.
-            send_push(device_token="stub-device-token", title="Maturity reminder", body=message, high_priority=False)
+            send_push(
+                device_token="stub-device-token",
+                title="Maturity reminder",
+                body=message,
+                high_priority=False,
+            )
         except PushNotConfiguredError as exc:
             return LadderStepResult(str(reminder.id), step, False, str(exc))
         logged = _log_notification(
-            session, reminder=reminder, channel="push", template="reminder.maturity_window",
-            payload={"message": message}, app_user_id=primary.id if primary else None,
+            session,
+            reminder=reminder,
+            channel="push",
+            template="reminder.maturity_window",
+            payload={"message": message},
+            app_user_id=primary.id if primary else None,
         )
-        return LadderStepResult(str(reminder.id), step, logged, "sent" if logged else "already sent")
+        return LadderStepResult(
+            str(reminder.id), step, logged, "sent" if logged else "already sent"
+        )
 
     if step == "email":
         if primary:
-            send_email(to_address=primary.email, subject="AICTE Security Deposit — maturity reminder", body=message)
+            send_email(
+                to_address=primary.email,
+                subject="AICTE Security Deposit — maturity reminder",
+                body=message,
+            )
         logged = _log_notification(
-            session, reminder=reminder, channel="email", template="reminder.maturity_window",
-            payload={"message": message}, app_user_id=primary.id if primary else None,
+            session,
+            reminder=reminder,
+            channel="email",
+            template="reminder.maturity_window",
+            payload={"message": message},
+            app_user_id=primary.id if primary else None,
         )
-        return LadderStepResult(str(reminder.id), step, logged, "sent" if logged else "already sent")
+        return LadderStepResult(
+            str(reminder.id), step, logged, "sent" if logged else "already sent"
+        )
 
     if step == "pstn_whatsapp":
         if not settings.production_telephony_enabled:
             return LadderStepResult(
-                str(reminder.id), step, False,
+                str(reminder.id),
+                step,
+                False,
                 "SIMULATED: PSTN/WhatsApp requires a licensed CPaaS + TRAI robocall intimation in production; disabled in this environment",
             )
         # Real production telephony is out of scope for this build —
         # see Blueprint.txt's zero-cost boundaries table.
-        return LadderStepResult(str(reminder.id), step, False, "production telephony not implemented")
+        return LadderStepResult(
+            str(reminder.id), step, False, "production telephony not implemented"
+        )
 
     if step == "regulation_bureau":
-        escalation_message = i18n.render("escalation.regulation_bureau", language, instrument_number=instrument.instrument_number)
+        escalation_message = i18n.render(
+            "escalation.regulation_bureau",
+            language,
+            instrument_number=instrument.instrument_number,
+        )
         session.add(
             Escalation(
                 institution_id=reminder.institution_id,
@@ -161,15 +217,22 @@ def _execute_step(session: Session, reminder: Reminder, instrument: Instrument, 
             )
         )
         logged = _log_notification(
-            session, reminder=reminder, channel="regulation_bureau", template="escalation.regulation_bureau",
+            session,
+            reminder=reminder,
+            channel="regulation_bureau",
+            template="escalation.regulation_bureau",
             payload={"message": escalation_message},
         )
-        return LadderStepResult(str(reminder.id), step, logged, "escalated" if logged else "already sent")
+        return LadderStepResult(
+            str(reminder.id), step, logged, "escalated" if logged else "already sent"
+        )
 
     raise ValueError(f"unknown ladder step '{step}'")
 
 
-def advance_ladder(session: Session, reminder: Reminder, clock: Clock) -> LadderStepResult | None:
+def advance_ladder(
+    session: Session, reminder: Reminder, clock: Clock
+) -> LadderStepResult | None:
     """Runs the current (or, if its delay has elapsed, the next) ladder
     step for one reminder. Returns None if the reminder is acknowledged
     or the next step's delay hasn't elapsed yet (nothing to do)."""

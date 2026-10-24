@@ -27,7 +27,12 @@ def test_parse_statement_csv_basic():
 
 
 def test_exact_utr_and_amount_match():
-    instrument = FakeInstrument(id=str(uuid.uuid4()), instrument_number="FDR1", amount=Decimal(500000), utr="UTR123")
+    instrument = FakeInstrument(
+        id=str(uuid.uuid4()),
+        instrument_number="FDR1",
+        amount=Decimal(500000),
+        utr="UTR123",
+    )
     csv_bytes = b"Date,UTR,Narration,Amount\n01-01-2025,UTR123,payment,500000\n"
     lines = parse_statement_csv(csv_bytes)
     results = match_statement_lines(lines, [instrument])
@@ -36,7 +41,12 @@ def test_exact_utr_and_amount_match():
 
 
 def test_utr_match_but_amount_mismatch_is_no_match():
-    instrument = FakeInstrument(id=str(uuid.uuid4()), instrument_number="FDR1", amount=Decimal(500000), utr="UTR123")
+    instrument = FakeInstrument(
+        id=str(uuid.uuid4()),
+        instrument_number="FDR1",
+        amount=Decimal(500000),
+        utr="UTR123",
+    )
     csv_bytes = b"Date,UTR,Narration,Amount\n01-01-2025,UTR123,payment,400000\n"
     lines = parse_statement_csv(csv_bytes)
     results = match_statement_lines(lines, [instrument])
@@ -45,8 +55,15 @@ def test_utr_match_but_amount_mismatch_is_no_match():
 
 
 def test_fuzzy_narration_fallback_when_no_utr_recorded():
-    instrument = FakeInstrument(id=str(uuid.uuid4()), instrument_number="FDR999888", amount=Decimal(500000), utr=None)
-    csv_bytes = b"Date,UTR,Narration,Amount\n01-01-2025,,NEFT ref FDR999888 college,500000\n"
+    instrument = FakeInstrument(
+        id=str(uuid.uuid4()),
+        instrument_number="FDR999888",
+        amount=Decimal(500000),
+        utr=None,
+    )
+    csv_bytes = (
+        b"Date,UTR,Narration,Amount\n01-01-2025,,NEFT ref FDR999888 college,500000\n"
+    )
     lines = parse_statement_csv(csv_bytes)
     results = match_statement_lines(lines, [instrument])
     assert results[0].confidence == "fuzzy_narration"
@@ -54,7 +71,9 @@ def test_fuzzy_narration_fallback_when_no_utr_recorded():
 
 
 def test_no_match_when_nothing_lines_up():
-    instrument = FakeInstrument(id=str(uuid.uuid4()), instrument_number="FDR1", amount=Decimal(500000), utr=None)
+    instrument = FakeInstrument(
+        id=str(uuid.uuid4()), instrument_number="FDR1", amount=Decimal(500000), utr=None
+    )
     csv_bytes = b"Date,UTR,Narration,Amount\n01-01-2025,,unrelated payment,999999\n"
     lines = parse_statement_csv(csv_bytes)
     results = match_statement_lines(lines, [instrument])

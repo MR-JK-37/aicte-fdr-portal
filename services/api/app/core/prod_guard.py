@@ -32,7 +32,9 @@ def _is_truthy(value: str) -> bool:
     return value.strip().lower() in _TRUTHY
 
 
-def assert_no_simulation_flags(env: "os._Environ[str] | dict[str, str] | None" = None) -> None:
+def assert_no_simulation_flags(
+    env: "os._Environ[str] | dict[str, str] | None" = None,
+) -> None:
     """Raises ProductionSimulationGuardError if any forbidden env var is
     truthy, or if the simulated-clock override var is set at all (even to
     a falsy-looking value — the point of that variable is that it must
@@ -44,7 +46,10 @@ def assert_no_simulation_flags(env: "os._Environ[str] | dict[str, str] | None" =
         if _FORBIDDEN_NAME_RE.match(key) and _is_truthy(value):
             violations.append(key)
 
-    if environ.get(_CLOCK_OVERRIDE_VAR, "") != "" and _CLOCK_OVERRIDE_VAR not in violations:
+    if (
+        environ.get(_CLOCK_OVERRIDE_VAR, "") != ""
+        and _CLOCK_OVERRIDE_VAR not in violations
+    ):
         violations.append(_CLOCK_OVERRIDE_VAR)
 
     if violations:

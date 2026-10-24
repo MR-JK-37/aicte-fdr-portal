@@ -14,8 +14,12 @@ from app.reminders.ladder import (
 )
 
 
-def _make_reminder_with_contact(db_session, clock, *, quiet_hours_start=21, quiet_hours_end=8):
-    inst = Institution(aicte_code=f"LAD-{uuid.uuid4().hex[:8]}", name="Ladder Test Institution")
+def _make_reminder_with_contact(
+    db_session, clock, *, quiet_hours_start=21, quiet_hours_end=8
+):
+    inst = Institution(
+        aicte_code=f"LAD-{uuid.uuid4().hex[:8]}", name="Ladder Test Institution"
+    )
     db_session.add(inst)
     db_session.flush()
     instrument = Instrument(
@@ -32,7 +36,7 @@ def _make_reminder_with_contact(db_session, clock, *, quiet_hours_start=21, quie
         keycloak_sub=f"kc-{uuid.uuid4().hex[:8]}",
         email=f"contact-{uuid.uuid4().hex[:8]}@example.test",
         full_name="Institution Contact",
-        role=AppRole.INSTITUTION,
+        role=AppRole.INSTITUTION_SUBMITTER,
         preferred_language="en",
         quiet_hours_start=quiet_hours_start,
         quiet_hours_end=quiet_hours_end,
@@ -63,13 +67,17 @@ def test_first_call_sends_in_app_step(db_session, clock):
 def test_does_not_escalate_before_delay_elapses(db_session, clock):
     _, _, reminder = _make_reminder_with_contact(db_session, clock)
     advance_ladder(db_session, reminder, clock)  # in_app
-    again = advance_ladder(db_session, reminder, clock)  # same clock time, delay not elapsed
+    again = advance_ladder(
+        db_session, reminder, clock
+    )  # same clock time, delay not elapsed
     assert again is None
     assert reminder.ladder_step == 0
 
 
 def test_escalates_to_push_after_delay(db_session, clock):
-    _, _, reminder = _make_reminder_with_contact(db_session, clock)
+    _, _, reminder = _make_reminder_with_contact(
+        db_session, clock, quiet_hours_start=0, quiet_hours_end=0
+    )
     advance_ladder(db_session, reminder, clock)  # in_app
     clock.advance(days=2)
     result = advance_ladder(db_session, reminder, clock)
@@ -87,7 +95,9 @@ def test_push_skipped_during_quiet_hours(db_session, clock):
     # step (sent ~2 days later, same hour-of-day) lands inside it.
     start = now_hour
     end = (now_hour + 1) % 24
-    _, _, reminder = _make_reminder_with_contact(db_session, clock, quiet_hours_start=start, quiet_hours_end=end)
+    _, _, reminder = _make_reminder_with_contact(
+        db_session, clock, quiet_hours_start=start, quiet_hours_end=end
+    )
     advance_ladder(db_session, reminder, clock)
     clock.advance(days=2)
     result = advance_ladder(db_session, reminder, clock)
@@ -101,10 +111,14 @@ def test_push_skipped_during_quiet_hours(db_session, clock):
     assert reminder.ladder_step == LADDER_STEPS.index("push")
 
 
-def test_full_ladder_reaches_regulation_bureau_with_clock_plus_300_days(db_session, clock):
+def test_full_ladder_reaches_regulation_bureau_with_clock_plus_300_days(
+    db_session, clock
+):
     from app.models import Escalation
 
-    _, _, reminder = _make_reminder_with_contact(db_session, clock, quiet_hours_start=0, quiet_hours_end=0)
+    _, _, reminder = _make_reminder_with_contact(
+        db_session, clock, quiet_hours_start=0, quiet_hours_end=0
+    )
     seen_steps = []
     for _ in range(len(LADDER_STEPS) + 2):
         clock.advance(days=300)
@@ -157,7 +171,9 @@ def test_email_step_sends_a_real_smtp_message_caught_by_mailpit(db_session, cloc
 
 
 def test_pstn_whatsapp_step_is_simulated_by_default(db_session, clock):
-    _, _, reminder = _make_reminder_with_contact(db_session, clock, quiet_hours_start=0, quiet_hours_end=0)
+    _, _, reminder = _make_reminder_with_contact(
+        db_session, clock, quiet_hours_start=0, quiet_hours_end=0
+    )
     advance_ladder(db_session, reminder, clock)  # in_app
     for _ in range(2):
         clock.advance(days=2)
@@ -171,8 +187,12 @@ def test_pstn_whatsapp_step_is_simulated_by_default(db_session, clock):
 
 def test_zero_width_quiet_window_means_never_quiet():
     user = AppUser(
-        keycloak_sub="x", email="x@example.test", full_name="x", role=AppRole.INSTITUTION,
-        quiet_hours_start=5, quiet_hours_end=5,
+        keycloak_sub="x",
+        email="x@example.test",
+        full_name="x",
+        role=AppRole.INSTITUTION_SUBMITTER,
+        quiet_hours_start=5,
+        quiet_hours_end=5,
     )
     for hour in range(24):
         assert _in_quiet_hours(user, datetime(2026, 1, 1, hour)) is False
@@ -180,8 +200,12 @@ def test_zero_width_quiet_window_means_never_quiet():
 
 def test_non_wrapping_quiet_window():
     user = AppUser(
-        keycloak_sub="x", email="x@example.test", full_name="x", role=AppRole.INSTITUTION,
-        quiet_hours_start=9, quiet_hours_end=17,
+        keycloak_sub="x",
+        email="x@example.test",
+        full_name="x",
+        role=AppRole.INSTITUTION_SUBMITTER,
+        quiet_hours_start=9,
+        quiet_hours_end=17,
     )
     assert _in_quiet_hours(user, datetime(2026, 1, 1, 9)) is True
     assert _in_quiet_hours(user, datetime(2026, 1, 1, 16)) is True
@@ -191,8 +215,12 @@ def test_non_wrapping_quiet_window():
 
 def test_wrapping_quiet_window_past_midnight():
     user = AppUser(
-        keycloak_sub="x", email="x@example.test", full_name="x", role=AppRole.INSTITUTION,
-        quiet_hours_start=21, quiet_hours_end=8,
+        keycloak_sub="x",
+        email="x@example.test",
+        full_name="x",
+        role=AppRole.INSTITUTION_SUBMITTER,
+        quiet_hours_start=21,
+        quiet_hours_end=8,
     )
     assert _in_quiet_hours(user, datetime(2026, 1, 1, 22)) is True
     assert _in_quiet_hours(user, datetime(2026, 1, 1, 2)) is True

@@ -10,7 +10,9 @@ from app.reminders.tasks import process_reminder_ladder
 
 
 def test_process_reminder_ladder_runs_end_to_end_and_is_idempotent(db_session):
-    inst = Institution(aicte_code=f"TASK-{uuid.uuid4().hex[:8]}", name="Task Test Institution")
+    inst = Institution(
+        aicte_code=f"TASK-{uuid.uuid4().hex[:8]}", name="Task Test Institution"
+    )
     db_session.add(inst)
     db_session.flush()
     instrument = Instrument(
@@ -25,12 +27,14 @@ def test_process_reminder_ladder_runs_end_to_end_and_is_idempotent(db_session):
     db_session.commit()  # the task uses its own session/connection — must actually be committed to be visible
 
     try:
-        first = process_reminder_ladder.run()
+        first = process_reminder_ladder()
         assert first["reminders_created"] >= 1
         assert first["transitions_applied"] >= 1
 
-        second = process_reminder_ladder.run()
-        assert second["reminders_created"] == 0  # idempotent: same instrument, same window, no dupes
+        second = process_reminder_ladder()
+        assert (
+            second["reminders_created"] == 0
+        )  # idempotent: same instrument, same window, no dupes
     finally:
         # This task commits via its own session, bypassing db_session's
         # rollback-based cleanup — clean up explicitly so this test
@@ -45,7 +49,13 @@ def test_process_reminder_ladder_runs_end_to_end_and_is_idempotent(db_session):
         # that calls db_session.commit() already does.
         cleanup = SessionLocal()
         cleanup.execute(text("SELECT set_config('app.role', 'bureau_admin', true)"))
-        cleanup.execute(text("DELETE FROM notification_log WHERE instrument_id = :id"), {"id": str(instrument.id)})
-        cleanup.execute(text("DELETE FROM reminders WHERE instrument_id = :id"), {"id": str(instrument.id)})
+        cleanup.execute(
+            text("DELETE FROM notification_log WHERE instrument_id = :id"),
+            {"id": str(instrument.id)},
+        )
+        cleanup.execute(
+            text("DELETE FROM reminders WHERE instrument_id = :id"),
+            {"id": str(instrument.id)},
+        )
         cleanup.commit()
         cleanup.close()

@@ -1,0 +1,28 @@
+{
+  "name": "@aicte-fdr/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generated OpenAPI client for apps/web and apps/mobile. See README \u2014 real generation happens once the backend publishes a real openapi.json.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "generate": "openapi-typescript ./openapi.json -o ./src/generated/schema.d.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.13.3"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.4.4",
+    "typescript": "^5.7.3",
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2"
+  }
+}

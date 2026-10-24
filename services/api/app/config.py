@@ -5,7 +5,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     env: str = "dev"
-    database_url: str = "postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5432/fdr"
+    database_url: str = (
+        "postgresql+psycopg://fdr_app:fdr_app_dev_password@localhost:5432/fdr"
+    )
     # Used only by Alembic migrations, which must run as the table-owning
     # role to create the fdr_app runtime role, RLS policies and triggers.
     # The API/worker processes never use this.
@@ -18,7 +20,9 @@ class Settings(BaseSettings):
     keycloak_realm: str = "fdr-portal"
     # Insight (text2sql) agent only — SELECT-only on an allow-listed view
     # set (app/agents/insight.py). Never used for anything else.
-    readonly_database_url: str = "postgresql+psycopg://fdr_readonly:fdr_readonly_dev_password@localhost:5432/fdr"
+    readonly_database_url: str = (
+        "postgresql+psycopg://fdr_readonly:fdr_readonly_dev_password@localhost:5432/fdr"
+    )
     garage_bucket: str = "fdr-documents"
     # Mailpit in dev (real SMTP transaction, caught locally, never sent
     # out) — a real production SMTP relay is a deploy-time config swap,
@@ -28,6 +32,10 @@ class Settings(BaseSettings):
     production_telephony_enabled: bool = False
     clamav_host: str = "localhost"
     clamav_port: int = 3310
+    jwt_secret: str = "dev-insecure-jwt-secret-for-signing-session-tokens-32bytes"
+    jwt_algorithm: str = "HS256"
+    jwt_expiration_seconds: int = 86400
+    session_cookie_name: str = "fdr_session"
 
 
 settings = Settings()

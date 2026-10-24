@@ -57,7 +57,9 @@ def test_all_undefined_transitions_are_illegal():
 
 
 def test_apply_transition_requires_nonempty_reason(db_session):
-    inst = Institution(aicte_code=f"L-{uuid.uuid4().hex[:8]}", name="Lifecycle Test Institution")
+    inst = Institution(
+        aicte_code=f"L-{uuid.uuid4().hex[:8]}", name="Lifecycle Test Institution"
+    )
     db_session.add(inst)
     db_session.flush()
     instrument = Instrument(
@@ -82,7 +84,9 @@ def test_apply_transition_requires_nonempty_reason(db_session):
 
 
 def test_apply_transition_writes_audit_entry_and_mutates_status(db_session):
-    inst = Institution(aicte_code=f"M-{uuid.uuid4().hex[:8]}", name="Lifecycle Test Institution 2")
+    inst = Institution(
+        aicte_code=f"M-{uuid.uuid4().hex[:8]}", name="Lifecycle Test Institution 2"
+    )
     db_session.add(inst)
     db_session.flush()
     instrument = Instrument(
@@ -109,18 +113,27 @@ def test_apply_transition_writes_audit_entry_and_mutates_status(db_session):
     assert result.to_status == InstrumentStatus.UNDER_SCRUTINY
     assert instrument.status == InstrumentStatus.UNDER_SCRUTINY
 
-    entry = db_session.execute(
-        select(AuditLog)
-        .where(AuditLog.entity_type == "instrument", AuditLog.entity_id == str(instrument.id))
-        .order_by(AuditLog.id.desc())
-    ).scalars().first()
+    entry = (
+        db_session.execute(
+            select(AuditLog)
+            .where(
+                AuditLog.entity_type == "instrument",
+                AuditLog.entity_id == str(instrument.id),
+            )
+            .order_by(AuditLog.id.desc())
+        )
+        .scalars()
+        .first()
+    )
     assert entry is not None
     assert entry.after["status"] == "UNDER_SCRUTINY"
     assert entry.after["reason"] == "Initial scrutiny assignment"
 
 
 def test_apply_transition_rejects_unauthorized_role(db_session):
-    inst = Institution(aicte_code=f"N-{uuid.uuid4().hex[:8]}", name="Lifecycle Test Institution 3")
+    inst = Institution(
+        aicte_code=f"N-{uuid.uuid4().hex[:8]}", name="Lifecycle Test Institution 3"
+    )
     db_session.add(inst)
     db_session.flush()
     instrument = Instrument(

@@ -23,7 +23,9 @@ class AphClauseChunk(Base):
 
     __tablename__ = "aph_clause_chunks"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     clause_id: Mapped[str] = mapped_column(String(64))
     title: Mapped[str] = mapped_column(String(256))
     text: Mapped[str] = mapped_column(Text)

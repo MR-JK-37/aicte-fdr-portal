@@ -7,10 +7,26 @@ every badge also carries a short label and an icon name.
 from app.models.enums import EvidenceLevel
 
 BADGES: dict[EvidenceLevel, dict] = {
-    EvidenceLevel.L0_DECLARED: {"label": "L0 Declared", "icon": "file-text", "tone": "neutral"},
-    EvidenceLevel.L1_EXTRACTED: {"label": "L1 Document-extracted", "icon": "file-search", "tone": "info"},
-    EvidenceLevel.L2_BANK_CONFIRMED: {"label": "L2 Bank-confirmed", "icon": "badge-check", "tone": "success"},
-    EvidenceLevel.L3_LEDGER_RECONCILED: {"label": "L3 Ledger-reconciled", "icon": "shield-check", "tone": "success"},
+    EvidenceLevel.L0_DECLARED: {
+        "label": "L0 Declared",
+        "icon": "file-text",
+        "tone": "neutral",
+    },
+    EvidenceLevel.L1_EXTRACTED: {
+        "label": "L1 Document-extracted",
+        "icon": "file-search",
+        "tone": "info",
+    },
+    EvidenceLevel.L2_BANK_CONFIRMED: {
+        "label": "L2 Bank-confirmed",
+        "icon": "badge-check",
+        "tone": "success",
+    },
+    EvidenceLevel.L3_LEDGER_RECONCILED: {
+        "label": "L3 Ledger-reconciled",
+        "icon": "shield-check",
+        "tone": "success",
+    },
 }
 
 

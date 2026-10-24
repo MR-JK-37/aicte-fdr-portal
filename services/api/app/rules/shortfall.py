@@ -27,16 +27,22 @@ class ShortfallResult:
     breakdown: list[dict]
 
 
-def compute_required_amount(programmes: list[ProgrammeIntake], *, leased: bool) -> tuple[Decimal, list[dict]]:
+def compute_required_amount(
+    programmes: list[ProgrammeIntake], *, leased: bool
+) -> tuple[Decimal, list[dict]]:
     config = load_table_1_4()
     base_amounts = config["programme_base_amounts"]
-    leased_multiplier = Decimal(str(config["leased_multiplier"])) if leased else Decimal(1)
+    leased_multiplier = (
+        Decimal(str(config["leased_multiplier"])) if leased else Decimal(1)
+    )
 
     total = Decimal(0)
     breakdown = []
     for programme in programmes:
         if programme.programme_type not in base_amounts:
-            raise ValueError(f"unknown programme type '{programme.programme_type}' — not in Table 1.4 config")
+            raise ValueError(
+                f"unknown programme type '{programme.programme_type}' — not in Table 1.4 config"
+            )
         base = Decimal(str(base_amounts[programme.programme_type]))
         subtotal = base * programme.intake_count * leased_multiplier
         total += subtotal

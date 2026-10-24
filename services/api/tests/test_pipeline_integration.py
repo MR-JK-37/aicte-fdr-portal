@@ -7,6 +7,7 @@ import uuid
 
 import pytest
 
+from app.db import set_app_context
 from app.documents.pipeline import (
     DocumentRejectedError,
     confirm_extraction,
@@ -19,7 +20,10 @@ from tests.fixtures import random_fdr_fields, render_fdr_pdf
 
 
 def _make_instrument(db_session):
-    inst = Institution(aicte_code=f"P-{uuid.uuid4().hex[:8]}", name="Pipeline Test Institution")
+    set_app_context(db_session, role="platform_operator")
+    inst = Institution(
+        aicte_code=f"P-{uuid.uuid4().hex[:8]}", name="Pipeline Test Institution"
+    )
     db_session.add(inst)
     db_session.flush()
     instrument = Instrument(
@@ -46,9 +50,14 @@ def test_clean_document_passes_pipeline_and_stores_in_garage(db_session):
     pdf_bytes = render_fdr_pdf(fields, 0)
 
     result = run_pipeline(
-        db_session, instrument, data=pdf_bytes, declared_mime_type="application/pdf", uploaded_by=None
+        db_session,
+        instrument,
+        data=pdf_bytes,
+        declared_mime_type="application/pdf",
+        uploaded_by=None,
     )
     db_session.commit()
+    set_app_context(db_session, role="platform_operator")
 
     assert result.document.sha256
     assert result.validation_flags == []
@@ -85,11 +94,21 @@ def test_evidence_level_stays_l0_until_officer_confirms(db_session):
     fields = random_fdr_fields(seed=43)
     pdf_bytes = render_fdr_pdf(fields, 1)
 
-    run_pipeline(db_session, instrument, data=pdf_bytes, declared_mime_type="application/pdf", uploaded_by=None)
+    run_pipeline(
+        db_session,
+        instrument,
+        data=pdf_bytes,
+        declared_mime_type="application/pdf",
+        uploaded_by=None,
+    )
     assert instrument.evidence_level == EvidenceLevel.L0_DECLARED
 
     confirm_extraction(
-        db_session, instrument, actor_role="scrutiny_officer", actor_id=None, reason="Matches source document"
+        db_session,
+        instrument,
+        actor_role="scrutiny_officer",
+        actor_id=None,
+        reason="Matches source document",
     )
     assert instrument.evidence_level == EvidenceLevel.L1_EXTRACTED
 
@@ -98,5 +117,9 @@ def test_confirm_extraction_rejects_unauthorized_role(db_session):
     instrument = _make_instrument(db_session)
     with pytest.raises(PermissionError):
         confirm_extraction(
-            db_session, instrument, actor_role="institution", actor_id=None, reason="I confirm my own document"
+            db_session,
+            instrument,
+            actor_role="institution",
+            actor_id=None,
+            reason="I confirm my own document",
         )

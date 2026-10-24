@@ -1,0 +1,117 @@
+{
+  "id": "aicte-fdr",
+  "realm": "aicte-fdr",
+  "displayName": "AICTE FDR Portal",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "roles": {
+    "realm": [
+      {
+        "name": "org_admin",
+        "description": "Institution Organisation Administrator"
+      },
+      {
+        "name": "institution_submitter",
+        "description": "Institution Submitter / Compliance Officer"
+      },
+      {
+        "name": "institution_viewer",
+        "description": "Institution Viewer (Read-only)"
+      },
+      {
+        "name": "intake_officer",
+        "description": "AICTE Intake and Registry Officer"
+      },
+      {
+        "name": "scrutiny_officer",
+        "description": "AICTE Scrutiny Officer"
+      },
+      {
+        "name": "finance_verifier",
+        "description": "AICTE Finance and Verification Officer"
+      },
+      {
+        "name": "regional_supervisor",
+        "description": "AICTE Regional Supervisor / Bureau Reviewer"
+      },
+      {
+        "name": "competent_authority",
+        "description": "AICTE Competent Authority / Release Approver"
+      },
+      {
+        "name": "audit_reviewer",
+        "description": "Independent Audit and Compliance Reviewer"
+      },
+      {
+        "name": "identity_admin",
+        "description": "Identity and Access Administrator"
+      },
+      {
+        "name": "platform_operator",
+        "description": "Platform and Security Operator"
+      },
+      {
+        "name": "integration_service",
+        "description": "Automated Integration Service Identity"
+      },
+      {
+        "name": "bank_verifier",
+        "description": "Participating Bank Verifier (Disabled until onboarded)"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "fdr-web",
+      "name": "AICTE FDR Web Application",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:3000/*",
+        "http://127.0.0.1:5173/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*##http://localhost:3000/*"
+      }
+    },
+    {
+      "clientId": "fdr-mobile",
+      "name": "AICTE FDR Mobile Application",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "aicte-fdr://*",
+        "exp://*"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ]
+}

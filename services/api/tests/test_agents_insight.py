@@ -11,7 +11,9 @@ from app.config import settings
 
 
 def test_valid_select_on_allowed_view_passes():
-    sql = validate_sql("SELECT instrument_id, status FROM v_instrument_summary WHERE status = 'ACTIVE'")
+    sql = validate_sql(
+        "SELECT instrument_id, status FROM v_instrument_summary WHERE status = 'ACTIVE'"
+    )
     assert "v_instrument_summary" in sql
     assert "LIMIT" in sql.upper()
 

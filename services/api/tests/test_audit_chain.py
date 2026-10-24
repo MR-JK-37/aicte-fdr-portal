@@ -83,7 +83,9 @@ def test_immutability_trigger_blocks_update_by_default(db_session):
     db_session.commit()
 
     with pytest.raises(DBAPIError, match="append-only"):
-        db_session.execute(text("UPDATE audit_log SET action = 'x' WHERE id = :id"), {"id": entry.id})
+        db_session.execute(
+            text("UPDATE audit_log SET action = 'x' WHERE id = :id"), {"id": entry.id}
+        )
     db_session.rollback()
 
 
@@ -98,5 +100,7 @@ def test_immutability_trigger_blocks_delete_by_default(db_session):
     db_session.commit()
 
     with pytest.raises(DBAPIError, match="append-only"):
-        db_session.execute(text("DELETE FROM audit_log WHERE id = :id"), {"id": entry.id})
+        db_session.execute(
+            text("DELETE FROM audit_log WHERE id = :id"), {"id": entry.id}
+        )
     db_session.rollback()

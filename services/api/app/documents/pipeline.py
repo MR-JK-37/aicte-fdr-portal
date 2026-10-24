@@ -107,7 +107,10 @@ def run_pipeline(
     forgery_signals: list[forgery.ForgerySignal] = []
     if extracted.instrument_number:
         dup = forgery.check_duplicate_instrument_number(
-            session, instrument.institution_id, extracted.instrument_number, instrument.id
+            session,
+            instrument.institution_id,
+            extracted.instrument_number,
+            instrument.id,
         )
         if dup:
             forgery_signals.append(dup)
@@ -115,7 +118,11 @@ def run_pipeline(
         dup_phash = forgery.check_duplicate_phash(session, phash, document.id)
         if dup_phash:
             forgery_signals.append(dup_phash)
-    pdf_meta_signal = forgery.check_pdf_producer_metadata(clean_data) if declared_mime_type == "application/pdf" else None
+    pdf_meta_signal = (
+        forgery.check_pdf_producer_metadata(clean_data)
+        if declared_mime_type == "application/pdf"
+        else None
+    )
     if pdf_meta_signal:
         forgery_signals.append(pdf_meta_signal)
     for signal in forgery_signals:
@@ -126,22 +133,32 @@ def run_pipeline(
     # pipeline found no flags. "Officer confirms (L1)" in the brief means
     # a human decision, not an automatic pass-through.
     return PipelineResult(
-        document=document, extracted=extracted, validation_flags=validation_flags, forgery_signals=forgery_signals
+        document=document,
+        extracted=extracted,
+        validation_flags=validation_flags,
+        forgery_signals=forgery_signals,
     )
 
 
-OFFICER_CONFIRM_ROLES = frozenset({"scrutiny_officer", "verifier"})
+OFFICER_CONFIRM_ROLES = frozenset({"scrutiny_officer", "finance_verifier"})
 
 
 def confirm_extraction(
-    session: Session, instrument: Instrument, *, actor_role: str, actor_id: str | None, reason: str
+    session: Session,
+    instrument: Instrument,
+    *,
+    actor_role: str,
+    actor_id: str | None,
+    reason: str,
 ) -> None:
     """The human-in-the-loop step that actually advances evidence_level to
     L1 after an officer has reviewed the extracted fields against the
     source document. Deliberately separate from run_pipeline — automatic
     promotion would defeat the point of an evidence-level ladder."""
     if actor_role not in OFFICER_CONFIRM_ROLES:
-        raise PermissionError(f"role '{actor_role}' may not confirm document extraction")
+        raise PermissionError(
+            f"role '{actor_role}' may not confirm document extraction"
+        )
     if not reason or not reason.strip():
         raise ValueError("a non-empty reason is required to confirm extraction")
 
@@ -154,7 +171,11 @@ def confirm_extraction(
         entity_type="instrument",
         entity_id=str(instrument.id),
         before={"evidence_level": before_level.value},
-        after={"evidence_level": EvidenceLevel.L1_EXTRACTED.value, "reason": reason, "actor_role": actor_role},
+        after={
+            "evidence_level": EvidenceLevel.L1_EXTRACTED.value,
+            "reason": reason,
+            "actor_role": actor_role,
+        },
         actor_id=actor_id,
         institution_id=str(instrument.institution_id),
     )

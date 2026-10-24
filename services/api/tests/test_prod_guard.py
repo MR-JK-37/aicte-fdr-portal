@@ -46,7 +46,9 @@ def test_simulated_clock_override_is_rejected_even_if_falsy():
 
 
 def test_clean_environment_passes():
-    assert_no_simulation_flags({"APP_ENV": "production", "DATABASE_URL": "postgresql://x"})  # does not raise
+    assert_no_simulation_flags(
+        {"APP_ENV": "production", "DATABASE_URL": "postgresql://x"}
+    )  # does not raise
 
 
 def test_enforce_production_guard_is_a_noop_outside_production(monkeypatch):
@@ -62,8 +64,13 @@ def test_enforce_production_guard_raises_in_production(monkeypatch):
         enforce_production_guard()
 
 
-@pytest.mark.parametrize("var_name,value", [(v, "true") for v in FORBIDDEN_TRUTHY_VARS] + [("SIMULATED_CLOCK", "1")])
-def test_importing_app_main_in_production_refuses_to_start(monkeypatch, var_name, value):
+@pytest.mark.parametrize(
+    "var_name,value",
+    [(v, "true") for v in FORBIDDEN_TRUTHY_VARS] + [("SIMULATED_CLOCK", "1")],
+)
+def test_importing_app_main_in_production_refuses_to_start(
+    monkeypatch, var_name, value
+):
     """The real acceptance test: a production boot with a forbidden flag
     set must fail at import time, not serve traffic."""
     monkeypatch.setenv("APP_ENV", "production")

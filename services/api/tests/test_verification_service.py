@@ -14,7 +14,9 @@ from app.verification.service import (
 
 
 def _make_instrument(db_session):
-    inst = Institution(aicte_code=f"V-{uuid.uuid4().hex[:8]}", name="Verification Test Institution")
+    inst = Institution(
+        aicte_code=f"V-{uuid.uuid4().hex[:8]}", name="Verification Test Institution"
+    )
     db_session.add(inst)
     db_session.flush()
     instrument = Instrument(
@@ -167,7 +169,9 @@ def test_confirm_ledger_reconciliation_requires_csv_source(db_session):
 def test_record_ledger_match_and_confirm_promotes_to_l3(db_session):
     instrument = _make_instrument(db_session)
     match = MatchResult(
-        statement_line=StatementLine(row_number=2, date=None, utr="UTR1", narration="n", amount=500000),
+        statement_line=StatementLine(
+            row_number=2, date=None, utr="UTR1", narration="n", amount=500000
+        ),
         instrument_id=str(instrument.id),
         confidence="exact_utr_amount",
         reason="matched",
@@ -176,7 +180,12 @@ def test_record_ledger_match_and_confirm_promotes_to_l3(db_session):
     assert instrument.evidence_level == EvidenceLevel.L0_DECLARED  # not raised yet
 
     confirm_ledger_reconciliation(
-        db_session, instrument, record, actor_role="verifier", actor_id=None, reason="CSV line matches"
+        db_session,
+        instrument,
+        record,
+        actor_role="verifier",
+        actor_id=None,
+        reason="CSV line matches",
     )
     assert instrument.evidence_level == EvidenceLevel.L3_LEDGER_RECONCILED
 
@@ -184,11 +193,20 @@ def test_record_ledger_match_and_confirm_promotes_to_l3(db_session):
 def test_confirm_requires_nonempty_reason(db_session):
     instrument = _make_instrument(db_session)
     match = MatchResult(
-        statement_line=StatementLine(row_number=2, date=None, utr="UTR1", narration="n", amount=500000),
+        statement_line=StatementLine(
+            row_number=2, date=None, utr="UTR1", narration="n", amount=500000
+        ),
         instrument_id=str(instrument.id),
         confidence="exact_utr_amount",
         reason="matched",
     )
     record = record_ledger_match(db_session, instrument, match)
     with pytest.raises(ValueError, match="reason"):
-        confirm_ledger_reconciliation(db_session, instrument, record, actor_role="verifier", actor_id=None, reason="")
+        confirm_ledger_reconciliation(
+            db_session,
+            instrument,
+            record,
+            actor_role="verifier",
+            actor_id=None,
+            reason="",
+        )

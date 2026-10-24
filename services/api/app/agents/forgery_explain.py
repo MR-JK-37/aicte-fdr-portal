@@ -37,8 +37,10 @@ def explain_flags(
         {"role": "system", "content": EXPLAIN_SYSTEM_PROMPT},
         {
             "role": "user",
-            "content": "Validation flags:\n" + "\n".join(flag_lines or ["(none)"])
-            + "\n\nForgery signals:\n" + "\n".join(signal_lines or ["(none)"]),
+            "content": "Validation flags:\n"
+            + "\n".join(flag_lines or ["(none)"])
+            + "\n\nForgery signals:\n"
+            + "\n".join(signal_lines or ["(none)"]),
         },
     ]
     result = generate("extraction", messages, agent_name=agent_name, session=session)

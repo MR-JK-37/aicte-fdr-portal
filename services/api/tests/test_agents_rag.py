@@ -19,7 +19,9 @@ def seeded(db_session):
 
 
 def test_retrieve_finds_the_relevant_clause(seeded):
-    results = retrieve(seeded, "when can the security deposit be released on maturity", top_k=1)
+    results = retrieve(
+        seeded, "when can the security deposit be released on maturity", top_k=1
+    )
     assert results[0].clause_id == "APH 2024-27, cl. 6.46"
 
 
@@ -38,11 +40,21 @@ def test_answer_calls_llm_with_retrieved_context_when_confident(seeded):
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
-        "choices": [{"message": {"content": "Per [APH 2024-27, cl. 6.46]: released after maturity, no pending observations."}}],
+        "choices": [
+            {
+                "message": {
+                    "content": "Per [APH 2024-27, cl. 6.46]: released after maturity, no pending observations."
+                }
+            }
+        ],
         "usage": {"prompt_tokens": 50, "completion_tokens": 20},
     }
-    with patch("app.llm_gateway.client.httpx.post", return_value=mock_response) as mock_post:
-        answer = answer_compliance_question(seeded, "security deposit release maturity date")
+    with patch(
+        "app.llm_gateway.client.httpx.post", return_value=mock_response
+    ) as mock_post:
+        answer = answer_compliance_question(
+            seeded, "security deposit release maturity date"
+        )
     assert mock_post.call_count == 1
     assert answer.refused is False
     assert "6.46" in answer.answer

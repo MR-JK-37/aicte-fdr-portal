@@ -20,7 +20,9 @@ from app.rules.release import (
 
 
 def _make_institution_and_instrument(db_session, status=InstrumentStatus.MATURED):
-    inst = Institution(aicte_code=f"R-{uuid.uuid4().hex[:8]}", name="Release Test Institution")
+    inst = Institution(
+        aicte_code=f"R-{uuid.uuid4().hex[:8]}", name="Release Test Institution"
+    )
     db_session.add(inst)
     db_session.flush()
     instrument = Instrument(
@@ -43,7 +45,9 @@ def test_eligible_when_matured_with_no_blockers(db_session):
 
 
 def test_not_eligible_when_not_yet_matured(db_session):
-    _, instrument = _make_institution_and_instrument(db_session, status=InstrumentStatus.ACTIVE)
+    _, instrument = _make_institution_and_instrument(
+        db_session, status=InstrumentStatus.ACTIVE
+    )
     result = check_release_eligibility(db_session, instrument)
     assert result.eligible is False
     term_item = next(i for i in result.checklist if i.rule_id == "term_served")
@@ -113,7 +117,7 @@ def _make_users(db_session, institution_id):
         keycloak_sub=f"kc-{uuid.uuid4().hex[:8]}",
         email=f"req-{uuid.uuid4().hex[:8]}@example.test",
         full_name="Requester",
-        role=AppRole.INSTITUTION,
+        role=AppRole.INSTITUTION_SUBMITTER,
     )
     scrutiny_officer = AppUser(
         keycloak_sub=f"kc-{uuid.uuid4().hex[:8]}",
@@ -178,7 +182,11 @@ def test_maker_checker_blocks_wrong_role():
         instrument_id=uuid.uuid4(),
     )
     with pytest.raises(MakerCheckerViolation, match="not authorized"):
-        assert_maker_checker(approver_id=str(uuid.uuid4()), approver_role="scrutiny_officer", release_request=rr)
+        assert_maker_checker(
+            approver_id=str(uuid.uuid4()),
+            approver_role="scrutiny_officer",
+            release_request=rr,
+        )
 
 
 def test_maker_checker_allows_independent_competent_authority(db_session):

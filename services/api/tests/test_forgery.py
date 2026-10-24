@@ -18,26 +18,40 @@ def test_duplicate_instrument_number_across_institutions_detected(db_session):
 
     shared_number = f"FDR-DUP-{uuid.uuid4().hex[:6]}"
     existing = Instrument(
-        institution_id=inst_a.id, type=InstrumentType.FDR, instrument_number=shared_number, amount=1
+        institution_id=inst_a.id,
+        type=InstrumentType.FDR,
+        instrument_number=shared_number,
+        amount=1,
     )
     db_session.add(existing)
     db_session.flush()
 
-    signal = check_duplicate_instrument_number(db_session, inst_b.id, shared_number, exclude_instrument_id=None)
+    signal = check_duplicate_instrument_number(
+        db_session, inst_b.id, shared_number, exclude_instrument_id=None
+    )
     assert signal is not None
     assert signal.signal == "duplicate_instrument_number"
 
 
-def test_same_institution_reusing_number_is_not_flagged_as_cross_institution_duplicate(db_session):
+def test_same_institution_reusing_number_is_not_flagged_as_cross_institution_duplicate(
+    db_session,
+):
     inst = Institution(aicte_code=f"FC-{uuid.uuid4().hex[:8]}", name="Forgery Test C")
     db_session.add(inst)
     db_session.flush()
     number = f"FDR-SAME-{uuid.uuid4().hex[:6]}"
-    existing = Instrument(institution_id=inst.id, type=InstrumentType.FDR, instrument_number=number, amount=1)
+    existing = Instrument(
+        institution_id=inst.id,
+        type=InstrumentType.FDR,
+        instrument_number=number,
+        amount=1,
+    )
     db_session.add(existing)
     db_session.flush()
 
-    signal = check_duplicate_instrument_number(db_session, inst.id, number, exclude_instrument_id=None)
+    signal = check_duplicate_instrument_number(
+        db_session, inst.id, number, exclude_instrument_id=None
+    )
     assert signal is None
 
 
@@ -46,7 +60,10 @@ def test_duplicate_phash_detected(db_session):
     db_session.add(inst)
     db_session.flush()
     instrument = Instrument(
-        institution_id=inst.id, type=InstrumentType.FDR, instrument_number="FDR-PHASH-1", amount=1
+        institution_id=inst.id,
+        type=InstrumentType.FDR,
+        instrument_number="FDR-PHASH-1",
+        amount=1,
     )
     db_session.add(instrument)
     db_session.flush()
@@ -61,13 +78,17 @@ def test_duplicate_phash_detected(db_session):
     db_session.add(existing_doc)
     db_session.flush()
 
-    signal = check_duplicate_phash(db_session, "deadbeefdeadbeef", exclude_document_id=None)
+    signal = check_duplicate_phash(
+        db_session, "deadbeefdeadbeef", exclude_document_id=None
+    )
     assert signal is not None
     assert signal.signal == "duplicate_phash"
 
 
 def test_no_phash_match_returns_none(db_session):
-    signal = check_duplicate_phash(db_session, "ffffffffffffffff", exclude_document_id=None)
+    signal = check_duplicate_phash(
+        db_session, "ffffffffffffffff", exclude_document_id=None
+    )
     assert signal is None
 
 

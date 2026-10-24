@@ -38,4 +38,6 @@ def test_multiple_programmes_sum_correctly():
 
 def test_unknown_programme_type_raises():
     with pytest.raises(ValueError, match="Table 1.4"):
-        check_shortfall([ProgrammeIntake("NOT_A_REAL_PROGRAMME", 1)], Decimal(0), leased=False)
+        check_shortfall(
+            [ProgrammeIntake("NOT_A_REAL_PROGRAMME", 1)], Decimal(0), leased=False
+        )

@@ -28,10 +28,46 @@ _TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
 # returned the wrong clause. Still a lexical, not semantic, signal; this
 # just stops the crudest false positives.
 _STOPWORDS = {
-    "a", "an", "the", "and", "or", "of", "in", "on", "at", "to", "for", "is",
-    "are", "was", "were", "be", "been", "being", "it", "its", "this", "that",
-    "with", "as", "by", "from", "has", "have", "had", "not", "no", "only",
-    "can", "when", "where", "which", "who", "will", "shall", "may",
+    "a",
+    "an",
+    "the",
+    "and",
+    "or",
+    "of",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "it",
+    "its",
+    "this",
+    "that",
+    "with",
+    "as",
+    "by",
+    "from",
+    "has",
+    "have",
+    "had",
+    "not",
+    "no",
+    "only",
+    "can",
+    "when",
+    "where",
+    "which",
+    "who",
+    "will",
+    "shall",
+    "may",
 }
 
 
@@ -42,7 +78,9 @@ def _tokenise(text: str) -> list[str]:
 def embed(text: str) -> list[float]:
     vector = [0.0] * EMBEDDING_DIM
     for token in _tokenise(text):
-        bucket = int(hashlib.sha256(token.encode("utf-8")).hexdigest(), 16) % EMBEDDING_DIM
+        bucket = (
+            int(hashlib.sha256(token.encode("utf-8")).hexdigest(), 16) % EMBEDDING_DIM
+        )
         vector[bucket] += 1.0
     norm = math.sqrt(sum(v * v for v in vector))
     if norm == 0:

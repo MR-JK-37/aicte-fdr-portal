@@ -32,23 +32,30 @@ def check_magic_bytes(data: bytes, declared_mime_type: str) -> ScanResult:
     this is what stops a renamed .exe uploaded as "scan.pdf"."""
     detected = magic.from_buffer(data, mime=True)
     if detected not in ALLOWED_MIME_TYPES:
-        return ScanResult(False, f"detected MIME type '{detected}' is not an allowed document type")
+        return ScanResult(
+            False, f"detected MIME type '{detected}' is not an allowed document type"
+        )
     if detected != declared_mime_type:
         return ScanResult(
-            False, f"declared MIME type '{declared_mime_type}' does not match detected type '{detected}'"
+            False,
+            f"declared MIME type '{declared_mime_type}' does not match detected type '{detected}'",
         )
     return ScanResult(True, f"magic-byte check passed ({detected})")
 
 
 def scan_for_malware(data: bytes) -> ScanResult:
     try:
-        client = clamd.ClamdNetworkSocket(host=settings.clamav_host, port=settings.clamav_port)
+        client = clamd.ClamdNetworkSocket(
+            host=settings.clamav_host, port=settings.clamav_port
+        )
         result = client.instream(io.BytesIO(data))
     except (clamd.ConnectionError, OSError) as exc:
         # Fail closed: if the scanner is unreachable, the upload is rejected
         # rather than silently skipped. A quarantined-but-unscanned document
         # must never reach storage.
-        return ScanResult(False, f"ClamAV unreachable, rejecting upload fail-closed: {exc}")
+        return ScanResult(
+            False, f"ClamAV unreachable, rejecting upload fail-closed: {exc}"
+        )
 
     status, signature = result["stream"]
     if status == "FOUND":

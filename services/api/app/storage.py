@@ -18,9 +18,13 @@ def get_s3_client():
     )
 
 
-def put_object(key: str, data: bytes, content_type: str = "application/octet-stream") -> None:
+def put_object(
+    key: str, data: bytes, content_type: str = "application/octet-stream"
+) -> None:
     client = get_s3_client()
-    client.put_object(Bucket=settings.garage_bucket, Key=key, Body=data, ContentType=content_type)
+    client.put_object(
+        Bucket=settings.garage_bucket, Key=key, Body=data, ContentType=content_type
+    )
 
 
 def get_object(key: str) -> bytes:
@@ -32,5 +36,16 @@ def get_object(key: str) -> bytes:
 def presigned_put_url(key: str, expires_in: int = 900) -> str:
     client = get_s3_client()
     return client.generate_presigned_url(
-        "put_object", Params={"Bucket": settings.garage_bucket, "Key": key}, ExpiresIn=expires_in
+        "put_object",
+        Params={"Bucket": settings.garage_bucket, "Key": key},
+        ExpiresIn=expires_in,
+    )
+
+
+def presigned_get_url(key: str, expires_in: int = 900) -> str:
+    client = get_s3_client()
+    return client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.garage_bucket, "Key": key},
+        ExpiresIn=expires_in,
     )

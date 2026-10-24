@@ -51,7 +51,12 @@ def _check_node(state: ReleaseGraphState, *, session, instrument) -> ReleaseGrap
     result = check_release_eligibility(session, instrument)
     state["eligible"] = result.eligible
     state["checklist"] = [
-        {"rule_id": i.rule_id, "passed": i.passed, "detail": i.detail, "citation": i.citation}
+        {
+            "rule_id": i.rule_id,
+            "passed": i.passed,
+            "detail": i.detail,
+            "citation": i.citation,
+        }
         for i in result.checklist
     ]
     if not result.eligible:
@@ -59,13 +64,17 @@ def _check_node(state: ReleaseGraphState, *, session, instrument) -> ReleaseGrap
     return state
 
 
-def _approval_node(state: ReleaseGraphState, *, session, instrument, release_request) -> ReleaseGraphState:
+def _approval_node(
+    state: ReleaseGraphState, *, session, instrument, release_request
+) -> ReleaseGraphState:
     if not state["eligible"]:
         return state
 
     # Suspends graph execution here. The caller resumes with
     # Command(resume={"approve": ..., "approver_id": ..., ...}).
-    decision_payload = interrupt({"checklist": state["checklist"], "instrument_id": state["instrument_id"]})
+    decision_payload = interrupt(
+        {"checklist": state["checklist"], "instrument_id": state["instrument_id"]}
+    )
     state["decision"] = decision_payload
 
     try:
@@ -88,7 +97,9 @@ def _approval_node(state: ReleaseGraphState, *, session, instrument, release_req
         InstrumentStatus.RELEASED,
         actor_role=decision_payload["approver_role"],
         actor_id=decision_payload["approver_id"],
-        reason=decision_payload.get("reason", "Release approved via release-eligibility agent"),
+        reason=decision_payload.get(
+            "reason", "Release approved via release-eligibility agent"
+        ),
     )
     state["outcome"] = "released"
     return state
@@ -105,32 +116,50 @@ _CHECKPOINTER = MemorySaver()
 
 def build_graph(session, instrument, release_request):
     graph = StateGraph(ReleaseGraphState)
-    graph.add_node("check_eligibility", lambda s: _check_node(s, session=session, instrument=instrument))
     graph.add_node(
-        "human_approval", lambda s: _approval_node(s, session=session, instrument=instrument, release_request=release_request)
+        "check_eligibility",
+        lambda s: _check_node(s, session=session, instrument=instrument),
+    )
+    graph.add_node(
+        "human_approval",
+        lambda s: _approval_node(
+            s, session=session, instrument=instrument, release_request=release_request
+        ),
     )
     graph.set_entry_point("check_eligibility")
     graph.add_conditional_edges(
-        "check_eligibility", lambda s: "human_approval" if s["eligible"] else END, {"human_approval": "human_approval", END: END}
+        "check_eligibility",
+        lambda s: "human_approval" if s["eligible"] else END,
+        {"human_approval": "human_approval", END: END},
     )
     graph.add_edge("human_approval", END)
     return graph.compile(checkpointer=_CHECKPOINTER)
 
 
-def start_release_review(session, instrument, release_request, *, thread_id: str) -> ReleaseGraphState:
+def start_release_review(
+    session, instrument, release_request, *, thread_id: str
+) -> ReleaseGraphState:
     """Runs the graph up to the eligibility check; if eligible, it will be
     paused at the interrupt and this returns the checklist for display.
     If ineligible, returns the final (not_eligible) state directly."""
     app = build_graph(session, instrument, release_request)
     config = {"configurable": {"thread_id": thread_id}}
     result = app.invoke(
-        {"instrument_id": str(instrument.id), "eligible": False, "checklist": [], "decision": None, "outcome": ""},
+        {
+            "instrument_id": str(instrument.id),
+            "eligible": False,
+            "checklist": [],
+            "decision": None,
+            "outcome": "",
+        },
         config=config,
     )
     return result
 
 
-def resume_release_review(session, instrument, release_request, *, thread_id: str, decision: ApprovalDecision) -> ReleaseGraphState:
+def resume_release_review(
+    session, instrument, release_request, *, thread_id: str, decision: ApprovalDecision
+) -> ReleaseGraphState:
     """Resumes a previously-paused graph (same thread_id) with the
     competent authority's actual decision."""
     app = build_graph(session, instrument, release_request)
