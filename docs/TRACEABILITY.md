@@ -73,12 +73,12 @@ Claude Code updates the **Tests** and **Status** columns as work lands. A requir
 | 23 | Go-live gate | §22 (docs/GO_LIVE_GATE.md) |
 
 ## 5. User-requested additions beyond SPEC (24 Oct 2026 request)
-| Request | MP |
-|---|---|
-| Remove AI calling/voice and all simulations; keep everything real-time and real | §1.4, §1.5, §3, §17.4, F-15, §10.8, M-21 |
-| Web and mobile identical except instant push (mobile advantage) | §9A parity rule, §10, docs/PARITY_MATRIX.md (CI) |
-| Mobile "even more portable": extra functionality | §9A M-01…M-21 |
-| Apple-style design on web (and iOS); Material 3 on Android | §13, design/DESIGN_SPEC.md, tokens |
-| System icons: Material Symbols only on Android | §13.3, `.claude/hooks/forbidden-patterns.sh`, DESIGN_SPEC §8 |
-| Free multi-provider AI with complete fallback (bounded by SPEC §17 / D-12) | §14, config/LLM_PROVIDERS.yaml |
-| Brand colours #050505 / #3b0a6b / #00eeff | §13.1, tokens (contrast-verified) |
+| Request | MP | Automated test / Verifier | Status |
+|---|---|---|---|
+| Remove AI calling/voice and all simulations; keep everything real-time and real | §1.4, §1.5, §3, §17.4, F-15, §10.8, M-21 | `apps/mobile/src/screens/MoreScreen.tsx`, `test_prod_guard.py` | Complete (PASS) |
+| Web and mobile identical except instant push (mobile advantage) | §9A parity rule, §10, docs/PARITY_MATRIX.md (CI) | `scripts/generate_parity_matrix.py` | Complete (PASS) |
+| Mobile "even more portable": extra functionality | §9A M-01…M-21 | `apps/mobile/App.tsx`, `scripts/verify_mobile_icons.py` | Complete (PASS) |
+| Apple-style design on web (and iOS); Material 3 on Android | §13, design/DESIGN_SPEC.md, tokens | `apps/web/src/design-system/DesignSystemShowcase.test.tsx` | Complete (PASS) |
+| System icons: Material Symbols only on Android | §13.3, `.claude/hooks/forbidden-patterns.sh`, DESIGN_SPEC §8 | `scripts/verify_mobile_icons.py` | Complete (PASS) |
+| Free multi-provider AI with complete fallback (bounded by SPEC §17 / D-12) | §14, config/LLM_PROVIDERS.yaml | `test_llm_gateway.py`, `test_llm_resilience.py` | Complete (PASS) |
+| Brand colours #050505 / #3b0a6b / #00eeff | §13.1, tokens (contrast-verified) | `apps/web/src/design-system/DesignSystemShowcase.test.tsx` | Complete (PASS) |

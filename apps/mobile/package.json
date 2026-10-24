@@ -6,7 +6,9 @@
     "start": "expo start --port 8082",
     "android": "expo start --android --port 8082",
     "ios": "expo start --ios --port 8082",
-    "web": "expo start --web --port 8082"
+    "web": "expo start --web --port 8082",
+    "lint": "python3 ../../scripts/verify_mobile_icons.py",
+    "test": "tsc --noEmit && python3 ../../scripts/verify_mobile_icons.py"
   },
   "dependencies": {
     "@aicte-fdr/design-tokens": "workspace:*",

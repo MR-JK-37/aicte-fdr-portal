@@ -19,6 +19,18 @@ import * as outlined400 from '@material-symbols-react-native/outlined-400';
  * enum so a CI icon-import lint rule (tracked, not yet wired — see README)
  * has exactly one file to allow-list.
  */
+export const ICON_NAMES = [
+  'dashboard', 'institution', 'instrument', 'documents', 'verified',
+  'checklist', 'notifications', 'notifications_active', 'deadline', 'calendar',
+  'inbox', 'search', 'filter', 'upload', 'scan', 'qr', 'lock', 'biometric',
+  'security', 'history', 'settings', 'profile', 'sign_out', 'warning', 'error',
+  'success', 'failed', 'pending', 'sync', 'offline', 'link', 'declared',
+  'help', 'blocked', 'receipt', 'report', 'download', 'share', 'add',
+  'language', 'devices', 'policy', 'audit',
+] as const;
+
+export type IconName = typeof ICON_NAMES[number];
+
 const MATERIAL: Record<IconName, { icon: typeof outlined400.msDashboard; fill: typeof outlined400.msDashboardFill }> = {
   dashboard: { icon: outlined400.msDashboard, fill: outlined400.msDashboardFill },
   institution: { icon: outlined400.msAccountBalance, fill: outlined400.msAccountBalanceFill },
@@ -111,8 +123,6 @@ const SF_SYMBOL: Record<IconName, string> = {
   policy: 'text.book.closed',
   audit: 'list.bullet.rectangle',
 };
-
-export type IconName = keyof typeof SF_SYMBOL;
 
 export interface IconProps {
   name: IconName;
