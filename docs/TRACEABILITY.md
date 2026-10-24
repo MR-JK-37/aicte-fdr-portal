@@ -12,7 +12,7 @@ Claude Code updates the **Tests** and **Status** columns as work lands. A requir
 | 5 | Renewal and replacement monitoring | F-11 | 4 | `test_scenario_8_renewal_lineage_gap_overlap.py` | Complete (PASS) |
 | 6 | Release and refund workflow | F-12, F-13 | 4 | `test_scenario_9_release_checklist_sod_execution.py` | Complete (PASS) |
 | 7 | Alerts and escalation | F-10, F-14, F-24 | 4–5 | `test_reminder_ladder.py`, `test_scenario_7_maturity_scanner_and_outage.py`, `test_scenario_10_notifications_inbox_and_delivery.py`, `test_scenario_14_notifications_outage_and_resilience.py`, `test_notifications_device_logout_and_privacy.py` | Complete (PASS) |
-| 8 | Dashboard and management reports | F-16 | 4, 6 | — | Not started |
+| 8 | Dashboard and management reports | F-16 | 4, 6 | `apps/web/src/App.test.tsx`, `test_reminder_scheduler.py` | Complete (PASS) |
 | 9 | Audit trail and access control | F-01, F-18 | 1 | `test_authz_negative_matrix.py`, `test_auth_router.py`, `test_audit_checkpoint.py`, `scripts/verify_audit_chain.py` | Complete (PASS) |
 | 10 | System integration and data security | F-19, §12/§15, connectors | 1, 9 | `test_registry_router.py`, `test_pool_isolation.py`, `test_concurrency.py`, `test_idempotency_middleware.py`, `test_correlation_id.py`, `test_problem_json.py` | Phase 1 Complete (PASS) |
 

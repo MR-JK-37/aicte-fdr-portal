@@ -95,3 +95,108 @@ export interface ReleaseChecklist {
   penalty_citation: string;
   eligible: boolean;
 }
+
+export type NotificationStage =
+  | 'CREATED'
+  | 'QUEUED'
+  | 'PROVIDER_ACCEPTED'
+  | 'PROVIDER_FAILED'
+  | 'DEVICE_RECEIVED'
+  | 'OPENED'
+  | 'ACKNOWLEDGED'
+  | 'ACTIONED';
+
+export interface InAppNotification {
+  id: string;
+  title: string;
+  body: string;
+  category: 'critical_workflow' | 'deadline' | 'security_account' | 'informational';
+  status: NotificationStage;
+  created_at: string;
+  read_at?: string;
+  acknowledged_at?: string;
+  action_url?: string;
+  instrument_id?: string;
+}
+
+export interface SearchFilterState {
+  query: string;
+  status: string[];
+  bank: string[];
+  minAmountPaise?: number;
+  maxAmountPaise?: number;
+  evidenceLevel: string[];
+  sortBy: 'maturity_date' | 'amount' | 'created_at';
+  sortOrder: 'asc' | 'desc';
+}
+
+export interface SavedViewPreset {
+  id: string;
+  name: string;
+  description: string;
+  filters: Partial<SearchFilterState>;
+  badgeCount?: number;
+}
+
+export interface ReportDefinition {
+  id: string;
+  title: string;
+  description: string;
+  frequency: 'daily' | 'weekly' | 'monthly' | 'on_demand';
+  category: 'compliance' | 'finance' | 'audit' | 'reconciliation';
+  supportedFormats: ('csv' | 'json' | 'pdf')[];
+}
+
+export interface GeneratedReport {
+  id: string;
+  reportId: string;
+  title: string;
+  format: 'csv' | 'json' | 'pdf';
+  generatedAt: string;
+  fileSizeBytes: number;
+  downloadUrl: string;
+  status: 'ready' | 'generating' | 'failed';
+}
+
+export interface ConnectorHealth {
+  id: string;
+  name: string;
+  type: 'core_banking' | 'pfms' | 'digilocker' | 'push_fcm' | 'push_apns' | 'email';
+  status: 'healthy' | 'degraded' | 'unconfigured' | 'outage';
+  latencyMs: number;
+  lastChecked: string;
+  details: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  subject: string;
+  category: 'handbook_query' | 'deposit_discrepancy' | 'release_escalation' | 'technical_issue';
+  priority: 'low' | 'medium' | 'high' | 'statutory';
+  status: 'open' | 'under_scrutiny' | 'resolved';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DPDPRightsRequest {
+  id: string;
+  requestType: 'access_data' | 'rectify_record' | 'retention_review' | 'nomination_update';
+  subjectName: string;
+  status: 'submitted' | 'under_review' | 'processed' | 'rejected';
+  submittedAt: string;
+  statutoryDaysRemaining: number;
+}
+
+export interface PublicReceiptPayload {
+  receiptNumber: string;
+  institutionAicteCode: string;
+  institutionName: string;
+  instrumentNumberMasked: string;
+  amountPaise: number;
+  bankName: string;
+  timestampUtc: string;
+  ed25519Signature: string;
+  isSignatureValid: boolean;
+  status: 'GENUINE_AICTE_SEALED' | 'INVALID_OR_TAMPERED';
+}
+

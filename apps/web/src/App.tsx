@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { KPIBoard } from './components/KPIBoard';
 import { NewFDRSubmission } from './components/NewFDRSubmission';
@@ -9,6 +9,13 @@ import { CopilotView } from './components/CopilotView';
 import { AuditLogView } from './components/AuditLogView';
 import { VoiceCallModal } from './components/VoiceCallModal';
 import { SimClockControl } from './components/SimClockControl';
+import { SearchWorkspace } from './components/SearchWorkspace';
+import { ReportsView } from './components/ReportsView';
+import { HelpAndRightsView } from './components/HelpAndRightsView';
+import { AdminConsoleView } from './components/AdminConsoleView';
+import { PublicReceiptVerification } from './components/PublicReceiptVerification';
+import { NotificationCenter } from './components/NotificationCenter';
+import { CommandPalette } from './components/CommandPalette';
 import { Instrument, AppRole, EvidenceLevel, AuditEntry } from './types';
 
 export const App: React.FC = () => {
@@ -16,15 +23,29 @@ export const App: React.FC = () => {
   const [userRole, setUserRole] = useState<AppRole>('scrutiny_officer');
   const [language, setLanguage] = useState<string>('en');
 
-  // Sim Clock state
+  // Modals & Panels state
   const [simClockDate, setSimClockDate] = useState('2026-10-23');
   const [simOffsetDays, setSimOffsetDays] = useState(0);
   const [simClockModalOpen, setSimClockModalOpen] = useState(false);
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   // Voice Call Modal state
   const [voiceCallInstrument, setVoiceCallInstrument] = useState<Instrument | null>(null);
 
-  // Sample Instruments representing the real scenarios
+  // Keyboard shortcut listener for ⌘K / Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Sample Instruments representing the real regulatory scenarios
   const [instruments, setInstruments] = useState<Instrument[]>([
     {
       id: 'inst-1',
@@ -92,7 +113,7 @@ export const App: React.FC = () => {
     },
   ]);
 
-  // Initial SHA-256 hash-chained audit entries
+  // Cryptographic SHA-256 hash-chained audit entries
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([
     {
       id: 1,
@@ -136,7 +157,6 @@ export const App: React.FC = () => {
     },
   ]);
 
-  // Handler to add audit entry chained to previous hash
   const handleAddAuditEntry = (action: string, entityId: string, details: any) => {
     const prevEntry = auditEntries[auditEntries.length - 1];
     const prevHash = prevEntry ? prevEntry.row_hash : 'sha256:00000000';
@@ -202,6 +222,9 @@ export const App: React.FC = () => {
         simClockOffsetDays={simOffsetDays}
         onOpenSimClock={() => setSimClockModalOpen(true)}
         onTriggerVoiceDemo={() => setVoiceCallInstrument(instruments[0])}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenNotifications={() => setIsNotificationCenterOpen(true)}
+        unreadNotificationsCount={2}
       />
 
       {/* Main Content Area */}
@@ -211,6 +234,15 @@ export const App: React.FC = () => {
             instruments={instruments}
             onSelectInstrument={(inst) => {
               setVoiceCallInstrument(inst);
+            }}
+          />
+        )}
+
+        {activeTab === 'search' && (
+          <SearchWorkspace
+            instruments={instruments}
+            onSelectInstrument={(inst) => {
+              setActiveTab('verify');
             }}
           />
         )}
@@ -247,6 +279,10 @@ export const App: React.FC = () => {
           />
         )}
 
+        {activeTab === 'reports' && (
+          <ReportsView instruments={instruments} />
+        )}
+
         {activeTab === 'copilot' && (
           <CopilotView onAddAuditEntry={handleAddAuditEntry} />
         )}
@@ -254,7 +290,33 @@ export const App: React.FC = () => {
         {activeTab === 'audit' && (
           <AuditLogView entries={auditEntries} />
         )}
+
+        {activeTab === 'admin' && (
+          <AdminConsoleView />
+        )}
+
+        {activeTab === 'help' && (
+          <HelpAndRightsView />
+        )}
+
+        {activeTab === 'public_receipt' && (
+          <PublicReceiptVerification onBackToApp={() => setActiveTab('dashboard')} />
+        )}
       </main>
+
+      {/* Command Palette Modal (⌘K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onSelectAction={(tabId) => setActiveTab(tabId)}
+      />
+
+      {/* In-App Notification Center Drawer */}
+      <NotificationCenter
+        isOpen={isNotificationCenterOpen}
+        onClose={() => setIsNotificationCenterOpen(false)}
+        onNavigateToTab={(tabId) => setActiveTab(tabId)}
+      />
 
       {/* Interactive Sim Clock Modal */}
       <SimClockControl
@@ -285,6 +347,7 @@ export const App: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
             <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">PostgreSQL 16 + pgvector</span>
+            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Liquid Glass Web UI</span>
             <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Valkey Cache</span>
             <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Sarvam AI + Pipecat</span>
             <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Llama-3.3-70b RAG</span>
