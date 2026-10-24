@@ -152,8 +152,10 @@ ROLE_PERMISSIONS_MATRIX: dict[AppRole, dict[str, str]] = {
         PermissionVerb.VERIFY_BANK_EVIDENCE.value: "connector",
     },
     AppRole.BANK_VERIFIER: {
-        # Participating Bank Verifier is disabled until formally onboarded (§1.3 / §3)
+        PermissionVerb.VIEW.value: "assigned_bank",
         PermissionVerb.VERIFY_BANK_EVIDENCE.value: "assigned_bank",
+        PermissionVerb.UPLOAD_EVIDENCE.value: "assigned_bank",
+        PermissionVerb.DOWNLOAD_EVIDENCE.value: "assigned_bank",
     },
 }
 
@@ -191,6 +193,7 @@ class Principal:
     mfa_enrolled: bool = False
     step_up_valid_until: datetime | None = None
     assigned_case_ids: set[uuid.UUID] = field(default_factory=set)
+    role_scope: dict[str, Any] = field(default_factory=dict)
 
 
 def get_role_permissions(role: AppRole) -> dict[str, str]:
@@ -282,7 +285,34 @@ def authorise(
                     "Access denied: case is not assigned to this officer"
                 )
 
+        # Check assigned bank scope for bank verifiers
+        elif scope_type == "assigned_bank":
+            res_bank = getattr(resource, "bank_name", None)
+            res_assigned_verifier = getattr(resource, "assigned_bank_verifier_id", None)
+            user_bank = None
+            if principal.role_scope and isinstance(principal.role_scope, dict):
+                user_bank = principal.role_scope.get("bank_name")
+            if (
+                res_assigned_verifier
+                and str(res_assigned_verifier) == str(principal.id)
+                or user_bank
+                and res_bank
+                and str(user_bank).strip().lower() == str(res_bank).strip().lower()
+            ):
+                pass
+            elif principal.role == AppRole.BANK_VERIFIER:
+                raise ForbiddenError(
+                    "Access denied: request is not assigned to your bank"
+                )
+
     # 5. Check separation of duties (SoD) & delegation limits
+    if act == PermissionVerb.VERIFY_BANK_EVIDENCE.value and resource is not None:
+        requested_by = getattr(resource, "requested_by", None)
+        if requested_by is not None and str(requested_by) == str(principal.id):
+            raise SeparationOfDutiesError(
+                "Requester cannot make evidence decision on their own bank confirmation request"
+            )
+
     if act == PermissionVerb.APPROVE_RELEASE.value and resource is not None:
         # Maker cannot be checker
         requested_by = getattr(resource, "requested_by", None)

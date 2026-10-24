@@ -1,7 +1,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -221,6 +230,40 @@ class ReleaseRequest(Base):
     reason: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     decided_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    # Phase 4: Workflow, clearances, SoD and execution fields (F-12 / Machine 5)
+    recommender_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    recommendation: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    recommendation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recommended_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    approver_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    decision: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    decision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    step_up_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    execution_evidence_ref: Mapped[str | None] = mapped_column(
+        String(128), nullable=True
+    )
+    execution_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("documents.id"), nullable=True
+    )
+    execution_recorded_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    execution_recorded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    execution_verified_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    execution_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class Penalty(Base):

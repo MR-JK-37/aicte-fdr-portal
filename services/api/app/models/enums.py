@@ -49,6 +49,36 @@ class DocumentStatus(str, enum.Enum):
     REJECTED = "REJECTED"
 
 
+class ReleaseRequestStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    COMPLETENESS_REVIEW = "COMPLETENESS_REVIEW"
+    REQUIRED_CLEARANCES = "REQUIRED_CLEARANCES"
+    SCRUTINY_RECOMMENDATION = "SCRUTINY_RECOMMENDATION"
+    COMPETENT_AUTHORITY_DECISION = "COMPETENT_AUTHORITY_DECISION"
+    EXECUTION_PENDING = "EXECUTION_PENDING"
+    RELEASED_DISCHARGED = "RELEASED_DISCHARGED"
+    RETURNED = "RETURNED"
+    DEFERRED = "DEFERRED"
+    REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"
+
+
+class ClearanceStatus(str, enum.Enum):
+    SATISFIED = "SATISFIED"
+    NOT_SATISFIED = "NOT SATISFIED"
+    PENDING_SOURCE = "PENDING SOURCE"
+    NOT_APPLICABLE = "NOT APPLICABLE"
+
+
+class PolicyStatus(str, enum.Enum):
+    DRAFT = "draft"
+    REVIEW = "review"
+    APPROVED = "approved"
+    RETIRED = "retired"
+    BLOCKED = "BLOCKED"
+
+
 class EvidenceLevel(str, enum.Enum):
     L0_DECLARED = "L0_DECLARED"
     L1_EXTRACTED = "L1_EXTRACTED"
@@ -103,10 +133,9 @@ class AppRole(str, enum.Enum):
     BANK_VERIFIER = "bank_verifier"
 
 
-# Roles that must never be grantable yet — no onboarding/activation
-# workflow exists for them. Role-grant endpoints (future phases) must
-# consult this, not just role_permissions, before issuing a grant.
-DISABLED_ROLES = (AppRole.BANK_VERIFIER,)
+# Active role set; BANK_VERIFIER enabled in Phase 3
+DISABLED_ROLES: tuple[AppRole, ...] = ()
+
 
 # Roles with bureau-side (cross-institution) visibility under RLS: AICTE
 # staff and system/service identities, as opposed to a single

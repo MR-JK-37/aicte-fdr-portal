@@ -1,7 +1,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -108,4 +117,272 @@ class CaseAssignment(Base):
     )
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+
+
+class BankConfirmationRequest(Base):
+    __tablename__ = "bank_confirmation_requests"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    institution_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("institutions.id"))
+    instrument_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("instruments.id"))
+    bank_name: Mapped[str] = mapped_column(String(128))
+    branch_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    ifsc: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    account_number_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    tracking_number: Mapped[str] = mapped_column(String(64), unique=True)
+    status: Mapped[str] = mapped_column(String(32), default="AWAITING_RESPONSE")
+    requested_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_users.id"))
+    requested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    assigned_bank_verifier_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    response_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("documents.id"), nullable=True
+    )
+    response_payload: Mapped[dict] = mapped_column(JSONB, default=dict)
+    response_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    responded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    decision: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    decision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class StatementBatch(Base):
+    __tablename__ = "statement_batches"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    source_filename: Mapped[str] = mapped_column(String(256))
+    format: Mapped[str] = mapped_column(String(32))
+    checksum: Mapped[str] = mapped_column(String(64))
+    account_number_masked: Mapped[str] = mapped_column(String(64))
+    opening_balance: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    closing_balance: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    total_lines: Mapped[int] = mapped_column(Integer, default=0)
+    matched_lines: Mapped[int] = mapped_column(Integer, default=0)
+    unmatched_lines: Mapped[int] = mapped_column(Integer, default=0)
+    quarantined_lines: Mapped[int] = mapped_column(Integer, default=0)
+    quarantined_summary: Mapped[list] = mapped_column(JSONB, default=list)
+    imported_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_users.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class StatementLine(Base):
+    __tablename__ = "statement_lines"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    batch_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("statement_batches.id", ondelete="CASCADE")
+    )
+    line_number: Mapped[int] = mapped_column(Integer)
+    line_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    utr: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    narration: Mapped[str] = mapped_column(Text)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    status: Mapped[str] = mapped_column(String(32), default="UNMATCHED")
+    matched_instrument_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("instruments.id"), nullable=True
+    )
+    reconciliation_rule_version: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
+    quarantine_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class ReconciliationException(Base):
+    __tablename__ = "reconciliation_exceptions"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    statement_line_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("statement_lines.id"), nullable=True
+    )
+    instrument_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("instruments.id"), nullable=True
+    )
+    exception_type: Mapped[str] = mapped_column(String(64))
+    details: Mapped[dict] = mapped_column(JSONB, default=dict)
+    status: Mapped[str] = mapped_column(String(32), default="OPEN")
+    resolved_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    resolution_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class DocumentExtraction(Base):
+    __tablename__ = "document_extractions"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id"))
+    instrument_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("instruments.id"))
+    raw_text: Mapped[str] = mapped_column(Text)
+    candidate_fields: Mapped[dict] = mapped_column(JSONB, default=dict)
+    reviewed_fields: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    engine: Mapped[str] = mapped_column(String(64), default="tesseract-v5")
+    status: Mapped[str] = mapped_column(String(32), default="CANDIDATE")
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    review_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class PolicyVersion(Base):
+    __tablename__ = "policy_versions"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    policy_id: Mapped[str] = mapped_column(String(64))
+    document: Mapped[str] = mapped_column(String(256))
+    clause: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    document_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    scope: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    effective_start: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    effective_end: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    config_payload: Mapped[dict] = mapped_column(JSONB, default=dict)
+    status: Mapped[str] = mapped_column(String(32), default="draft")
+    blocked_reason: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    author_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    approver_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    step_up_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    version_number: Mapped[int] = mapped_column(Integer, default=1)
+    changelog: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class SchedulerRun(Base):
+    __tablename__ = "scheduler_runs"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    scheduler_id: Mapped[str] = mapped_column(String(64))
+    leased_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    leased_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_heartbeat_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_success_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(32), default="IDLE")
+    metadata_payload: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class InstrumentLineage(Base):
+    __tablename__ = "instrument_lineage"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    predecessor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("instruments.id"))
+    successor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("instruments.id"))
+    relationship_type: Mapped[str] = mapped_column(String(32), default="RENEWAL")
+    gap_days: Mapped[int] = mapped_column(Integer, default=0)
+    overlap_days: Mapped[int] = mapped_column(Integer, default=0)
+    policy_allowed_gap_days: Mapped[int] = mapped_column(Integer, default=0)
+    is_gap_discrepancy: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class Clearance(Base):
+    __tablename__ = "clearances"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    release_request_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("release_requests.id", ondelete="CASCADE")
+    )
+    institution_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("institutions.id"))
+    cell: Mapped[str] = mapped_column(String(64))
+    source: Mapped[str] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(32), default="PENDING_SOURCE")
+    received_date: Mapped[datetime | None] = mapped_column(Date, nullable=True)
+    outcome: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    evidence_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("documents.id"), nullable=True
+    )
+    verified_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ReleaseChecklistItem(Base):
+    __tablename__ = "release_checklist_items"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    release_request_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("release_requests.id", ondelete="CASCADE")
+    )
+    rule_id: Mapped[str] = mapped_column(String(32))
+    label: Mapped[str] = mapped_column(String(256))
+    status: Mapped[str] = mapped_column(String(32), default="PENDING_SOURCE")
+    deciding_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id"), nullable=True
+    )
+    evidence_ref: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    evidence_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("documents.id"), nullable=True
+    )
+    policy_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("policy_versions.id"), nullable=True
+    )
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )

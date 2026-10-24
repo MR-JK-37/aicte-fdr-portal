@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import jwt
 from fastapi import Cookie, Depends, Header
@@ -13,6 +14,7 @@ from app.authz import PermissionVerb, Principal, authorise
 from app.config import settings
 from app.db import SessionLocal, set_app_context
 from app.models.core import AppUser
+from app.models.enums import AppRole
 from app.problem_json import UnauthenticatedError
 
 
@@ -102,15 +104,26 @@ def get_current_principal(
 
     # Establish RLS parameters in the database transaction
     role_str = user.role.value if hasattr(user.role, "value") else str(user.role)
+    role_scope_dict: dict[str, Any] = {
+        "institution_id": str(user.institution_id) if user.institution_id else None,
+        "region_id": user.region_id,
+    }
+    if user.role == AppRole.BANK_VERIFIER:
+        if "@sbi." in user.email.lower():
+            role_scope_dict["bank_name"] = "State Bank of India"
+        elif "@pnb." in user.email.lower():
+            role_scope_dict["bank_name"] = "Punjab National Bank"
+        elif "@hdfc." in user.email.lower():
+            role_scope_dict["bank_name"] = "HDFC Bank"
+        elif "@icici." in user.email.lower():
+            role_scope_dict["bank_name"] = "ICICI Bank"
+
     set_app_context(
         db,
         role=role_str,
         institution_id=str(user.institution_id) if user.institution_id else None,
         user_id=str(user.id),
-        role_scope={
-            "institution_id": str(user.institution_id) if user.institution_id else None,
-            "region_id": user.region_id,
-        },
+        role_scope=role_scope_dict,
         assurance={"mfa": user.mfa_enrolled, "step_up": step_up_valid},
     )
 
@@ -125,6 +138,7 @@ def get_current_principal(
         is_active=user.is_active,
         mfa_enrolled=user.mfa_enrolled,
         step_up_valid_until=user.step_up_valid_until,
+        role_scope=role_scope_dict,
     )
 
 

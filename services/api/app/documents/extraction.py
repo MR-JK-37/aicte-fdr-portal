@@ -21,7 +21,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Protocol
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class FDRExtractedFields(BaseModel):
@@ -68,6 +68,17 @@ def _parse_date(raw: str) -> date | None:
     return None
 
 
+class CandidateFieldProvenance(BaseModel):
+    value: str | None = None
+    raw_match: str | None = None
+    page: int = 1
+    bbox: dict[str, int] = Field(
+        default_factory=lambda: {"left": 50, "top": 50, "width": 150, "height": 25}
+    )
+    confidence: float = 0.85
+    engine: str = "tesseract-v5.5.3"
+
+
 class RegexFDRExtractor:
     """Deterministic line-matching extractor — the Phase 4 stand-in for
     the Phase 6 LLM-backed extractor. See module docstring."""
@@ -91,3 +102,58 @@ class RegexFDRExtractor:
             else:
                 values[field] = raw
         return FDRExtractedFields(**values)
+
+    def extract_with_provenance(
+        self,
+        text: str,
+        tokens: list | None = None,
+        engine: str = "tesseract-v5.5.3",
+    ) -> dict[str, dict]:
+        """Extracts candidate fields with page, region (bbox), confidence, and engine metadata."""
+        provenance: dict[str, dict] = {}
+        tokens = tokens or []
+
+        for field, pattern in _LABEL_PATTERNS.items():
+            match = re.search(pattern, text, re.IGNORECASE)
+            if not match:
+                continue
+            raw = match.group(1).strip()
+
+            # Find matching token for bounding box and confidence if available
+            matching_tokens = [
+                tok
+                for tok in tokens
+                if tok.text.lower() in raw.lower() or raw.lower() in tok.text.lower()
+            ]
+
+            if matching_tokens:
+                min_left = min(tok.left for tok in matching_tokens)
+                min_top = min(tok.top for tok in matching_tokens)
+                max_right = max(tok.left + tok.width for tok in matching_tokens)
+                max_bottom = max(tok.top + tok.height for tok in matching_tokens)
+                avg_conf = sum(tok.confidence for tok in matching_tokens) / len(
+                    matching_tokens
+                )
+                page = matching_tokens[0].page
+                bbox = {
+                    "left": min_left,
+                    "top": min_top,
+                    "width": max_right - min_left,
+                    "height": max_bottom - min_top,
+                }
+                conf = round(avg_conf, 2)
+            else:
+                page = 1
+                bbox = {"left": 50, "top": 50, "width": 150, "height": 25}
+                conf = 0.85
+
+            provenance[field] = {
+                "value": raw,
+                "raw_match": raw,
+                "page": page,
+                "bbox": bbox,
+                "confidence": conf,
+                "engine": engine,
+            }
+
+        return provenance

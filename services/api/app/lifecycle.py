@@ -16,12 +16,13 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.audit import append_audit_entry
-from app.models.core import Document, Instrument, ScrutinyObservation
+from app.models.core import Document, Instrument, ReleaseRequest, ScrutinyObservation
 from app.models.enums import (
     AppRole,
     DocumentStatus,
     InstrumentStatus,
     ObservationStatus,
+    ReleaseRequestStatus,
 )
 from app.models.workflow import StateTransition
 from app.outbox.producer import enqueue_outbox_event
@@ -182,6 +183,13 @@ INSTRUMENT_TRANSITIONS: dict[
     InstrumentStatus.ACTIVE: {
         InstrumentStatus.EXPIRING: frozenset({SYSTEM_ROLE}),
         InstrumentStatus.MATURED: frozenset({SYSTEM_ROLE}),
+        InstrumentStatus.SUPERSEDED: frozenset(
+            {
+                SYSTEM_ROLE,
+                AppRole.REGIONAL_SUPERVISOR.value,
+                AppRole.PLATFORM_OPERATOR.value,
+            }
+        ),
     },
     InstrumentStatus.ACTIVE_TRACKING: {
         InstrumentStatus.EXPIRING: frozenset({SYSTEM_ROLE}),
@@ -207,6 +215,13 @@ INSTRUMENT_TRANSITIONS: dict[
     },
     InstrumentStatus.EXPIRING: {
         InstrumentStatus.MATURED: frozenset({SYSTEM_ROLE}),
+        InstrumentStatus.SUPERSEDED: frozenset(
+            {
+                SYSTEM_ROLE,
+                AppRole.REGIONAL_SUPERVISOR.value,
+                AppRole.PLATFORM_OPERATOR.value,
+            }
+        ),
     },
     InstrumentStatus.MATURED: {
         InstrumentStatus.RENEWAL_REQUESTED: frozenset(
@@ -227,6 +242,13 @@ INSTRUMENT_TRANSITIONS: dict[
                 "institution",
             }
         ),
+        InstrumentStatus.SUPERSEDED: frozenset(
+            {
+                SYSTEM_ROLE,
+                AppRole.REGIONAL_SUPERVISOR.value,
+                AppRole.PLATFORM_OPERATOR.value,
+            }
+        ),
     },
     InstrumentStatus.RENEWAL_REQUESTED: {
         InstrumentStatus.ACTIVE: frozenset(
@@ -238,6 +260,13 @@ INSTRUMENT_TRANSITIONS: dict[
         InstrumentStatus.ACTIVE_TRACKING: frozenset(
             {
                 AppRole.REGIONAL_SUPERVISOR.value,
+            }
+        ),
+        InstrumentStatus.SUPERSEDED: frozenset(
+            {
+                SYSTEM_ROLE,
+                AppRole.REGIONAL_SUPERVISOR.value,
+                AppRole.PLATFORM_OPERATOR.value,
             }
         ),
     },
@@ -252,6 +281,13 @@ INSTRUMENT_TRANSITIONS: dict[
                 AppRole.SCRUTINY_OFFICER.value,
             }
         ),
+        InstrumentStatus.SUPERSEDED: frozenset(
+            {
+                SYSTEM_ROLE,
+                AppRole.REGIONAL_SUPERVISOR.value,
+                AppRole.PLATFORM_OPERATOR.value,
+            }
+        ),
     },
     InstrumentStatus.RELEASE_REQUESTED: {
         InstrumentStatus.RELEASED: frozenset(
@@ -264,6 +300,7 @@ INSTRUMENT_TRANSITIONS: dict[
         InstrumentStatus.DISCHARGED: frozenset(
             {
                 AppRole.PLATFORM_OPERATOR.value,
+                AppRole.FINANCE_VERIFIER.value,
                 "bureau_admin",
             }
         ),
@@ -728,3 +765,301 @@ def apply_document_transition(
     return TransitionResult(
         str(document.id), current_status.value, to_status.value, str(st_id)
     )
+
+
+# ==============================================================================
+# Machine 5: Release Request Lifecycle (SPEC §2.3, §6.1 / Clause 6.46)
+# ==============================================================================
+RELEASE_REQUEST_TRANSITIONS: dict[
+    ReleaseRequestStatus, dict[ReleaseRequestStatus, frozenset[str]]
+] = {
+    ReleaseRequestStatus.DRAFT: {
+        ReleaseRequestStatus.SUBMITTED: frozenset(
+            {
+                AppRole.INSTITUTION_SUBMITTER.value,
+                AppRole.ORG_ADMIN.value,
+                "institution",
+            }
+        ),
+        ReleaseRequestStatus.CANCELLED: frozenset(
+            {
+                AppRole.INSTITUTION_SUBMITTER.value,
+                AppRole.ORG_ADMIN.value,
+                "institution",
+            }
+        ),
+    },
+    ReleaseRequestStatus.SUBMITTED: {
+        ReleaseRequestStatus.COMPLETENESS_REVIEW: frozenset(
+            {
+                AppRole.INTAKE_OFFICER.value,
+                AppRole.SCRUTINY_OFFICER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+                AppRole.PLATFORM_OPERATOR.value,
+            }
+        ),
+        ReleaseRequestStatus.SCRUTINY_RECOMMENDATION: frozenset(
+            {
+                AppRole.SCRUTINY_OFFICER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+                AppRole.PLATFORM_OPERATOR.value,
+            }
+        ),
+        ReleaseRequestStatus.RETURNED: frozenset(
+            {
+                AppRole.SCRUTINY_OFFICER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+            }
+        ),
+        ReleaseRequestStatus.CANCELLED: frozenset(
+            {
+                AppRole.INSTITUTION_SUBMITTER.value,
+                AppRole.ORG_ADMIN.value,
+                "institution",
+            }
+        ),
+    },
+    ReleaseRequestStatus.COMPLETENESS_REVIEW: {
+        ReleaseRequestStatus.REQUIRED_CLEARANCES: frozenset(
+            {
+                AppRole.SCRUTINY_OFFICER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+                AppRole.PLATFORM_OPERATOR.value,
+            }
+        ),
+        ReleaseRequestStatus.SCRUTINY_RECOMMENDATION: frozenset(
+            {
+                AppRole.SCRUTINY_OFFICER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+                AppRole.PLATFORM_OPERATOR.value,
+            }
+        ),
+        ReleaseRequestStatus.RETURNED: frozenset(
+            {
+                AppRole.SCRUTINY_OFFICER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+            }
+        ),
+    },
+    ReleaseRequestStatus.REQUIRED_CLEARANCES: {
+        ReleaseRequestStatus.SCRUTINY_RECOMMENDATION: frozenset(
+            {
+                AppRole.SCRUTINY_OFFICER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+            }
+        ),
+        ReleaseRequestStatus.RETURNED: frozenset(
+            {
+                AppRole.SCRUTINY_OFFICER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+            }
+        ),
+        ReleaseRequestStatus.DEFERRED: frozenset(
+            {
+                AppRole.SCRUTINY_OFFICER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+            }
+        ),
+    },
+    ReleaseRequestStatus.SCRUTINY_RECOMMENDATION: {
+        ReleaseRequestStatus.COMPETENT_AUTHORITY_DECISION: frozenset(
+            {
+                AppRole.COMPETENT_AUTHORITY.value,
+            }
+        ),
+        ReleaseRequestStatus.EXECUTION_PENDING: frozenset(
+            {
+                AppRole.COMPETENT_AUTHORITY.value,
+            }
+        ),
+        ReleaseRequestStatus.RETURNED: frozenset(
+            {
+                AppRole.COMPETENT_AUTHORITY.value,
+            }
+        ),
+        ReleaseRequestStatus.DEFERRED: frozenset(
+            {
+                AppRole.COMPETENT_AUTHORITY.value,
+            }
+        ),
+        ReleaseRequestStatus.REJECTED: frozenset(
+            {
+                AppRole.COMPETENT_AUTHORITY.value,
+            }
+        ),
+    },
+    ReleaseRequestStatus.COMPETENT_AUTHORITY_DECISION: {
+        ReleaseRequestStatus.EXECUTION_PENDING: frozenset(
+            {
+                AppRole.COMPETENT_AUTHORITY.value,
+            }
+        ),
+        ReleaseRequestStatus.RETURNED: frozenset(
+            {
+                AppRole.COMPETENT_AUTHORITY.value,
+            }
+        ),
+        ReleaseRequestStatus.DEFERRED: frozenset(
+            {
+                AppRole.COMPETENT_AUTHORITY.value,
+            }
+        ),
+        ReleaseRequestStatus.REJECTED: frozenset(
+            {
+                AppRole.COMPETENT_AUTHORITY.value,
+            }
+        ),
+    },
+    ReleaseRequestStatus.EXECUTION_PENDING: {
+        ReleaseRequestStatus.RELEASED_DISCHARGED: frozenset(
+            {
+                AppRole.FINANCE_VERIFIER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+                AppRole.PLATFORM_OPERATOR.value,
+                SYSTEM_ROLE,
+            }
+        ),
+        ReleaseRequestStatus.DEFERRED: frozenset(
+            {
+                AppRole.FINANCE_VERIFIER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+            }
+        ),
+    },
+    ReleaseRequestStatus.RETURNED: {
+        ReleaseRequestStatus.SUBMITTED: frozenset(
+            {
+                AppRole.INSTITUTION_SUBMITTER.value,
+                AppRole.ORG_ADMIN.value,
+                "institution",
+            }
+        ),
+        ReleaseRequestStatus.CANCELLED: frozenset(
+            {
+                AppRole.INSTITUTION_SUBMITTER.value,
+                AppRole.ORG_ADMIN.value,
+                "institution",
+            }
+        ),
+    },
+    ReleaseRequestStatus.DEFERRED: {
+        ReleaseRequestStatus.SCRUTINY_RECOMMENDATION: frozenset(
+            {
+                AppRole.SCRUTINY_OFFICER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+            }
+        ),
+        ReleaseRequestStatus.REQUIRED_CLEARANCES: frozenset(
+            {
+                AppRole.SCRUTINY_OFFICER.value,
+                AppRole.REGIONAL_SUPERVISOR.value,
+            }
+        ),
+    },
+}
+
+
+def assert_release_request_transition_allowed(
+    from_status: ReleaseRequestStatus,
+    to_status: ReleaseRequestStatus,
+    actor_role: str,
+) -> None:
+    edges = RELEASE_REQUEST_TRANSITIONS.get(from_status, {})
+    if to_status not in edges:
+        raise IllegalTransitionError(
+            f"{from_status.value} -> {to_status.value} is not a legal release request transition"
+        )
+
+    normalized = normalize_role(actor_role)
+    allowed_roles = edges[to_status]
+    if actor_role not in allowed_roles and normalized not in allowed_roles:
+        allowed = ", ".join(sorted(allowed_roles))
+        raise UnauthorizedTransitionError(
+            f"role '{actor_role}' may not perform {from_status.value} -> {to_status.value} "
+            f"(allowed: {allowed})"
+        )
+
+
+def apply_release_request_transition(
+    session: Session,
+    release_request: ReleaseRequest,
+    to_status: ReleaseRequestStatus,
+    *,
+    actor_role: str,
+    actor_id: str | None,
+    reason: str,
+    reason_code: str = "RELEASE_TRANSITION",
+    correlation_id: str | None = None,
+) -> TransitionResult:
+    """Atomically executes a release request transition (Machine 5)."""
+    if not reason or not reason.strip():
+        raise ValueError(
+            "a non-empty reason is required for every lifecycle transition"
+        )
+
+    current_status = (
+        ReleaseRequestStatus(release_request.status)
+        if isinstance(release_request.status, str)
+        else release_request.status
+    )
+    assert_release_request_transition_allowed(current_status, to_status, actor_role)
+
+    release_request.status = to_status.value
+    session.flush()
+
+    actor_uuid = (
+        uuid.UUID(actor_id)
+        if actor_id and isinstance(actor_id, str) and len(actor_id) == 36
+        else (actor_id if isinstance(actor_id, uuid.UUID) else None)
+    )
+
+    st_id = uuid.uuid4()
+    st = StateTransition(
+        id=st_id,
+        entity_type="release_request",
+        entity_id=release_request.id,
+        from_state=current_status.value,
+        to_state=to_status.value,
+        actor_id=actor_uuid,
+        reason_code=reason_code,
+        reason_text=reason,
+        correlation_id=correlation_id,
+    )
+    session.add(st)
+    session.flush()
+
+    append_audit_entry(
+        session,
+        action="release_request.lifecycle_transition",
+        entity_type="release_request",
+        entity_id=str(release_request.id),
+        before={"status": current_status.value},
+        after={
+            "status": to_status.value,
+            "reason": reason,
+            "reason_code": reason_code,
+            "actor_role": actor_role,
+        },
+        actor_id=actor_id,
+        institution_id=str(release_request.institution_id),
+    )
+
+    enqueue_outbox_event(
+        session,
+        aggregate_type="release_request",
+        aggregate_id=release_request.id,
+        event_type="release_request.state_changed",
+        payload={
+            "from_state": current_status.value,
+            "to_state": to_status.value,
+            "actor_role": actor_role,
+            "reason_code": reason_code,
+            "reason": reason,
+        },
+        dedupe_key=f"release_request.state_changed:{release_request.id}:{current_status.value}->{to_status.value}:{st_id.hex[:8]}",
+    )
+
+    return TransitionResult(
+        str(release_request.id), current_status.value, to_status.value, str(st_id)
+    )
+

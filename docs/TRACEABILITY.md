@@ -6,12 +6,12 @@ Claude Code updates the **Tests** and **Status** columns as work lands. A requir
 | # | Capability | MP modules | Phase | Tests | Status |
 |---|---|---|---|---|---|
 | 1 | Centralised repository | F-02, F-03, F-17 | 2 | `test_institution_onboarding.py`, `test_instrument_submission_and_versions.py`, `test_state_machines.py`, `test_scenario_new_fdr_submission.py` | Complete (PASS) |
-| 2 | Digital document management | F-04, F-05, F-20 | 2–3 | `test_security_scan.py`, `test_receipt_verification.py`, `test_scenario_new_fdr_submission.py` | Phase 2 Complete (PASS) |
-| 3 | Verification and discrepancy detection | F-06, F-07, F-08, F-09 | 3 | — | Not started |
-| 4 | Validity and maturity tracking, reminders | F-10 | 4 | — | Not started |
-| 5 | Renewal and replacement monitoring | F-11 | 4 | — | Not started |
-| 6 | Release and refund workflow | F-12, F-13 | 4 | — | Not started |
-| 7 | Alerts and escalation | F-10, F-14, F-24 | 4–5 | — | Not started |
+| 2 | Digital document management | F-04, F-05, F-20 | 2–3 | `test_security_scan.py`, `test_receipt_verification.py`, `test_scenario_new_fdr_submission.py`, `test_scenario_3_ocr_correction_no_bank_confirmed.py` | Complete (PASS) |
+| 3 | Verification and discrepancy detection | F-06, F-07, F-08, F-09 | 3 | `test_scenario_4_bank_confirmation_inconclusive_exception.py`, `test_scenario_5_statement_import_idempotent_quarantine.py`, `test_scenario_discrepancy_identification.py`, `test_verification_invariants.py` | Complete (PASS) |
+| 4 | Validity and maturity tracking, reminders | F-10 | 4 | `test_reminder_scheduler.py`, `test_scenario_7_maturity_scanner_and_outage.py` | Complete (PASS) |
+| 5 | Renewal and replacement monitoring | F-11 | 4 | `test_scenario_8_renewal_lineage_gap_overlap.py` | Complete (PASS) |
+| 6 | Release and refund workflow | F-12, F-13 | 4 | `test_scenario_9_release_checklist_sod_execution.py` | Complete (PASS) |
+| 7 | Alerts and escalation | F-10, F-14, F-24 | 4–5 | `test_reminder_ladder.py`, `test_scenario_7_maturity_scanner_and_outage.py` | Phase 4 Complete (PASS) |
 | 8 | Dashboard and management reports | F-16 | 4, 6 | — | Not started |
 | 9 | Audit trail and access control | F-01, F-18 | 1 | `test_authz_negative_matrix.py`, `test_auth_router.py`, `test_audit_checkpoint.py`, `scripts/verify_audit_chain.py` | Complete (PASS) |
 | 10 | System integration and data security | F-19, §12/§15, connectors | 1, 9 | `test_registry_router.py`, `test_pool_isolation.py`, `test_concurrency.py`, `test_idempotency_middleware.py`, `test_correlation_id.py`, `test_problem_json.py` | Phase 1 Complete (PASS) |
@@ -20,24 +20,24 @@ Claude Code updates the **Tests** and **Status** columns as work lands. A requir
 | Scenario | MP | Phase | Automated test | Status |
 |---|---|---|---|---|
 | New FDR submission | F-03, F-04, §17.2 | 2 | `test_scenario_new_fdr_submission.py` | Complete (PASS) |
-| Validity tracking | F-10 | 4 | — | Not started |
-| Approaching maturity | F-10 | 4 | — | Not started |
-| Renewal | F-11 | 4 | — | Not started |
-| Discrepancy identification | F-08, F-09 | 3 | — | Not started |
-| Authorised release processing | F-12 | 4 | — | Not started |
+| Validity tracking | F-10 | 4 | `test_reminder_scheduler.py`, `test_scenario_7_maturity_scanner_and_outage.py` | Complete (PASS) |
+| Approaching maturity | F-10 | 4 | `test_reminder_scheduler.py`, `test_scenario_7_maturity_scanner_and_outage.py` | Complete (PASS) |
+| Renewal | F-11 | 4 | `test_scenario_8_renewal_lineage_gap_overlap.py` | Complete (PASS) |
+| Discrepancy identification | F-08, F-09 | 3 | `test_scenario_discrepancy_identification.py` | Complete (PASS) |
+| Authorised release processing | F-12 | 4 | `test_scenario_9_release_checklist_sod_execution.py` | Complete (PASS) |
 
 ## 3. SPEC §18.1 mandatory scenarios
 | # | Scenario (short) | MP | Phase | Test | Status |
 |---|---|---|---|---|---|
 | 1 | Tenant isolation (copied UUID / forged filter / deep link) | §8.5, §17.2 | 1 | `test_cross_tenant_404.py`, `test_pool_isolation.py` | Complete (PASS) |
 | 2 | Submission → immutable version, hash, receipt, queue | F-03, F-04, F-20 | 2 | `test_instrument_submission_and_versions.py`, `test_scenario_new_fdr_submission.py` | Complete (PASS) |
-| 3 | OCR candidate → correction; no bank-confirmed badge | F-05 | 3 | — | Not started |
-| 4 | Bank confirmation pending; inconclusive → exception | F-06 | 3 | — | Not started |
-| 5 | Statement import idempotent; malformed quarantined; ambiguity not auto-confirmed | F-07 | 3 | — | Not started |
+| 3 | OCR candidate → correction; no bank-confirmed badge | F-05 | 3 | `test_scenario_3_ocr_correction_no_bank_confirmed.py` | Complete (PASS) |
+| 4 | Bank confirmation pending; inconclusive → exception | F-06 | 3 | `test_scenario_4_bank_confirmation_inconclusive_exception.py` | Complete (PASS) |
+| 5 | Statement import idempotent; malformed quarantined; ambiguity not auto-confirmed | F-07 | 3 | `test_scenario_5_statement_import_idempotent_quarantine.py` | Complete (PASS) |
 | 6 | Observation lifecycle with full timeline | F-09 | 2 | `test_observation_casework.py`, `test_scenario_new_fdr_submission.py` | Complete (PASS) |
-| 7 | Maturity scanner twice → one reminder per key; outage detectable | F-10 | 4 | — | Not started |
-| 8 | Renewal lineage; gap/overlap policy | F-11 | 4 | — | Not started |
-| 9 | Release checklist blocks; SoD; delegation; MFA; execution evidence | F-12 | 4 | — | Not started |
+| 7 | Maturity scanner twice → one reminder per key; outage detectable | F-10 | 4 | `test_scenario_7_maturity_scanner_and_outage.py`, `test_reminder_scheduler.py` | Complete (PASS) |
+| 8 | Renewal lineage; gap/overlap policy | F-11 | 4 | `test_scenario_8_renewal_lineage_gap_overlap.py` | Complete (PASS) |
+| 9 | Release checklist blocks; SoD; delegation; MFA; execution evidence | F-12 | 4 | `test_scenario_9_release_checklist_sod_execution.py` | Complete (PASS) |
 | 10 | Inbox persists if push fails; invalid token cleaned; no fabricated "delivered" | §10 | 5 | — | Not started |
 | 11 | Prod config refuses demo/fake/sim/test creds | §17.4 | 0 | `test_prod_guard.py` | Complete (PASS) |
 | 12 | Audit tamper denied; checkpoint verification detects change | F-18 | 1 | `test_audit_checkpoint.py`, `scripts/verify_audit_chain.py` | Complete (PASS) |
