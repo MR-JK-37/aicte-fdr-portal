@@ -2,14 +2,17 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Date,
     DateTime,
     ForeignKey,
+    Identity,
     Integer,
     Numeric,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -386,3 +389,132 @@ class ReleaseChecklistItem(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class UserNotification(Base):
+    __tablename__ = "user_notifications"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    event_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    recipient_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("app_users.id", ondelete="CASCADE"), nullable=True
+    )
+    institution_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("institutions.id", ondelete="CASCADE"), nullable=True
+    )
+    category: Mapped[str] = mapped_column(String(64), default="critical_workflow")
+    channel: Mapped[str] = mapped_column(String(32), default="in_app")
+    template_key: Mapped[str] = mapped_column(String(128))
+    template_version: Mapped[str] = mapped_column(String(32), default="v1.0")
+    locale: Mapped[str] = mapped_column(String(16), default="en")
+    status: Mapped[str] = mapped_column(String(32), default="CREATED")
+    title: Mapped[str] = mapped_column(String(256))
+    body: Mapped[str] = mapped_column(Text)
+    deep_link: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    lock_screen_title: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    lock_screen_body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    actioned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    provider_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    device_received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    metadata_payload: Mapped[dict] = mapped_column(JSONB, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class NotificationAttempt(Base):
+    __tablename__ = "notification_attempts"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_notification_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_notifications.id", ondelete="CASCADE")
+    )
+    provider: Mapped[str] = mapped_column(String(32))
+    provider_message_id: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    attempt_number: Mapped[int] = mapped_column(Integer, default=1)
+    attempted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    result_code: Mapped[str] = mapped_column(String(64))
+    error_category: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    error_details: Mapped[str | None] = mapped_column(Text, nullable=True)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class DeviceInstallation(Base):
+    __tablename__ = "device_installations"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_users.id", ondelete="CASCADE"))
+    platform: Mapped[str] = mapped_column(String(32))
+    provider: Mapped[str] = mapped_column(String(32))
+    push_token: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    endpoint: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    auth_key: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    p256dh_key: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    app_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    last_registered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class NotificationPreference(Base):
+    __tablename__ = "notification_preferences"
+    __table_args__ = (
+        UniqueConstraint("user_id", "category", "channel", name="uq_user_notif_pref"),
+    )
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_users.id", ondelete="CASCADE"))
+    category: Mapped[str] = mapped_column(String(64))
+    channel: Mapped[str] = mapped_column(String(32))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    locale: Mapped[str] = mapped_column(String(16), default="en")
+    quiet_hours_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    quiet_hours_start: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    quiet_hours_end: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class SSEEvent(Base):
+    __tablename__ = "sse_events"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    sequence_id: Mapped[int] = mapped_column(BigInteger, Identity(start=1, cycle=False))
+    event_type: Mapped[str] = mapped_column(String(64))
+    recipient_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    institution_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    role: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    payload: Mapped[dict] = mapped_column(JSONB, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class NotificationDLQ(Base):
+    __tablename__ = "notification_dlq"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    outbox_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    user_notification_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    event_type: Mapped[str] = mapped_column(String(64))
+    error_reason: Mapped[str] = mapped_column(Text)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    payload: Mapped[dict] = mapped_column(JSONB, default=dict)
+    status: Mapped[str] = mapped_column(String(32), default="DEAD_LETTER")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    replayed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+

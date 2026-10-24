@@ -13,10 +13,12 @@ from app.documents.router import router as documents_router
 from app.idempotency.middleware import IdempotencyMiddleware
 from app.institutions.router import router as institutions_router
 from app.instruments.router import router as instruments_router
+from app.notifications.router import router as notifications_router
 from app.observations.router import router as observations_router
 from app.policy.router import router as policy_router
 from app.problem_json import register_exception_handlers
 from app.queues.router import router as queues_router
+from app.realtime.router import router as realtime_router
 from app.receipts.router import router as receipts_router
 from app.registry.router import router as registry_router
 from app.release.router import router as release_router
@@ -59,6 +61,8 @@ app.include_router(discrepancies_router)
 app.include_router(policy_router)
 app.include_router(renewals_router)
 app.include_router(release_router)
+app.include_router(notifications_router)
+app.include_router(realtime_router)
 
 
 @app.get("/health", tags=["system"])

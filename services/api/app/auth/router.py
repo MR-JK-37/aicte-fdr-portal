@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Cookie, Depends, Header, Response
+
+logger = logging.getLogger(__name__)
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -87,13 +90,35 @@ def login(
 
 
 @router.post("/auth/logout")
-def logout(response: Response) -> dict[str, str]:
+def logout(
+    response: Response,
+    authorization: str | None = Header(None, alias="Authorization"),
+    fdr_session: str | None = Cookie(None, alias=settings.session_cookie_name),
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
     response.delete_cookie(
         key=settings.session_cookie_name,
         httponly=True,
         samesite="strict",
         secure=(settings.env == "production"),
     )
+    try:
+        principal = get_current_principal(authorization=authorization, fdr_session=fdr_session, db=db)
+        if principal:
+            from app.notifications.devices import revoke_all_user_devices
+            revoke_all_user_devices(db, principal.id)
+            append_audit_entry(
+                db,
+                action="auth.logout",
+                entity_type="app_user",
+                entity_id=str(principal.id),
+                actor_id=str(principal.id),
+            )
+            db.commit()
+    except UnauthenticatedError:
+        pass
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Non-critical cleanup failure on logout: %s", exc)
     return {"message": "Logged out successfully"}
 
 

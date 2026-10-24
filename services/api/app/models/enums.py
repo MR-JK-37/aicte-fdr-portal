@@ -79,6 +79,46 @@ class PolicyStatus(str, enum.Enum):
     BLOCKED = "BLOCKED"
 
 
+class NotificationCategory(str, enum.Enum):
+    CRITICAL_WORKFLOW = "critical_workflow"
+    DEADLINE = "deadline"
+    SECURITY_ACCOUNT = "security_account"
+    OPERATIONS = "operations"
+    DIGEST = "digest"
+
+
+class NotificationChannel(str, enum.Enum):
+    IN_APP = "in_app"
+    PUSH = "push"
+    EMAIL = "email"
+    WEB_PUSH = "web_push"
+
+
+class NotificationStatus(str, enum.Enum):
+    CREATED = "CREATED"
+    QUEUED = "QUEUED"
+    PROVIDER_ACCEPTED = "PROVIDER_ACCEPTED"
+    PROVIDER_FAILED = "PROVIDER_FAILED"
+    DEVICE_RECEIVED = "DEVICE_RECEIVED"
+    OPENED = "OPENED"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
+    ACTIONED = "ACTIONED"
+    EXPIRED = "EXPIRED"
+    DEAD_LETTER = "DEAD_LETTER"
+
+
+class DevicePlatform(str, enum.Enum):
+    ANDROID = "android"
+    IOS = "ios"
+    WEB = "web"
+
+
+class PushProvider(str, enum.Enum):
+    FCM = "fcm"
+    APNS = "apns"
+    WEBPUSH = "webpush"
+
+
 class EvidenceLevel(str, enum.Enum):
     L0_DECLARED = "L0_DECLARED"
     L1_EXTRACTED = "L1_EXTRACTED"
