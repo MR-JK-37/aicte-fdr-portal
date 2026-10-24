@@ -1,0 +1,32 @@
+# connectors.example.yaml — shape of connector registry entries. Real values go in the feature registry (DB) via admin UI.
+# A connector may be 'production-enabled' only with: named owner, formal permission, route, data contract,
+# credentials/certificates, sandbox+production setup, audit trail, error handling, monitoring, and acceptance tests (SPEC §12).
+connectors:
+  - key: statement_import
+    owner: "<finance/bank relationship owner — fill>"
+    state: production-enabled          # file-based; no credentials
+    entry_criteria_met: true
+  - key: bank_verifier_portal
+    owner: "<participating bank + AICTE finance — fill>"
+    state: disabled
+    entry_criteria_met: false
+  - key: aicte_institution_registry_api
+    owner: "<registry/application owner — fill>"
+    state: disabled
+  - key: financial_execution_system
+    owner: "<finance operations — fill>"
+    state: disabled
+  - key: fcm_android
+    state: disabled
+  - key: apns_ios
+    state: disabled
+  - key: web_push
+    state: disabled
+  - key: email
+    state: disabled
+  - key: sms_whatsapp
+    state: disabled                    # no adapter shipped
+  - key: bg_sfms_nesl
+    state: disabled                    # D-07
+  - key: digilocker_esign_apisetu_parichay
+    state: disabled

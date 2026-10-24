@@ -1,0 +1,59 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make *)",
+      "Bash(pnpm *)",
+      "Bash(uv *)",
+      "Bash(pytest *)",
+      "Bash(alembic *)",
+      "Bash(docker compose *)",
+      "Bash(npx playwright *)",
+      "Bash(gitleaks *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git checkout -b *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(**/*.p8)",
+      "Read(**/service-account*.json)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(*--no-verify*)",
+      "Bash(rm -rf /*)",
+      "Bash(curl * | sh)",
+      "Bash(curl * | bash)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/protect-files.sh",
+            "args": []
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/forbidden-patterns.sh",
+            "args": []
+          }
+        ]
+      }
+    ]
+  }
+}

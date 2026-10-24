@@ -1,0 +1,177 @@
+# LLM_PROVIDERS.yaml — provider registry for backend/app/ai/gateway
+# Rules (docs/MASTER_PROMPT.md §14):
+#  * AI is a bounded assistant. It never decides evidence, policy, release or money.
+#  * tier_s = real case data/documents. tier_p = public policy text, synthetic data, public UI strings.
+#  * EVERYTHING below ships `enabled: false`. Enabling a provider requires: (1) reading its CURRENT
+#    terms + free-tier limits from the official docs, (2) recording that in docs/ai-evals/PROVIDERS_VERIFIED.md,
+#    (3) the feature-registry approval flow. For tier_s, additionally OPEN_DECISIONS D-12 approval.
+#  * Limits and model IDs are NOT hard-coded here on purpose: they change. Set them via env/config after verifying.
+#  * Providers that use free-tier traffic for training MUST stay tier_p only.
+version: 1
+
+defaults:
+  timeout_seconds: 30
+  max_retries_per_provider: 1          # then fail over to the next provider in the route
+  backoff: { base_ms: 400, max_ms: 6000, jitter: full }
+  circuit_breaker:
+    failure_threshold: 4               # consecutive 429/5xx/timeouts
+    open_seconds: 60
+    half_open_probe_requests: 1
+  temperature: 0.0                     # extraction / classification tasks
+  max_output_tokens: 1024
+  log_prompts: false                   # metadata-only logging (llm_requests); never raw text for tier_s
+  redact_before_external: true         # Presidio + Indian recognisers (PAN, Aadhaar-like, IFSC, account/FDR numbers)
+
+# --- Provider catalogue --------------------------------------------------------------------------
+# kind: openai_compat uses POST {base_url}/chat/completions with Bearer auth unless noted.
+providers:
+  local_ollama:
+    enabled: false                     # enable for tier_s once a local model is accepted (D-12)
+    kind: openai_compat
+    base_url: "${OLLAMA_BASE_URL}"  # e.g. http://ollama:11434/v1
+    api_key_env: null
+    model: "${LOCAL_MODEL}"              # choose after evaluating on the golden set (docs/ai-evals)
+    tiers: [tier_s, tier_p]
+    capabilities: { json_mode: verify, context_tokens: "${LOCAL_CONTEXT}", languages: [en, hi, ta] }
+    limits: { rpm: null, rpd: null, tpm: null }   # self-hosted: bound by hardware; set concurrency instead
+    concurrency: 2
+    notes: "Final fallback and the only default-eligible tier_s processor."
+
+  groq:
+    enabled: false
+    kind: openai_compat
+    base_url: https://api.groq.com/openai/v1
+    api_key_env: GROQ_API_KEY
+    model: "${GROQ_MODEL}"               # VERIFY current model ids + per-model limits in Groq console/docs
+    tiers: [tier_p]
+    capabilities: { json_mode: verify, context_tokens: verify, languages: [en, hi] }
+    limits: { rpm: "${GROQ_RPM}", rpd: "${GROQ_RPD}", tpm: "${GROQ_TPM}" }
+    notes: "Fast inference; free-tier limits are per-model and organisation-scoped. VERIFY."
+
+  openrouter:
+    enabled: false
+    kind: openai_compat
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: OPENROUTER_API_KEY
+    model: "${OPENROUTER_MODEL}"         # use only ids ending in ':free' for zero cost; VERIFY availability
+    tiers: [tier_p]
+    capabilities: { json_mode: verify, context_tokens: verify, languages: [en, hi, ta] }
+    limits: { rpm: "${OPENROUTER_RPM}", rpd: "${OPENROUTER_RPD}", tpm: null }
+    extra_headers: { "HTTP-Referer": "${APP_PUBLIC_URL}", "X-Title": "AICTE FDR Portal" }
+    notes: "Free models are rate-limited and change often; daily caps can depend on account credit status. VERIFY. Check each model's data-retention/training policy before use."
+
+  gemini:
+    enabled: false
+    kind: openai_compat                # Google's OpenAI-compatible endpoint; VERIFY path/params
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai
+    api_key_env: GEMINI_API_KEY
+    model: "${GEMINI_MODEL}"
+    tiers: [tier_p]                    # free tier content may be used to improve Google products -> NEVER tier_s
+    capabilities: { json_mode: verify, context_tokens: verify, languages: [en, hi, ta, many] }
+    limits: { rpm: "${GEMINI_RPM}", rpd: "${GEMINI_RPD}", tpm: "${GEMINI_TPM}" }
+    notes: "VERIFY free-tier data-use terms at build time; keep tier_p only."
+
+  cerebras:
+    enabled: false
+    kind: openai_compat
+    base_url: https://api.cerebras.ai/v1
+    api_key_env: CEREBRAS_API_KEY
+    model: "${CEREBRAS_MODEL}"
+    tiers: [tier_p]
+    capabilities: { json_mode: verify, context_tokens: verify, languages: [en] }
+    limits: { rpm: "${CEREBRAS_RPM}", rpd: "${CEREBRAS_RPD}", tpm: "${CEREBRAS_TPM}" }
+    notes: "Account may require a verified payment method even for free usage. VERIFY before relying on it."
+
+  cloudflare_workers_ai:
+    enabled: false
+    kind: openai_compat
+    base_url: "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/v1"
+    api_key_env: CLOUDFLARE_API_TOKEN
+    model: "${CLOUDFLARE_MODEL}"
+    tiers: [tier_p]
+    capabilities: { json_mode: verify, context_tokens: verify, languages: [en] }
+    limits: { neurons_per_day: "${CLOUDFLARE_NEURONS_PER_DAY}" }   # free allocation is metered in 'neurons'; VERIFY
+    notes: "VERIFY endpoint shape and the free daily allocation."
+
+  sarvam:
+    enabled: false
+    kind: sarvam                       # native adapter likely required (custom auth header); VERIFY API shape
+    base_url: https://api.sarvam.ai
+    api_key_env: SARVAM_API_KEY
+    model: "${SARVAM_MODEL}"
+    tiers: [tier_p]
+    capabilities: { json_mode: verify, context_tokens: verify, languages: [en, hi, ta, te, bn, mr, gu, kn, ml, pa, or] }
+    limits: { rpm: "${SARVAM_RPM}" }
+    notes: "Indian-language specialist. Use for translation DRAFTS (human review mandatory) and Indic summarisation of public text. VERIFY terms/credits."
+
+  mistral:
+    enabled: false
+    kind: openai_compat
+    base_url: https://api.mistral.ai/v1
+    api_key_env: MISTRAL_API_KEY
+    model: "${MISTRAL_MODEL}"
+    tiers: [tier_p]
+    capabilities: { json_mode: verify, context_tokens: verify, languages: [en] }
+    limits: { rpm: "${MISTRAL_RPM}" }
+    notes: "UNVERIFIED free-tier details and data-use terms at authoring time. Keep disabled until verified."
+
+  nvidia_nim:
+    enabled: false
+    kind: openai_compat
+    base_url: https://integrate.api.nvidia.com/v1
+    api_key_env: NVIDIA_API_KEY
+    model: "${NVIDIA_MODEL}"
+    tiers: [tier_p]
+    capabilities: { json_mode: verify, context_tokens: verify, languages: [en] }
+    limits: { rpm: "${NVIDIA_RPM}" }
+    notes: "UNVERIFIED trial/prototyping terms (may not permit production use). Keep disabled until verified."
+
+  huggingface_router:
+    enabled: false
+    kind: openai_compat
+    base_url: https://router.huggingface.co/v1
+    api_key_env: HF_TOKEN
+    model: "${HF_MODEL}"
+    tiers: [tier_p]
+    capabilities: { json_mode: verify, context_tokens: verify, languages: [en] }
+    limits: { monthly_credit_usd: "${HF_MONTHLY_CREDIT_USD}" }      # free credits may be zero; VERIFY
+    notes: "Do not count on free capacity. Disabled by default."
+
+# --- Task routing -------------------------------------------------------------------------------
+# Each route is an ORDERED failover list. The gateway skips providers that are disabled, over their
+# token bucket, circuit-open, not allowed for the data tier, or lacking a required capability.
+# If the list is exhausted: return AI_UNAVAILABLE and let the UI fall back to the manual workflow.
+tasks:
+  ocr_field_structuring:               # structures OCR TEXT into candidate fields; OCR itself is local (not an LLM)
+    tier: tier_s
+    route: [local_ollama]
+    output_schema: schemas/ai/ocr_candidate_fields.v1.json
+    require: { json_mode: true }
+    post_checks: [value_must_appear_in_source_text, decimal_parse, date_parse]
+    on_exhausted: manual_entry
+
+  policy_qa:
+    tier: tier_p                       # approved public policy text only
+    route: [groq, cerebras, gemini, openrouter, cloudflare_workers_ai, local_ollama]
+    output_schema: schemas/ai/policy_answer.v1.json
+    post_checks: [every_citation_resolves_to_stored_clause, no_uncited_numbers]
+    on_exhausted: show_unavailable
+
+  case_summary:
+    tier: tier_s
+    route: [local_ollama]              # external providers only if D-12 explicitly approves named providers
+    output_schema: schemas/ai/case_summary.v1.json
+    post_checks: [numbers_and_dates_must_match_record, label_as_ai_generated]
+    on_exhausted: hide_feature
+
+  translation_draft:                   # public UI strings -> machine-draft for HUMAN review
+    tier: tier_p
+    route: [sarvam, gemini, openrouter, groq, local_ollama]
+    output_schema: schemas/ai/translation_draft.v1.json
+    post_checks: [icu_placeholders_preserved]
+    on_exhausted: keep_english
+
+rate_limiting:
+  per_user_requests_per_minute: 6
+  per_institution_requests_per_day: 200
+kill_switch_env: AI_GATEWAY_DISABLED   # if "true": all AI features report unavailable

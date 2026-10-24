@@ -1,0 +1,18 @@
+{
+  "$comment": "UNAPPROVED EXAMPLE — staging/test only. SPEC_v3 §9.1: reminder windows are configuration; T-90/60/30/7/0 are examples, AICTE must choose official windows (D-01/D-10). Production must NOT activate this file; with no approved schedule the scanner records 'skipped: no approved schedule' and admins see an alert.",
+  "policy_id": "REMINDER-SCHEDULE-EXAMPLE",
+  "status": "draft",
+  "label": "UNAPPROVED EXAMPLE",
+  "environments_allowed": ["local", "ci", "staging"],
+  "business_timezone": "Asia/Kolkata",
+  "events": {
+    "maturity": { "offsets_days_before": [90, 60, 30, 7, 0], "recipients": ["institution_contacts", "assigned_workflow_owner"] },
+    "renewal_due": { "offsets_days_before": [30, 7, 0], "recipients": ["institution_submitter", "scrutiny_queue"] },
+    "verification_overdue": { "offsets_days_after_due": [0, 3, 7], "recipients": ["finance_verifier_queue", "regional_supervisor"] },
+    "observation_overdue": { "offsets_days_after_due": [0, 3, 7], "recipients": ["institution_submitter", "assigned_officer", "regional_supervisor"] }
+  },
+  "holiday_rules": null,
+  "grace_periods": null,
+  "escalation": { "unacknowledged_critical_after_hours": null, "to": "regional_supervisor", "note": "null = not configured; must be approved (D-10)" },
+  "idempotency_key": "instrument_id|event_type|target_date|schedule_version|recipient_id"
+}

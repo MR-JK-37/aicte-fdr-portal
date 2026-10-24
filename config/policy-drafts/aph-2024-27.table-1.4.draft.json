@@ -1,0 +1,25 @@
+{
+  "$comment": "DRAFT SOURCE DATA — NOT APPROVED. Import through the policy admin UI; status must be moved draft→review→approved by AICTE's policy owner with an independent approver (D-01). Source: AICTE Approval Process Handbook 2024-2027, Clause 1.12 / Table 1.4 as recorded in docs/spec/SPEC_v3.md §2.1 [R1]. Accuracy guardrail: these are table values, not a rule to charge every institution. Programme applicability, exemptions, conversions, historical deposits, later amendments and the correct policy version must be validated per case before any amount decision.",
+  "policy_id": "APH-2024-27-T1.4",
+  "status": "draft",
+  "currency": "INR",
+  "unit": "lakh",
+  "effective_start": null,
+  "effective_end": null,
+  "source": { "document": "Approval Process Handbook 2024-2027 (AICTE)", "clause": "1.12; Table 1.4", "url": null, "document_hash": null, "verified_by": null },
+  "notes": [
+    "Amount is double in the case of private leased building/land (per cited handbook text) — modelled as a land_building_factor condition requiring policy-owner confirmation.",
+    "Handbook text states the amount remains with the Council for 10 years; principal returned at end of term subject to possible extension and/or forfeiture in specified circumstances. Do not auto-apply forfeiture; see penalties.blocked.json.",
+    "Table 1.4 does not list every programme category. Unlisted programmes => 'rule not defined — cannot assess'."
+  ],
+  "rules": [
+    { "programme": "Engineering and Technology", "diploma_post_diploma": 15, "undergraduate": 35, "pg_diploma_pg_degree": 15 },
+    { "programme": "Planning", "diploma_post_diploma": 15, "undergraduate": 15, "pg_diploma_pg_degree": 15 },
+    { "programme": "Applied Arts and Crafts", "diploma_post_diploma": 15, "undergraduate": 15, "pg_diploma_pg_degree": 15 },
+    { "programme": "Design", "diploma_post_diploma": 15, "undergraduate": 15, "pg_diploma_pg_degree": 15 },
+    { "programme": "Hotel Management and Catering Technology", "diploma_post_diploma": 15, "undergraduate": 15, "pg_diploma_pg_degree": 15 },
+    { "programme": "Computer Applications (e.g. BCA/MCA)", "diploma_post_diploma": null, "undergraduate": 5, "pg_diploma_pg_degree": 15 },
+    { "programme": "Management (e.g. BBA/MBA)", "diploma_post_diploma": null, "undergraduate": 5, "pg_diploma_pg_degree": 15 }
+  ],
+  "land_building_factor": { "private_leased_building_or_land": 2, "status": "needs_policy_owner_confirmation" }
+}

@@ -1,0 +1,8 @@
+{
+  "$comment": "BLOCKED — DO NOT IMPLEMENT AMOUNTS OR DATES. SPEC_v3 §1.4/§2.2: penalty percentages/cut-off dates are inconsistent across materials (an apparent 10%/20% versus 10%/50% discrepancy was noted in secondary materials). Do not resolve using an LLM or guesswork. Require written confirmation from AICTE's policy owner and legal team (D-01).",
+  "policy_id": "PENALTY-RULES",
+  "status": "BLOCKED",
+  "blocked_reason": "awaiting AICTE written confirmation (D-01)",
+  "engine_behaviour": "Any evaluation that would depend on a penalty rule returns 'cannot assess — rule BLOCKED'. No charge, waiver or rejection is produced.",
+  "rules": []
+}

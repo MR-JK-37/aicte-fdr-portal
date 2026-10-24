@@ -1,0 +1,19 @@
+{
+  "$comment": "DRAFT SOURCE DATA — NOT APPROVED. Derived from the indexed text of AICTE APH 2024-27 Clause 6.46 'Release of Security Deposit' as recorded in docs/spec/SPEC_v3.md §2.3 [R1]. The policy owner must verify against the final downloadable PDF, current amendments, and applicability per case (D-01, D-02). Each checklist row resolves to SATISFIED / NOT SATISFIED / PENDING SOURCE / NOT APPLICABLE with deciding user, evidence link, rule version and reason. 'All documents uploaded' is NOT clearance.",
+  "policy_id": "APH-2024-27-C6.46",
+  "status": "draft",
+  "row_states": ["SATISFIED", "NOT SATISFIED", "PENDING SOURCE", "NOT APPLICABLE"],
+  "checklist": [
+    { "id": "REL-01", "label": "Institution request/application letter for FDR / RTGS release", "kind": "document", "category": "request_letter", "applies_to": ["FDR", "RTGS"], "boundary": "Do not auto-accept a blank/malformed letter; policy owner defines template/mandatory fields." },
+    { "id": "REL-02", "label": "Affidavit 6 (institution and Trust/Society/Company details; FDR/RTGS details)", "kind": "document", "category": "affidavit_6", "applies_to": ["FDR", "RTGS"], "boundary": "Store template/version and submission date; corrected versions keep history." },
+    { "id": "REL-03", "label": "Copy of FDR to be released; for corpus fund created by RPGF, DD copies if applicable; or online security-deposit payment proof", "kind": "document", "category": "fdr_copy_or_payment_proof", "conditional_on": "historical_instrument_or_payment_type", "boundary": "File present ≠ authentic or credited; use the separate verification process." },
+    { "id": "REL-04", "label": "Copy of latest LoA / EoA", "kind": "document", "category": "loa_eoa", "boundary": "Policy owner defines acceptable official source and validity/version checks." },
+    { "id": "REL-05", "label": "Clearance — PGRC", "kind": "clearance", "responsible_cell": "PGRC", "boundary": "Never infer clear from empty queue, missing data or integration outage." },
+    { "id": "REL-06", "label": "Clearance — Vigilance Cell", "kind": "clearance", "responsible_cell": "Vigilance Cell", "boundary": "Same as REL-05." },
+    { "id": "REL-07", "label": "Clearance — other AICTE Cells/Bureaus relevant to grants released to the institution", "kind": "clearance", "responsible_cell": "other (configurable)", "boundary": "Each required clearance explicitly resolved." },
+    { "id": "REL-08", "label": "NOC from Approval Bureau (FDR/RPGF path)", "kind": "authorisation_artifact", "applies_to": ["FDR", "RPGF"], "boundary": "Portal never issues a substitute for the official NOC." },
+    { "id": "REL-09", "label": "Sanction order issued by Council (RTGS path)", "kind": "authorisation_artifact", "applies_to": ["RTGS"], "boundary": "Keep distinct from REL-08; never issue a portal-generated sanction order." },
+    { "id": "REL-10", "label": "Where financial embezzlement with a Government body/bank exists: NOC from that body before any release", "kind": "conditional_hold", "recorded_by": "official case owner", "boundary": "Do not infer from an AI score; official owner records basis and evidence." }
+  ],
+  "reference_note": "APH also states the Council may initiate penal action for security-deposit norm violations. The portal must not calculate or impose penalty (see penalties.blocked.json)."
+}
