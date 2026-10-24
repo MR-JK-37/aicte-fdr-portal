@@ -80,5 +80,5 @@ Claude Code updates the **Tests** and **Status** columns as work lands. A requir
 | Mobile "even more portable": extra functionality | §9A M-01…M-21 | `apps/mobile/App.tsx`, `scripts/verify_mobile_icons.py` | Complete (PASS) |
 | Apple-style design on web (and iOS); Material 3 on Android | §13, design/DESIGN_SPEC.md, tokens | `apps/web/src/design-system/DesignSystemShowcase.test.tsx` | Complete (PASS) |
 | System icons: Material Symbols only on Android | §13.3, `.claude/hooks/forbidden-patterns.sh`, DESIGN_SPEC §8 | `scripts/verify_mobile_icons.py` | Complete (PASS) |
-| Free multi-provider AI with complete fallback (bounded by SPEC §17 / D-12) | §14, config/LLM_PROVIDERS.yaml | `test_llm_gateway.py`, `test_llm_resilience.py` | Complete (PASS) |
+| Free multi-provider AI with complete fallback (bounded by SPEC §17 / D-12) | §14, config/LLM_PROVIDERS.yaml, F-05, F-26, F-27 | `test_llm_gateway.py`, `test_llm_resilience.py`, `test_llm_injection.py`, `test_ai_failover.py`, `docs/ai-evals/PROVIDERS_VERIFIED.md` | Complete (PASS) |
 | Brand colours #050505 / #3b0a6b / #00eeff | §13.1, tokens (contrast-verified) | `apps/web/src/design-system/DesignSystemShowcase.test.tsx` | Complete (PASS) |

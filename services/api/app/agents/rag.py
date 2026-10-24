@@ -12,13 +12,14 @@ embeddings are a local lexical hash (app.agents.embeddings), not a real
 semantic model. The retrieval/refusal/citation *mechanics* are real.
 """
 
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.agents.embeddings import embed
-from app.llm_gateway.gateway import generate
+from app.llm_gateway.gateway import generate, is_gateway_disabled
 from app.models.rag import AphClauseChunk
 
 # Cosine distance from pgvector's <=> operator: 0 = identical, 2 =
@@ -28,6 +29,7 @@ from app.models.rag import AphClauseChunk
 MAX_DISTANCE_THRESHOLD = 0.6
 
 REFUSAL_TEXT = "Not found in APH; refer to Regulation Bureau."
+UNAVAILABLE_TEXT = "AI policy assistance is currently unavailable. Please refer directly to the Approval Process Handbook or contact the Regulation Bureau."
 
 
 @dataclass
@@ -44,6 +46,45 @@ class RagAnswer:
     answer: str
     refused: bool
     sources: list[RetrievedChunk]
+    unavailable: bool = False
+    verified_citations: list[str] = field(default_factory=list)
+
+
+def resolve_citations(
+    session: Session, answer_text: str
+) -> tuple[bool, list[str]]:
+    """Citation resolver (SPEC §14.4 / F-26):
+    Every citation in the generated response must resolve to a real stored clause.
+    If the response hallucinates an unknown clause ID, it is rejected before reaching the user."""
+    stored_rows = session.execute(select(AphClauseChunk.clause_id)).scalars().all()
+    stored_ids = set(stored_rows)
+
+    # Match bracketed citations e.g. [APH 2024-27, cl. 6.46] or [6.46]
+    bracketed = re.findall(r"\[([^\]]+)\]", answer_text)
+    # Match clause mentions e.g. cl. 6.46 or clause 6.46
+    cl_refs = re.findall(r"(?:cl\.|clause)\s*([0-9]+\.[0-9]+)", answer_text, re.IGNORECASE)
+
+    if not bracketed and not cl_refs:
+        # If response does not cite any clause and is not a refusal
+        if REFUSAL_TEXT not in answer_text:
+            return False, []
+        return True, []
+
+    resolved: list[str] = []
+    for ref in bracketed:
+        clean_ref = ref.strip()
+        matching = [s for s in stored_ids if clean_ref in s or s in clean_ref]
+        if not matching:
+            return False, []
+        resolved.extend(matching)
+
+    for cl in cl_refs:
+        matching = [s for s in stored_ids if cl in s]
+        if not matching:
+            return False, []
+        resolved.extend(matching)
+
+    return True, sorted(set(resolved))
 
 
 def ingest_clause(
@@ -89,6 +130,9 @@ def retrieve(session: Session, query: str, *, top_k: int = 3) -> list[RetrievedC
 def answer_compliance_question(
     session: Session, question: str, *, agent_name: str = "compliance-rag"
 ) -> RagAnswer:
+    if is_gateway_disabled():
+        return RagAnswer(UNAVAILABLE_TEXT, refused=True, sources=[], unavailable=True)
+
     retrieved = retrieve(session, question, top_k=3)
     if not retrieved or retrieved[0].distance > MAX_DISTANCE_THRESHOLD:
         return RagAnswer(REFUSAL_TEXT, refused=True, sources=retrieved)
@@ -117,6 +161,20 @@ def answer_compliance_question(
         },
     ]
     result = generate("rag", messages, agent_name=agent_name, session=session)
-    if result.status != "ok":
+    if result.status == "unavailable":
+        return RagAnswer(UNAVAILABLE_TEXT, refused=True, sources=retrieved, unavailable=True)
+    if result.status != "ok" or not result.content:
         return RagAnswer(REFUSAL_TEXT, refused=True, sources=retrieved)
-    return RagAnswer(result.content, refused=False, sources=retrieved)
+
+    # Post-check: Citation resolver enforces that all citations resolve to stored clauses
+    valid_citations, resolved_ids = resolve_citations(session, result.content)
+    if not valid_citations:
+        return RagAnswer(REFUSAL_TEXT, refused=True, sources=retrieved)
+
+    return RagAnswer(
+        result.content,
+        refused=False,
+        sources=retrieved,
+        unavailable=False,
+        verified_citations=resolved_ids,
+    )

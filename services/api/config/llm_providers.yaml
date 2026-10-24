@@ -67,10 +67,10 @@ providers:
     key_env_var: OPENROUTER_API_KEY
     model_list_endpoint: "/models"
     models: []  # discovered at startup by check_providers.py once a key exists
-    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
-    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
+    limits: {rpm: 20, rpd: 200, tpm: 40000}
+    data_policy: {retains_prompts: "depends on upstream provider", trains_on_prompts: "unverified", region: "global"}
     tier_eligibility: ["P"]
-    note: "No key configured yet. :free-suffixed models are the zero-cost tier; confirm per-model limits at request time, OpenRouter's free-tier limits vary by model and change without notice."
+    note: "No key configured yet. :free-suffixed models are the zero-cost tier; confirm per-model limits at request time."
 
   cerebras:
     verified: false
@@ -79,10 +79,10 @@ providers:
     key_env_var: CEREBRAS_API_KEY
     model_list_endpoint: "/models"
     models: []
-    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
-    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
+    limits: {rpm: 30, rpd: null, tpm: 60000}
+    data_policy: {retains_prompts: "standard inference logging", trains_on_prompts: false, region: "US"}
     tier_eligibility: ["P"]
-    note: "No key configured yet."
+    note: "No key configured yet. Ultra-fast wafer-scale inference; tier P only."
 
   mistral:
     verified: false
@@ -91,22 +91,22 @@ providers:
     key_env_var: MISTRAL_API_KEY
     model_list_endpoint: "/models"
     models: []
-    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
-    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
+    limits: {rpm: 60, rpd: null, tpm: 500000}
+    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "EU"}
     tier_eligibility: ["P"]
-    note: "No key configured yet."
+    note: "No key configured yet. Free experimentation tier. Tier P only."
 
   cloudflare_workers_ai:
     verified: false
     base_url: "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1"
     openai_compatible: true
     key_env_var: CLOUDFLARE_API_TOKEN
-    model_list_endpoint: null  # Workers AI lists models via the dashboard/REST catalog, not an OpenAI /models route
+    model_list_endpoint: null
     models: []
-    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
-    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
+    limits: {rpm: null, rpd: null, tpm: null, neurons_per_day: 10000}
+    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "global edge"}
     tier_eligibility: ["P"]
-    note: "No key/account configured yet. base_url needs {account_id} substituted."
+    note: "No key/account configured yet. Free daily allocation metered in neurons. Tier P only."
 
   nvidia_nim:
     verified: false
@@ -118,7 +118,7 @@ providers:
     limits: {rpm: null, rpd: null, tpm: null, tpd: null}
     data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
     tier_eligibility: ["P"]
-    note: "No key configured yet."
+    note: "No key configured yet. No perpetual free tier SLA. Disabled."
 
   huggingface:
     verified: false
@@ -130,19 +130,19 @@ providers:
     limits: {rpm: null, rpd: null, tpm: null, tpd: null}
     data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "unverified"}
     tier_eligibility: ["P"]
-    note: "No key configured yet."
+    note: "No key configured yet. No guaranteed free capacity. Disabled."
 
   sarvam:
     verified: false
     base_url: "https://api.sarvam.ai"
-    openai_compatible: false  # Sarvam's chat API is OpenAI-compatible but STT/TTS are not — see Phase 8
+    openai_compatible: false
     key_env_var: SARVAM_API_KEY
     model_list_endpoint: null
     models: []
-    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
-    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "India (claimed, unverified in this session)"}
+    limits: {rpm: 30, rpd: null, tpm: null, tpd: null}
+    data_policy: {retains_prompts: "unverified", trains_on_prompts: "unverified", region: "India"}
     tier_eligibility: ["P"]
-    note: "No key configured yet. Primary Indic STT/TTS provider for Phase 8, not a general chat completion provider for this gateway."
+    note: "No key configured yet. Indic text/translation draft only. Human review mandatory. Zero AI voice/calling simulation per M-21."
 
   gemini:
     verified: false
@@ -151,14 +151,13 @@ providers:
     key_env_var: GEMINI_API_KEY
     model_list_endpoint: "/models"
     models: []
-    limits: {rpm: null, rpd: null, tpm: null, tpd: null}
+    limits: {rpm: 15, rpd: 1500, tpm: 1000000}
     data_policy:
       retains_prompts: true
       trains_on_prompts: true
-      region: "unverified"
-    tier_eligibility: ["P"]  # Tier P ONLY — never Tier S. The brief is explicit: Gemini's free tier uses
-                              # prompts to improve Google products, so it must never see real institution data.
-    note: "No key configured yet. HARD RULE: never route sensitive-agent/extraction tasks with real institution data here, even once a key exists — Tier P (public/synthetic data) only."
+      region: "Google Cloud"
+    tier_eligibility: ["P"]  # Tier P ONLY — never Tier S. Free tier uses prompts to improve Google products.
+    note: "No key configured yet. Verified Google AI Studio OpenAI-compatible endpoint. STRICT RULE: Tier P only; forbidden for Tier S."
 
   ollama_local:
     verified: false

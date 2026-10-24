@@ -6456,6 +6456,300 @@
         }
       }
     },
+    "/v1/ai/status": {
+      "get": {
+        "tags": [
+          "ai-gateway"
+        ],
+        "summary": "Get Gateway Status",
+        "description": "Returns gateway operational status and provider health.",
+        "operationId": "get_gateway_status_v1_ai_status_get",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "fdr_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fdr Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GatewayStatusResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ai/policy-qa": {
+      "post": {
+        "tags": [
+          "ai-gateway"
+        ],
+        "summary": "Policy Qa",
+        "description": "Compliance RAG: Q&A over approved APH clauses with citation resolver.",
+        "operationId": "policy_qa_v1_ai_policy_qa_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "fdr_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fdr Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyQARequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyQAResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ai/case-summary/{instrument_id}": {
+      "post": {
+        "tags": [
+          "ai-gateway"
+        ],
+        "summary": "Get Case Summary",
+        "description": "Gated case summary for authorized officers.",
+        "operationId": "get_case_summary_v1_ai_case_summary__instrument_id__post",
+        "parameters": [
+          {
+            "name": "instrument_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Instrument Id"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "fdr_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fdr Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseSummaryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/ai/translation-draft": {
+      "post": {
+        "tags": [
+          "ai-gateway"
+        ],
+        "summary": "Create Translation Draft",
+        "description": "Generates a machine translation draft for public UI strings.",
+        "operationId": "create_translation_draft_v1_ai_translation_draft_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "fdr_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fdr Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranslationDraftRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationDraftResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/healthz": {
       "get": {
         "tags": [
@@ -6978,6 +7272,49 @@
           "created_at"
         ],
         "title": "CaseAssignmentResponse"
+      },
+      "CaseSummaryResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "key_points": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Key Points"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          },
+          "verified_against_record": {
+            "type": "boolean",
+            "title": "Verified Against Record"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "summary",
+          "key_points",
+          "disclaimer",
+          "verified_against_record"
+        ],
+        "title": "CaseSummaryResponse"
       },
       "CommentResponse": {
         "properties": {
@@ -7780,6 +8117,32 @@
           "state"
         ],
         "title": "FeatureRegistryPatch"
+      },
+      "GatewayStatusResponse": {
+        "properties": {
+          "gateway_disabled": {
+            "type": "boolean",
+            "title": "Gateway Disabled"
+          },
+          "active_providers_count": {
+            "type": "integer",
+            "title": "Active Providers Count"
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderHealthInfo"
+            },
+            "type": "array",
+            "title": "Providers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gateway_disabled",
+          "active_providers_count",
+          "providers"
+        ],
+        "title": "GatewayStatusResponse"
       },
       "GenerateObservationRequest": {
         "properties": {
@@ -8625,6 +8988,61 @@
         "type": "object",
         "title": "PolicyApprovalRequest"
       },
+      "PolicyQARequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 3,
+            "title": "Question"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "PolicyQARequest"
+      },
+      "PolicyQAResponse": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "refused": {
+            "type": "boolean",
+            "title": "Refused"
+          },
+          "unavailable": {
+            "type": "boolean",
+            "title": "Unavailable"
+          },
+          "verified_citations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Verified Citations"
+          },
+          "sources": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer",
+          "refused",
+          "unavailable",
+          "verified_citations",
+          "sources"
+        ],
+        "title": "PolicyQAResponse"
+      },
       "PolicyVersionResponse": {
         "properties": {
           "id": {
@@ -8759,6 +9177,42 @@
           "config_payload"
         ],
         "title": "PolicyVersionResponse"
+      },
+      "ProviderHealthInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "verified": {
+            "type": "boolean",
+            "title": "Verified"
+          },
+          "has_key": {
+            "type": "boolean",
+            "title": "Has Key"
+          },
+          "circuit_open": {
+            "type": "boolean",
+            "title": "Circuit Open"
+          },
+          "tier_eligibility": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tier Eligibility"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "verified",
+          "has_key",
+          "circuit_open",
+          "tier_eligibility"
+        ],
+        "title": "ProviderHealthInfo"
       },
       "PublicReceiptVerificationResponse": {
         "properties": {
@@ -9387,6 +9841,71 @@
           "user"
         ],
         "title": "TokenResponse"
+      },
+      "TranslationDraftRequest": {
+        "properties": {
+          "source_text": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Source Text"
+          },
+          "target_language": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "title": "Target Language"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_text",
+          "target_language"
+        ],
+        "title": "TranslationDraftRequest"
+      },
+      "TranslationDraftResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "source_text": {
+            "type": "string",
+            "title": "Source Text"
+          },
+          "target_language": {
+            "type": "string",
+            "title": "Target Language"
+          },
+          "translated_text": {
+            "type": "string",
+            "title": "Translated Text"
+          },
+          "placeholders_preserved": {
+            "type": "boolean",
+            "title": "Placeholders Preserved"
+          },
+          "requires_human_review": {
+            "type": "boolean",
+            "title": "Requires Human Review"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "source_text",
+          "target_language",
+          "translated_text",
+          "placeholders_preserved",
+          "requires_human_review",
+          "disclaimer"
+        ],
+        "title": "TranslationDraftResponse"
       },
       "UpdateChecklistItemPayload": {
         "properties": {

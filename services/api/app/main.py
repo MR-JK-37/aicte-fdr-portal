@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from sqlalchemy import text
 
+from app.agents.router import router as agents_router
 from app.auth.router import router as auth_router
 from app.config import settings
 from app.core.prod_guard import enforce_production_guard
@@ -63,6 +64,7 @@ app.include_router(renewals_router)
 app.include_router(release_router)
 app.include_router(notifications_router)
 app.include_router(realtime_router)
+app.include_router(agents_router)
 
 
 @app.get("/health", tags=["system"])

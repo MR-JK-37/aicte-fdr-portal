@@ -14,11 +14,15 @@ from app.llm_gateway.registry import load_registry
 
 TASK_CLASSES = (
     "sensitive-agent",  # Tier S
+    "case_summary",     # Tier S
     "extraction",
+    "ocr_field_structuring",
     "rag",
+    "policy_qa",
     "text2sql",
     "voice-intent",
     "translation",
+    "translation_draft",
     "embeddings",
     "safety",
 )
@@ -30,28 +34,54 @@ class ChainStep:
     model: str
 
 
-# Model choices are grounded in the verified Groq model list
-# (config/llm_providers.yaml) — gpt-oss-120b for quality/context on
-# non-latency-critical Tier P tasks, gpt-oss-20b where speed matters more
-# (voice-intent) or as the cheaper second hop, and the dedicated
-# safety/prompt-injection models for their matching task classes.
+# Model choices are grounded in the verified provider catalog (config/llm_providers.yaml)
+# Multi-provider ordered failover: primary fast LPU (groq) -> wafer-scale (cerebras) ->
+# multimodal (gemini) -> free aggregator (openrouter) -> open European (mistral).
 _TIER_P_CHAINS: dict[str, list[ChainStep]] = {
     "extraction": [
         ChainStep("groq", "openai/gpt-oss-120b"),
         ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("cerebras", "llama-3.3-70b"),
+        ChainStep("gemini", "gemini-2.0-flash"),
+        ChainStep("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
+    ],
+    "ocr_field_structuring": [
+        ChainStep("groq", "openai/gpt-oss-120b"),
+        ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("cerebras", "llama-3.3-70b"),
     ],
     "rag": [
         ChainStep("groq", "openai/gpt-oss-120b"),
         ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("cerebras", "llama-3.3-70b"),
+        ChainStep("gemini", "gemini-2.0-flash"),
+        ChainStep("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
+    ],
+    "policy_qa": [
+        ChainStep("groq", "openai/gpt-oss-120b"),
+        ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("cerebras", "llama-3.3-70b"),
+        ChainStep("gemini", "gemini-2.0-flash"),
+        ChainStep("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
     ],
     "text2sql": [
         ChainStep("groq", "openai/gpt-oss-120b"),
         ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("cerebras", "llama-3.3-70b"),
+        ChainStep("gemini", "gemini-2.0-flash"),
     ],
     "voice-intent": [ChainStep("groq", "openai/gpt-oss-20b")],
     "translation": [
         ChainStep("groq", "openai/gpt-oss-120b"),
-        ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("gemini", "gemini-2.0-flash"),
+        ChainStep("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
+        ChainStep("mistral", "mistral-small-latest"),
+    ],
+    "translation_draft": [
+        ChainStep("groq", "openai/gpt-oss-120b"),
+        ChainStep("gemini", "gemini-2.0-flash"),
+        ChainStep("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
+        ChainStep("mistral", "mistral-small-latest"),
     ],
     "embeddings": [],  # No embeddings-capable provider has a key yet — a real gap, not hidden.
     "safety": [ChainStep("groq", "openai/gpt-oss-safeguard-20b")],

@@ -6,6 +6,7 @@ second half) never talk to a provider directly.
 """
 
 import hashlib
+import os
 import time
 from dataclasses import dataclass
 from typing import Literal
@@ -23,7 +24,21 @@ from app.llm_gateway.schema_validation import (
 )
 from app.models.audit import AgentRun
 
-GatewayStatus = Literal["ok", "human_review_required"]
+GatewayStatus = Literal["ok", "human_review_required", "unavailable"]
+
+
+def is_gateway_disabled() -> bool:
+    """Checks the global AI gateway kill switch (config/LLM_PROVIDERS.yaml / SPEC §14.3)."""
+    val = os.environ.get("AI_GATEWAY_DISABLED", "").strip().lower()
+    return val in ("true", "1", "yes", "on")
+
+
+def is_ai_available(task_class: str = "rag", tier: str = "P") -> bool:
+    """Returns True if the gateway is enabled and at least one provider is configured for the route."""
+    if is_gateway_disabled():
+        return False
+    chain = get_chain(task_class, tier=tier)
+    return bool(chain)
 
 
 @dataclass
@@ -89,6 +104,29 @@ def generate(
         if m.get("role") == "user":
             _, tm = redaction.redact(m["content"])
             token_map.update(tm)
+
+    if is_gateway_disabled():
+        _log_agent_run(
+            session,
+            agent_name=agent_name,
+            task_class=task_class,
+            provider=None,
+            model=None,
+            input_text=str(redacted_messages),
+            tokens_in=None,
+            tokens_out=None,
+            latency_ms=0,
+            status="gateway_disabled",
+        )
+        return GatewayResult(
+            "unavailable",
+            None,
+            None,
+            None,
+            None,
+            token_map,
+            [{"skipped": "ai_gateway_disabled", "reason": "AI_GATEWAY_DISABLED kill switch active"}],
+        )
 
     registry = load_registry()
     chain = get_chain(task_class, tier=tier)
