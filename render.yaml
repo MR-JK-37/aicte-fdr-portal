@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: aicte-fdr-api
+    runtime: python
+    plan: free
+    region: oregon
+    rootDir: services/api
+    buildCommand: pip install uv && uv sync --frozen --no-dev
+    startCommand: bash scripts/render_start.sh
+    healthCheckPath: /healthz
+    envVars:
+      - key: ENV
+        value: staging
+      # Set manually in the Render dashboard during Blueprint creation —
+      # never stored in this repo. Use Neon's UNPOOLED/direct connection
+      # string (not the pgbouncer-pooled one): Alembic's CREATE ROLE
+      # migration needs a plain session connection.
+      - key: MIGRATION_DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: TOTP_ENCRYPTION_KEY
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
