@@ -12,25 +12,24 @@ from sqlalchemy.orm import Session
 
 from app.authz import PermissionVerb, Principal, authorise
 from app.config import settings
-from app.db import SessionLocal, set_app_context
+from app.db import get_db, set_app_context
 from app.models.core import AppUser
 from app.models.enums import AppRole
 from app.problem_json import UnauthenticatedError
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-def create_access_token(user: AppUser, expires_delta: int | None = None) -> str:
+def create_access_token(
+    user: AppUser,
+    expires_delta: int | None = None,
+    session_id: uuid.UUID | str | None = None,
+) -> str:
     now = datetime.now(UTC)
     exp = int(
         (
-            now + timedelta(seconds=expires_delta or settings.jwt_expiration_seconds)
+            now
+            + timedelta(
+                seconds=expires_delta or settings.access_token_expiration_seconds
+            )
         ).timestamp()
     )
     payload = {
@@ -39,6 +38,7 @@ def create_access_token(user: AppUser, expires_delta: int | None = None) -> str:
         "email": user.email,
         "role": user.role.value if hasattr(user.role, "value") else str(user.role),
         "institution_id": str(user.institution_id) if user.institution_id else None,
+        "session_id": str(session_id) if session_id else None,
         "exp": exp,
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
@@ -127,6 +127,14 @@ def get_current_principal(
         assurance={"mfa": user.mfa_enrolled, "step_up": step_up_valid},
     )
 
+    session_id_str = data.get("session_id")
+    session_uuid = None
+    if session_id_str:
+        try:
+            session_uuid = uuid.UUID(session_id_str)
+        except ValueError:
+            session_uuid = None
+
     return Principal(
         id=user.id,
         email=user.email,
@@ -139,6 +147,7 @@ def get_current_principal(
         mfa_enrolled=user.mfa_enrolled,
         step_up_valid_until=user.step_up_valid_until,
         role_scope=role_scope_dict,
+        session_id=session_uuid,
     )
 
 

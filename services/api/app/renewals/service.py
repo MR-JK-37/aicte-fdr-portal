@@ -39,12 +39,16 @@ class LineageNotFoundError(LineageError):
     pass
 
 
-def assert_no_cycle(session: Session, predecessor_id: uuid.UUID, successor_id: uuid.UUID) -> None:
+def assert_no_cycle(
+    session: Session, predecessor_id: uuid.UUID, successor_id: uuid.UUID
+) -> None:
     """Checks for cycles in the instrument lineage graph using DFS.
     Rejects self-links and any path that would make successor an ancestor of predecessor.
     """
     if predecessor_id == successor_id:
-        raise LineageCycleError("Lineage cycle rejected: instrument cannot be its own predecessor or successor")
+        raise LineageCycleError(
+            "Lineage cycle rejected: instrument cannot be its own predecessor or successor"
+        )
 
     visited = set()
     queue = [successor_id]
@@ -52,16 +56,24 @@ def assert_no_cycle(session: Session, predecessor_id: uuid.UUID, successor_id: u
     while queue:
         current = queue.pop(0)
         if current == predecessor_id:
-            raise LineageCycleError(f"Lineage cycle rejected: connecting {predecessor_id} to {successor_id} creates a circular dependency")
+            raise LineageCycleError(
+                f"Lineage cycle rejected: connecting {predecessor_id} to {successor_id} creates a circular dependency"
+            )
 
         if current in visited:
             continue
         visited.add(current)
 
         # Find all successors of current
-        next_succs = session.execute(
-            select(InstrumentLineage.successor_id).where(InstrumentLineage.predecessor_id == current)
-        ).scalars().all()
+        next_succs = (
+            session.execute(
+                select(InstrumentLineage.successor_id).where(
+                    InstrumentLineage.predecessor_id == current
+                )
+            )
+            .scalars()
+            .all()
+        )
         queue.extend(next_succs)
 
 

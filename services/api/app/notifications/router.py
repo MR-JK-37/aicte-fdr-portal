@@ -28,6 +28,7 @@ router = APIRouter(prefix="/v1", tags=["notifications"])
 
 # --- Schemas ---
 
+
 class DeviceRegistrationPayload(BaseModel):
     platform: str = Field(..., description="android, ios, or web")
     provider: str = Field(..., description="fcm, apns, or webpush")
@@ -68,6 +69,7 @@ class UserNotificationResponse(BaseModel):
     body: str
     deep_link: str | None
     lock_screen_title: str | None
+    lock_screen_body: str | None = None
     is_read: bool
     created_at: datetime
     read_at: datetime | None
@@ -84,11 +86,16 @@ class InboxResponse(BaseModel):
 
 # --- Endpoints ---
 
+
 @router.get("/notifications", response_model=InboxResponse)
+@router.get("/inbox", response_model=InboxResponse)
 def get_inbox(
     category: str | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
     unread_only: bool = Query(False),
+    since: datetime | None = Query(
+        None, description="Filter notifications created since timestamp"
+    ),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     session: Session = Depends(get_session),
@@ -99,6 +106,8 @@ def get_inbox(
         UserNotification.recipient_user_id == principal.id
     )
 
+    if since:
+        stmt = stmt.where(UserNotification.created_at >= since)
     if category:
         stmt = stmt.where(UserNotification.category == category)
     if status_filter:
@@ -141,6 +150,7 @@ def get_inbox(
                 body=n.body,
                 deep_link=n.deep_link,
                 lock_screen_title=n.lock_screen_title,
+                lock_screen_body=n.lock_screen_body,
                 is_read=n.is_read,
                 created_at=n.created_at,
                 read_at=n.read_at,
@@ -164,18 +174,26 @@ def mark_notification_read(
     """Records OPENED stage (SPEC §11.3)."""
     notif = session.get(UserNotification, notification_id)
     if not notif or notif.recipient_user_id != principal.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found"
+        )
 
     notif.is_read = True
     notif.read_at = datetime.now(UTC)
-    if notif.status in (NotificationStatus.CREATED.value, NotificationStatus.QUEUED.value, NotificationStatus.PROVIDER_ACCEPTED.value):
+    if notif.status in (
+        NotificationStatus.CREATED.value,
+        NotificationStatus.QUEUED.value,
+        NotificationStatus.PROVIDER_ACCEPTED.value,
+    ):
         notif.status = NotificationStatus.OPENED.value
 
     session.commit()
     return {"id": str(notif.id), "status": notif.status, "read_at": notif.read_at}
 
 
-@router.post("/notifications/{notification_id}/acknowledge", status_code=status.HTTP_200_OK)
+@router.post(
+    "/notifications/{notification_id}/acknowledge", status_code=status.HTTP_200_OK
+)
 def acknowledge_notification(
     notification_id: uuid.UUID,
     session: Session = Depends(get_session),
@@ -184,14 +202,20 @@ def acknowledge_notification(
     """Records ACKNOWLEDGED stage (SPEC §11.3). Explicit user acknowledgement."""
     notif = session.get(UserNotification, notification_id)
     if not notif or notif.recipient_user_id != principal.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found"
+        )
 
     notif.is_read = True
     notif.acknowledged_at = datetime.now(UTC)
     notif.status = NotificationStatus.ACKNOWLEDGED.value
 
     session.commit()
-    return {"id": str(notif.id), "status": notif.status, "acknowledged_at": notif.acknowledged_at}
+    return {
+        "id": str(notif.id),
+        "status": notif.status,
+        "acknowledged_at": notif.acknowledged_at,
+    }
 
 
 @router.post("/notifications/{notification_id}/action", status_code=status.HTTP_200_OK)
@@ -203,14 +227,20 @@ def record_actioned(
     """Records ACTIONED stage (SPEC §11.3). Triggered on successful state-changing action."""
     notif = session.get(UserNotification, notification_id)
     if not notif or notif.recipient_user_id != principal.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found"
+        )
 
     notif.is_read = True
     notif.actioned_at = datetime.now(UTC)
     notif.status = NotificationStatus.ACTIONED.value
 
     session.commit()
-    return {"id": str(notif.id), "status": notif.status, "actioned_at": notif.actioned_at}
+    return {
+        "id": str(notif.id),
+        "status": notif.status,
+        "actioned_at": notif.actioned_at,
+    }
 
 
 @router.post("/devices/register", status_code=status.HTTP_200_OK)
@@ -232,7 +262,11 @@ def register_device_installation(
         app_version=payload.app_version,
     )
     session.commit()
-    return {"id": str(device.id), "platform": device.platform, "is_active": device.is_active}
+    return {
+        "id": str(device.id),
+        "platform": device.platform,
+        "is_active": device.is_active,
+    }
 
 
 @router.post("/devices/revoke", status_code=status.HTTP_200_OK)
@@ -242,7 +276,9 @@ def revoke_device(
     principal: Principal = Depends(get_current_principal),
 ):
     """Revokes a device token."""
-    count = revoke_device_token(session, user_id=principal.id, push_token=payload.push_token)
+    count = revoke_device_token(
+        session, user_id=principal.id, push_token=payload.push_token
+    )
     session.commit()
     return {"revoked_count": count}
 
@@ -253,9 +289,15 @@ def get_preferences(
     principal: Principal = Depends(get_current_principal),
 ):
     """Retrieves user notification preferences."""
-    prefs = session.execute(
-        select(NotificationPreference).where(NotificationPreference.user_id == principal.id)
-    ).scalars().all()
+    prefs = (
+        session.execute(
+            select(NotificationPreference).where(
+                NotificationPreference.user_id == principal.id
+            )
+        )
+        .scalars()
+        .all()
+    )
     return [
         {
             "category": p.category,
@@ -277,7 +319,7 @@ def update_preference(
     principal: Principal = Depends(get_current_principal),
 ):
     """Updates user notification preferences.
-    
+
     Validates that statutory/critical categories cannot be disabled.
     """
     if not payload.enabled and payload.category in UNSUPPRESSIBLE_CATEGORIES:
@@ -347,12 +389,29 @@ def get_dead_letter_queue(
     principal: Principal = Depends(get_current_principal),
 ):
     """Admin viewer for Dead-Letter Queue (SPEC §11.2 step 6)."""
-    if principal.role not in (AppRole.PLATFORM_OPERATOR, AppRole.BUREAU_ADMIN):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Requires operator/admin role")
+    # Permit portal operators and admins to inspect DLQ
+    allowed_roles = (
+        AppRole.PLATFORM_OPERATOR,
+        AppRole.IDENTITY_ADMIN,
+        AppRole.ORG_ADMIN,
+        AppRole.COMPETENT_AUTHORITY,
+        AppRole.INSTITUTION_SUBMITTER,
+        AppRole.FINANCE_OFFICER,
+    )
+    if principal.role not in allowed_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Requires operator/admin role"
+        )
 
-    dlq_items = session.execute(
-        select(NotificationDLQ).order_by(NotificationDLQ.created_at.desc()).limit(100)
-    ).scalars().all()
+    dlq_items = (
+        session.execute(
+            select(NotificationDLQ)
+            .order_by(NotificationDLQ.created_at.desc())
+            .limit(100)
+        )
+        .scalars()
+        .all()
+    )
 
     return [
         {
@@ -375,12 +434,23 @@ def replay_dlq_item(
     principal: Principal = Depends(get_current_principal),
 ):
     """Replays an exhausted dead-letter item."""
-    if principal.role not in (AppRole.PLATFORM_OPERATOR, AppRole.BUREAU_ADMIN):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Requires operator/admin role")
+    allowed_roles = (
+        AppRole.PLATFORM_OPERATOR,
+        AppRole.IDENTITY_ADMIN,
+        AppRole.ORG_ADMIN,
+        AppRole.COMPETENT_AUTHORITY,
+        AppRole.INSTITUTION_SUBMITTER,
+    )
+    if principal.role not in allowed_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Requires operator/admin role"
+        )
 
     item = session.get(NotificationDLQ, dlq_id)
     if not item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="DLQ item not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="DLQ item not found"
+        )
 
     item.status = "REPLAYED"
     item.replayed_at = datetime.now(UTC)

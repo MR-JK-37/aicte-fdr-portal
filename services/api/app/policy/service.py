@@ -40,7 +40,9 @@ class PolicyPermissionError(PolicyError):
     pass
 
 
-def get_policy(session: Session, policy_id: str, version_number: int | None = None) -> PolicyVersion | None:
+def get_policy(
+    session: Session, policy_id: str, version_number: int | None = None
+) -> PolicyVersion | None:
     stmt = select(PolicyVersion).where(PolicyVersion.policy_id == policy_id)
     if version_number is not None:
         stmt = stmt.where(PolicyVersion.version_number == version_number)
@@ -49,7 +51,9 @@ def get_policy(session: Session, policy_id: str, version_number: int | None = No
     return session.execute(stmt).scalars().first()
 
 
-def get_active_policy(session: Session, policy_id: str, as_of: datetime | None = None) -> PolicyVersion | None:
+def get_active_policy(
+    session: Session, policy_id: str, as_of: datetime | None = None
+) -> PolicyVersion | None:
     """Finds an approved policy valid as of the given date."""
     now_utc = as_of or datetime.now(UTC)
     stmt = (
@@ -93,26 +97,41 @@ def approve_policy_version(
     # Role check
     allowed_roles = {AppRole.COMPETENT_AUTHORITY, AppRole.PLATFORM_OPERATOR}
     if approver.role not in allowed_roles:
-        raise PolicyPermissionError(f"Role '{approver.role.value}' cannot approve policies (requires COMPETENT_AUTHORITY or PLATFORM_OPERATOR)")
+        raise PolicyPermissionError(
+            f"Role '{approver.role.value}' cannot approve policies (requires COMPETENT_AUTHORITY or PLATFORM_OPERATOR)"
+        )
 
     # Maker-Checker: Approver != Author
     if pv.author_id is not None and str(pv.author_id) == str(approver.id):
-        raise MakerCheckerViolation("Maker-checker violation: author cannot approve their own policy version")
+        raise MakerCheckerViolation(
+            "Maker-checker violation: author cannot approve their own policy version"
+        )
 
     # Step-Up MFA verification
     now_utc = datetime.now(UTC)
-    has_valid_session = approver.step_up_valid_until is not None and approver.step_up_valid_until >= now_utc
-    token_valid = bool(step_up_token and len(step_up_token) == 6 and step_up_token.isdigit())
+    has_valid_session = (
+        approver.step_up_valid_until is not None
+        and approver.step_up_valid_until >= now_utc
+    )
+    token_valid = bool(
+        step_up_token and len(step_up_token) == 6 and step_up_token.isdigit()
+    )
     if not (has_valid_session or token_valid):
-        raise StepUpRequiredError("Step-up MFA verification required to approve policy version")
+        raise StepUpRequiredError(
+            "Step-up MFA verification required to approve policy version"
+        )
 
     # Retire currently approved versions of this policy
-    active_versions = session.execute(
-        select(PolicyVersion).where(
-            PolicyVersion.policy_id == pv.policy_id,
-            PolicyVersion.status == "approved",
+    active_versions = (
+        session.execute(
+            select(PolicyVersion).where(
+                PolicyVersion.policy_id == pv.policy_id,
+                PolicyVersion.status == "approved",
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     for av in active_versions:
         av.status = "retired"
         av.updated_at = now_utc

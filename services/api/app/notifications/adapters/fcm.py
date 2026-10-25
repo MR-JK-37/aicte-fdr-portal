@@ -13,12 +13,16 @@ logger = logging.getLogger(__name__)
 
 class FCMAdapter:
     def __init__(self, credentials_path: str | None = None) -> None:
-        self.credentials_path = credentials_path or os.environ.get("FCM_SERVICE_ACCOUNT_PATH")
-        self.is_configured = bool(self.credentials_path and os.path.exists(self.credentials_path))
+        self.credentials_path = credentials_path or os.environ.get(
+            "FCM_SERVICE_ACCOUNT_PATH"
+        )
+        self.is_configured = bool(
+            self.credentials_path and os.path.exists(self.credentials_path)
+        )
 
     def send_push(self, token: str, payload: PushPayload) -> SendResult:
         """Dispatches push notification via FCM HTTP v1.
-        
+
         Honest reporting:
         If not configured, reports PROVIDER_FAILED / NOT_CONFIGURED without crashing.
         Never fabricates delivered state.
@@ -56,7 +60,9 @@ class FCMAdapter:
             )
 
         if not self.is_configured:
-            logger.info("FCM credentials not provisioned on environment. Reporting honest NOT_CONFIGURED.")
+            logger.info(
+                "FCM credentials not provisioned on environment. Reporting honest NOT_CONFIGURED."
+            )
             return SendResult(
                 status="PROVIDER_FAILED",
                 result_code="NOT_CONFIGURED",

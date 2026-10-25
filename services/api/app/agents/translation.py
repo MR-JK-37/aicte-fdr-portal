@@ -26,7 +26,9 @@ PLACEHOLDER_REGEX = re.compile(r"\{([a-zA-Z0-9_]+)\}")
 
 class TranslationDraftPayload(BaseModel):
     target_language: str
-    translated_text: str = Field(description="Translated text with ICU placeholders intact")
+    translated_text: str = Field(
+        description="Translated text with ICU placeholders intact"
+    )
     confidence: float = Field(default=0.9, ge=0.0, le=1.0)
 
 
@@ -77,9 +79,7 @@ def generate_translation_draft(
     placeholder_instruction = ""
     if placeholders:
         ph_list = ", ".join(f"{{{p}}}" for p in sorted(placeholders))
-        placeholder_instruction = (
-            f" MANDATORY: Preserve exact placeholders verbatim: {ph_list}. Do not translate or alter them."
-        )
+        placeholder_instruction = f" MANDATORY: Preserve exact placeholders verbatim: {ph_list}. Do not translate or alter them."
 
     messages = [
         {
@@ -87,8 +87,7 @@ def generate_translation_draft(
             "content": (
                 f"You are a translation assistant translating public UI strings into {target_language}. "
                 "Respond with accurate, natural Indian administrative terminology. "
-                "Respond in JSON matching the schema."
-                + placeholder_instruction
+                "Respond in JSON matching the schema." + placeholder_instruction
             ),
         },
         {

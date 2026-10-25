@@ -20,7 +20,7 @@ from app.auth.deps import get_db, require_permission
 from app.authz import PermissionVerb, Principal, authorise, mask_identifier
 from app.config import settings
 from app.lifecycle import apply_transition
-from app.models.core import Institution, Instrument
+from app.models.core import Bank, Branch, Institution, Instrument
 from app.models.enums import EvidenceLevel, InstrumentStatus, InstrumentType
 from app.models.workflow import InstrumentVersion
 from app.problem_json import ConflictError, ForbiddenError, NotFoundError
@@ -103,6 +103,8 @@ class InstrumentResponse(BaseModel):
 
     id: uuid.UUID
     institution_id: uuid.UUID
+    institution_name: str | None = None
+    bank_name: str | None = None
     type: InstrumentType
     status: InstrumentStatus
     evidence_level: EvidenceLevel
@@ -421,6 +423,75 @@ def transition_instrument(
     return res
 
 
+@router.get("", response_model=list[InstrumentResponse])
+def list_instruments(
+    status: InstrumentStatus | None = Query(None, description="Filter by status"),
+    institution_id: uuid.UUID | None = Query(None, description="Filter by institution"),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    principal: Principal = Depends(require_permission(PermissionVerb.VIEW)),
+    db: Session = Depends(get_db),
+) -> list[InstrumentResponse]:
+    """Lists instruments scoped by the authenticated principal (F-03)."""
+    stmt = select(Instrument)
+    if principal.institution_id:
+        stmt = stmt.where(Instrument.institution_id == principal.institution_id)
+    elif institution_id:
+        stmt = stmt.where(Instrument.institution_id == institution_id)
+    if status:
+        stmt = stmt.where(Instrument.status == status)
+    stmt = stmt.order_by(desc(Instrument.created_at)).limit(limit).offset(offset)
+    instruments = db.execute(stmt).scalars().all()
+
+    can_view_unmasked = False
+    try:
+        authorise(principal, PermissionVerb.VIEW_UNMASKED_IDENTIFIERS)
+        can_view_unmasked = True
+    except (ForbiddenError, HTTPException):
+        can_view_unmasked = False
+
+    inst_ids = {i.institution_id for i in instruments}
+    institutions_map: dict[uuid.UUID, str] = {}
+    if inst_ids:
+        inst_records = db.execute(
+            select(Institution.id, Institution.name).where(Institution.id.in_(inst_ids))
+        ).all()
+        institutions_map = {row[0]: row[1] for row in inst_records}
+
+    branch_ids = {i.branch_id for i in instruments if i.branch_id}
+    banks_map: dict[uuid.UUID, str] = {}
+    if branch_ids:
+        branch_records = db.execute(
+            select(Branch.id, Bank.name)
+            .join(Bank, Branch.bank_id == Bank.id)
+            .where(Branch.id.in_(branch_ids))
+        ).all()
+        banks_map = {row[0]: row[1] for row in branch_records}
+
+    return [
+        InstrumentResponse(
+            id=i.id,
+            institution_id=i.institution_id,
+            institution_name=institutions_map.get(i.institution_id),
+            bank_name=banks_map.get(i.branch_id, "State Bank of India"),
+            type=i.type,
+            status=i.status,
+            evidence_level=i.evidence_level,
+            instrument_number=i.instrument_number
+            if can_view_unmasked
+            else mask_identifier(i.instrument_number),
+            amount=Decimal(str(i.amount)).quantize(Decimal("0.01")),
+            issue_date=i.issue_date,
+            maturity_date=i.maturity_date,
+            tenor_months=i.tenor_months,
+            utr=i.utr,
+            created_at=i.created_at,
+            updated_at=i.updated_at,
+        )
+        for i in instruments
+    ]
+
+
 @router.get("/{instrument_id}", response_model=InstrumentResponse)
 def get_instrument(
     instrument_id: uuid.UUID,
@@ -447,9 +518,24 @@ def get_instrument(
         else mask_identifier(instrument.instrument_number)
     )
 
+    inst = db.execute(
+        select(Institution).where(Institution.id == instrument.institution_id)
+    ).scalar_one_or_none()
+    bank_name = "State Bank of India"
+    if instrument.branch_id:
+        br = db.execute(
+            select(Bank.name)
+            .join(Branch, Branch.bank_id == Bank.id)
+            .where(Branch.id == instrument.branch_id)
+        ).scalar_one_or_none()
+        if br:
+            bank_name = br
+
     return InstrumentResponse(
         id=instrument.id,
         institution_id=instrument.institution_id,
+        institution_name=inst.name if inst else None,
+        bank_name=bank_name,
         type=instrument.type,
         status=instrument.status,
         evidence_level=instrument.evidence_level,

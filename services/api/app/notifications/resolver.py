@@ -52,7 +52,9 @@ def resolve_recipients(
         users.extend(session.execute(inst_stmt).scalars().all())
 
     if target_role:
-        role_val = target_role.value if hasattr(target_role, "value") else str(target_role)
+        role_val = (
+            target_role.value if hasattr(target_role, "value") else str(target_role)
+        )
         role_stmt = select(AppUser).where(
             AppUser.is_active.is_(True),
             AppUser.role == role_val,
@@ -67,7 +69,9 @@ def resolve_recipients(
     if not users and "operations" in event_type:
         op_stmt = select(AppUser).where(
             AppUser.is_active.is_(True),
-            AppUser.role.in_([AppRole.PLATFORM_OPERATOR.value, AppRole.BUREAU_ADMIN.value]),
+            AppUser.role.in_(
+                [AppRole.PLATFORM_OPERATOR.value, AppRole.IDENTITY_ADMIN.value]
+            ),
         )
         users.extend(session.execute(op_stmt).scalars().all())
 
@@ -84,7 +88,7 @@ def should_deliver_to_channel(
     now_utc: datetime | None = None,
 ) -> tuple[bool, str]:
     """Checks user notification preferences and quiet hours.
-    
+
     CRITICAL RULE (MASTER_PROMPT §10.4):
     Quiet hours and opt-outs NEVER suppress critical_workflow, deadline,
     or security_account items; user preference cannot silently cancel an obligation.

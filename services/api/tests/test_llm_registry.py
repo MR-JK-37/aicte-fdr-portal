@@ -15,10 +15,17 @@ def test_groq_has_the_live_discovered_models():
     assert "openai/gpt-oss-20b" in model_ids
 
 
+def test_openrouter_is_registered_and_verified():
+    registry = load_registry()
+    assert "openrouter" in registry
+    assert registry["openrouter"].verified is True
+    assert registry["openrouter"].openai_compatible is True
+
+
 def test_unverified_providers_have_empty_model_lists():
     registry = load_registry()
     for name, provider in registry.items():
-        if name in ("groq", "ollama_local"):
+        if name in ("groq", "ollama_local", "openrouter"):
             continue
         assert provider.verified is False
         assert provider.models == [], f"{name} is unverified but has hard-coded models"

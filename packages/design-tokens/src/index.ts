@@ -1,12 +1,28 @@
-/**
- * @aicte-fdr/design-tokens
- *
- * Thin re-export. The actual token *values* live in exactly one place —
- * /design/tokens.ts (verified against /design/tokens.css for parity and
- * WCAG contrast by `design/check_tokens.py`). This package exists only so
- * apps/web and apps/mobile can `import { dark, m3Dark, radius, ... } from
- * '@aicte-fdr/design-tokens'` as a normal workspace dependency instead of
- * reaching across the repo with relative paths. Never copy values here —
- * add them to /design/tokens.ts and they flow through automatically.
- */
+import * as tokens from '../../../design/tokens';
+
 export * from '../../../design/tokens';
+
+export const m3Shape = tokens.radius;
+
+export const touchTarget = {
+  android: tokens.size.tapAndroid,
+  ios: tokens.size.tapIos,
+};
+
+function enrichTone<T extends Record<string, string>>(tone: T) {
+  return {
+    ...tone,
+    bg: tone.canvas,
+    surfaceHigh: tone.surfaceMuted,
+    accent: tone.azure,
+    accentContainer: tone.primaryContainer,
+    onAccent: tone.onPrimary,
+    onAccentContainer: tone.onPrimaryContainer,
+    outlineVariant: tone.hairline,
+  };
+}
+
+export const light = enrichTone(tokens.light);
+export const dark = enrichTone(tokens.dark);
+export const m3Light = enrichTone(tokens.m3Light);
+export const m3Dark = enrichTone(tokens.m3Dark);

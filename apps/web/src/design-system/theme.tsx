@@ -39,8 +39,8 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
  */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(() => {
-    if (typeof window === 'undefined') return 'dark';
-    return (localStorage.getItem(STORAGE_KEY) as ThemeMode | null) ?? 'dark';
+    // Pure crisp white theme strictly matching ui-refrence.png
+    return 'light';
   });
   const [reduceTransparency, setReduceTransparencyState] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -48,19 +48,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return matchMediaSafe('(prefers-reduced-transparency: reduce)');
   });
 
-  const resolved: 'dark' | 'light' = useMemo(() => {
-    if (mode === 'system') return resolveSystemPrefersLight() ? 'light' : 'dark';
-    return mode;
-  }, [mode]);
+  const resolved: 'dark' | 'light' = 'light';
 
   useEffect(() => {
     const html = document.documentElement;
-    if (mode === 'system') {
-      html.removeAttribute('data-theme');
-    } else {
-      html.setAttribute('data-theme', mode);
+    html.setAttribute('data-theme', 'light');
+    try {
+      localStorage.setItem(STORAGE_KEY, 'light');
+    } catch {
+      /* ignore */
     }
-  }, [mode, resolved]);
+  }, [mode]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-reduce-transparency', String(reduceTransparency));

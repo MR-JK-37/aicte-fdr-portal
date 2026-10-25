@@ -53,19 +53,21 @@ DEFAULT_INTERVAL_SECONDS = 15 * 60
 DEFAULT_POLL_INTERVAL_SECONDS = 5.0
 
 
-def try_acquire_scheduler_lease(session: Session) -> bool:
+def try_acquire_scheduler_lease(
+    session: Session, key: int = SCHEDULER_ADVISORY_LOCK_KEY
+) -> bool:
     return bool(
         session.execute(
             text("SELECT pg_try_advisory_lock(:key)"),
-            {"key": SCHEDULER_ADVISORY_LOCK_KEY},
+            {"key": key},
         ).scalar()
     )
 
 
-def release_scheduler_lease(session: Session) -> None:
-    session.execute(
-        text("SELECT pg_advisory_unlock(:key)"), {"key": SCHEDULER_ADVISORY_LOCK_KEY}
-    )
+def release_scheduler_lease(
+    session: Session, key: int = SCHEDULER_ADVISORY_LOCK_KEY
+) -> None:
+    session.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": key})
 
 
 def run_forever(

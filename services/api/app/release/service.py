@@ -51,14 +51,26 @@ class ExecutionReviewViolation(ReleaseWorkflowError):
 
 
 CLAUSE_646_DEFAULT_ITEMS = [
-    {"rule_id": "REL-01", "label": "Institution request/application letter for FDR / RTGS release"},
-    {"rule_id": "REL-02", "label": "Affidavit 6 (institution and Trust/Society/Company details; FDR/RTGS details)"},
-    {"rule_id": "REL-03", "label": "Copy of FDR to be released / online security-deposit payment proof"},
+    {
+        "rule_id": "REL-01",
+        "label": "Institution request/application letter for FDR / RTGS release",
+    },
+    {
+        "rule_id": "REL-02",
+        "label": "Affidavit 6 (institution and Trust/Society/Company details; FDR/RTGS details)",
+    },
+    {
+        "rule_id": "REL-03",
+        "label": "Copy of FDR to be released / online security-deposit payment proof",
+    },
     {"rule_id": "REL-04", "label": "Copy of latest LoA / EoA"},
     {"rule_id": "REL-05", "label": "Clearance — PGRC"},
     {"rule_id": "REL-06", "label": "Clearance — Vigilance Cell"},
     {"rule_id": "REL-07", "label": "Clearance — other AICTE Cells/Bureaus"},
-    {"rule_id": "REL-08", "label": "NOC from Approval Bureau (FDR/RPGF path) OR RTGS sanction order"},
+    {
+        "rule_id": "REL-08",
+        "label": "NOC from Approval Bureau (FDR/RPGF path) OR RTGS sanction order",
+    },
     {"rule_id": "REL-09", "label": "Sanction order issued by Council (RTGS path)"},
     {"rule_id": "REL-10", "label": "Embezzlement-hold NOC (where applicable)"},
 ]
@@ -86,7 +98,9 @@ def create_release_request(
     existing = session.execute(
         select(ReleaseRequest).where(
             ReleaseRequest.instrument_id == instrument_id,
-            ReleaseRequest.status.notin_(["RELEASED_DISCHARGED", "REJECTED", "CANCELLED"]),
+            ReleaseRequest.status.notin_(
+                ["RELEASED_DISCHARGED", "REJECTED", "CANCELLED"]
+            ),
         )
     ).scalar_one_or_none()
     if existing:
@@ -109,10 +123,12 @@ def create_release_request(
     items_to_create = []
     if policy and policy.config_payload and "checklist" in policy.config_payload:
         for c in policy.config_payload["checklist"]:
-            items_to_create.append({
-                "rule_id": c.get("id"),
-                "label": c.get("label"),
-            })
+            items_to_create.append(
+                {
+                    "rule_id": c.get("id"),
+                    "label": c.get("label"),
+                }
+            )
     else:
         items_to_create = CLAUSE_646_DEFAULT_ITEMS
 
@@ -178,11 +194,15 @@ def update_checklist_item(
         )
     ).scalar_one_or_none()
     if not item:
-        raise ReleaseWorkflowError(f"Checklist item {rule_id} not found for release request {release_request_id}")
+        raise ReleaseWorkflowError(
+            f"Checklist item {rule_id} not found for release request {release_request_id}"
+        )
 
     valid_statuses = {"SATISFIED", "NOT SATISFIED", "PENDING SOURCE", "NOT APPLICABLE"}
     if status_val not in valid_statuses:
-        raise ReleaseWorkflowError(f"Invalid checklist status '{status_val}'. Must be one of {valid_statuses}")
+        raise ReleaseWorkflowError(
+            f"Invalid checklist status '{status_val}'. Must be one of {valid_statuses}"
+        )
 
     before_status = item.status
     item.status = status_val
@@ -229,7 +249,9 @@ def record_clearance_outcome(
 
     valid_statuses = {"SATISFIED", "NOT SATISFIED", "PENDING SOURCE", "NOT APPLICABLE"}
     if status_val not in valid_statuses:
-        raise ReleaseWorkflowError(f"Invalid clearance status '{status_val}'. Must be one of {valid_statuses}")
+        raise ReleaseWorkflowError(
+            f"Invalid clearance status '{status_val}'. Must be one of {valid_statuses}"
+        )
 
     c.status = status_val
     c.outcome = outcome
@@ -257,7 +279,9 @@ def submit_recommendation(
 
     # Maker-checker constraint: Recommender != Requester
     if req.requested_by and str(req.requested_by) == str(recommender.id):
-        raise MakerCheckerViolation("Separation of duties violation: release requester cannot submit scrutiny recommendation")
+        raise MakerCheckerViolation(
+            "Separation of duties violation: release requester cannot submit scrutiny recommendation"
+        )
 
     req.recommender_id = recommender.id
     req.recommendation = recommendation
@@ -298,24 +322,39 @@ def decide_release(
 
     # Role check
     if approver.role != AppRole.COMPETENT_AUTHORITY:
-        raise ReleaseWorkflowError(f"Role '{approver.role.value}' is not authorized to decide releases (requires COMPETENT_AUTHORITY)")
+        raise ReleaseWorkflowError(
+            f"Role '{approver.role.value}' is not authorized to decide releases (requires COMPETENT_AUTHORITY)"
+        )
 
     # Maker-Checker constraints
     if req.requested_by and str(req.requested_by) == str(approver.id):
-        raise MakerCheckerViolation("Maker-checker violation: release requester cannot approve the release")
+        raise MakerCheckerViolation(
+            "Maker-checker violation: release requester cannot approve the release"
+        )
 
     if req.recommender_id and str(req.recommender_id) == str(approver.id):
-        raise MakerCheckerViolation("Maker-checker violation: scrutiny recommender cannot approve the release")
+        raise MakerCheckerViolation(
+            "Maker-checker violation: scrutiny recommender cannot approve the release"
+        )
 
     if req.scrutiny_officer_id and str(req.scrutiny_officer_id) == str(approver.id):
-        raise MakerCheckerViolation("Maker-checker violation: scrutiny officer who handled instrument cannot approve the release")
+        raise MakerCheckerViolation(
+            "Maker-checker violation: scrutiny officer who handled instrument cannot approve the release"
+        )
 
     # Step-Up MFA check (authentication prerequisite for sensitive approval)
     now_utc = datetime.now(UTC)
-    has_valid_session = approver.step_up_valid_until is not None and approver.step_up_valid_until >= now_utc
-    token_valid = bool(step_up_token and len(step_up_token) == 6 and step_up_token.isdigit())
+    has_valid_session = (
+        approver.step_up_valid_until is not None
+        and approver.step_up_valid_until >= now_utc
+    )
+    token_valid = bool(
+        step_up_token and len(step_up_token) == 6 and step_up_token.isdigit()
+    )
     if not (has_valid_session or token_valid):
-        raise StepUpRequiredError("Step-up MFA verification required to approve release request")
+        raise StepUpRequiredError(
+            "Step-up MFA verification required to approve release request"
+        )
 
     # Delegation limit check
     if approver.delegation_limit is not None:
@@ -328,26 +367,49 @@ def decide_release(
 
     # If approving: verify checklist and clearances completeness
     if decision.upper() == "APPROVE":
-        checklist_items = session.execute(
-            select(ReleaseChecklistItem).where(ReleaseChecklistItem.release_request_id == release_request_id)
-        ).scalars().all()
+        checklist_items = (
+            session.execute(
+                select(ReleaseChecklistItem).where(
+                    ReleaseChecklistItem.release_request_id == release_request_id
+                )
+            )
+            .scalars()
+            .all()
+        )
 
         unresolved_items = [
-            item.rule_id for item in checklist_items
-            if (item.status or "").replace("_", " ").upper() not in ("SATISFIED", "NOT APPLICABLE")
+            item.rule_id
+            for item in checklist_items
+            if (item.status or "").replace("_", " ").upper()
+            not in ("SATISFIED", "NOT APPLICABLE")
         ]
         if unresolved_items:
             raise ChecklistIncompleteError(
                 f"Cannot approve release: checklist items {unresolved_items} are not SATISFIED or NOT APPLICABLE"
             )
 
-        clearances = session.execute(
-            select(Clearance).where(Clearance.release_request_id == release_request_id)
-        ).scalars().all()
+        clearances = (
+            session.execute(
+                select(Clearance).where(
+                    Clearance.release_request_id == release_request_id
+                )
+            )
+            .scalars()
+            .all()
+        )
 
         unresolved_clearances = [
-            c.cell for c in clearances
-            if (c.status or "").replace("_", " ").upper() not in ("SATISFIED", "NOT APPLICABLE", "CLEARED", "NOC GRANTED", "NOC_GRANTED", "WAIVED")
+            c.cell
+            for c in clearances
+            if (c.status or "").replace("_", " ").upper()
+            not in (
+                "SATISFIED",
+                "NOT APPLICABLE",
+                "CLEARED",
+                "NOC GRANTED",
+                "NOC_GRANTED",
+                "WAIVED",
+            )
         ]
         if unresolved_clearances:
             raise ChecklistIncompleteError(
@@ -362,7 +424,9 @@ def decide_release(
     elif decision.upper() == "REJECT":
         target_status = ReleaseRequestStatus.REJECTED
     else:
-        raise ReleaseWorkflowError(f"Invalid decision '{decision}'. Must be APPROVE, RETURN, DEFER, or REJECT")
+        raise ReleaseWorkflowError(
+            f"Invalid decision '{decision}'. Must be APPROVE, RETURN, DEFER, or REJECT"
+        )
 
     req.approver_id = approver.id
     req.decision = decision.upper()
@@ -395,7 +459,9 @@ def record_execution_evidence(
         raise ReleaseWorkflowError(f"Release request {release_request_id} not found")
 
     if req.status != ReleaseRequestStatus.EXECUTION_PENDING.value:
-        raise ReleaseWorkflowError(f"Release request must be in EXECUTION_PENDING to record execution evidence (current: {req.status})")
+        raise ReleaseWorkflowError(
+            f"Release request must be in EXECUTION_PENDING to record execution evidence (current: {req.status})"
+        )
 
     req.execution_evidence_ref = execution_evidence_ref
     req.execution_document_id = execution_document_id
@@ -433,14 +499,20 @@ def verify_execution_and_discharge(
         raise ReleaseWorkflowError(f"Release request {release_request_id} not found")
 
     if req.status != ReleaseRequestStatus.EXECUTION_PENDING.value:
-        raise ReleaseWorkflowError(f"Release request must be in EXECUTION_PENDING (current: {req.status})")
+        raise ReleaseWorkflowError(
+            f"Release request must be in EXECUTION_PENDING (current: {req.status})"
+        )
 
     if not req.execution_evidence_ref:
-        raise ReleaseWorkflowError("Cannot verify execution: trusted execution evidence reference is missing")
+        raise ReleaseWorkflowError(
+            "Cannot verify execution: trusted execution evidence reference is missing"
+        )
 
     # Second person review SoD: Reviewer cannot be the officer who recorded the execution evidence
     if req.execution_recorded_by and str(req.execution_recorded_by) == str(reviewer.id):
-        raise ExecutionReviewViolation("Separation of duties violation: second-person review required for execution confirmation")
+        raise ExecutionReviewViolation(
+            "Separation of duties violation: second-person review required for execution confirmation"
+        )
 
     now_utc = datetime.now(UTC)
     req.execution_verified_by = reviewer.id
@@ -460,7 +532,8 @@ def verify_execution_and_discharge(
     if (
         instrument
         and instrument.status != InstrumentStatus.DISCHARGED
-        and instrument.status in (InstrumentStatus.MATURED, InstrumentStatus.RELEASE_REQUESTED)
+        and instrument.status
+        in (InstrumentStatus.MATURED, InstrumentStatus.RELEASE_REQUESTED)
     ):
         if instrument.status == InstrumentStatus.MATURED:
             apply_transition(

@@ -1,0 +1,2 @@
+# Reference sheet (owner-supplied, style reference only)
+`reference-sheet.png` is the owner's target look: 9 phone screens. Use it to compare proportions, spacing, hierarchy and component behaviour with `design/preview.html` and the running app. **Do not reproduce its brand assets** (product name, wordmark, character/mascot, illustrations, photos); this product uses `fdr·portal` and the original mascot "Kosh". Measurements and decisions: `docs/DESIGN_RESEARCH.md`. Screen mapping: `design/DESIGN_SPEC.md` §6.

@@ -15,7 +15,11 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.llm_gateway import redaction, resilience
-from app.llm_gateway.client import ProviderCallError, call_chat_completion
+from app.llm_gateway.client import (
+    ProviderAuthError,
+    ProviderCallError,
+    call_chat_completion,
+)
 from app.llm_gateway.registry import load_registry
 from app.llm_gateway.routing import get_chain
 from app.llm_gateway.schema_validation import (
@@ -125,7 +129,12 @@ def generate(
             None,
             None,
             token_map,
-            [{"skipped": "ai_gateway_disabled", "reason": "AI_GATEWAY_DISABLED kill switch active"}],
+            [
+                {
+                    "skipped": "ai_gateway_disabled",
+                    "reason": "AI_GATEWAY_DISABLED kill switch active",
+                }
+            ],
         )
 
     registry = load_registry()
@@ -341,6 +350,18 @@ def _call_with_retry(
                 }
             )
             time.sleep(wait)
+        except ProviderAuthError as exc:
+            attempts.append(
+                {
+                    "provider": provider.name,
+                    "model": model_id,
+                    "auth_error": str(exc),
+                    "attempt": attempt,
+                }
+            )
+            resilience.record_failure(provider.name)
+            # Permanent key/credential error: do not retry this provider; failover to next provider immediately
+            break
         except ProviderCallError as exc:
             attempts.append(
                 {

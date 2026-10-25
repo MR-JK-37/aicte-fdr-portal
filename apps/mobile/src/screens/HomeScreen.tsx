@@ -1,7 +1,11 @@
 import React from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Icon } from '../design-system/Icon';
+import { useAppTheme } from '../design-system/theme';
+import { Kosh } from '../design-system/Kosh';
 import { MobileInstrument, MobileTab } from '../types';
+import { formatCroresINR, formatPaiseINR } from '@aicte-fdr/shared';
+import { useAuth } from '../auth/AuthContext';
 
 interface HomeScreenProps {
   instruments: MobileInstrument[];
@@ -11,6 +15,13 @@ interface HomeScreenProps {
   onOpenDocCapture?: () => void;
 }
 
+/**
+ * Mobile Home Screen — Matching ui-refrence.png (Screen 3: "Hello, Asha")
+ * TopBar: wordmark, progress mini (56%), role pill, action bell
+ * Hero Card: Region chip, dynamic greeting, peeking Kosh mascot with circular halo
+ * Grouped Section 1: "Needs attention" list card with chevrons
+ * Grouped Section 2: "Main" actions list card with chevrons
+ */
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   instruments,
   onNavigateTab,
@@ -18,162 +29,191 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenQRScanner,
   onOpenDocCapture,
 }) => {
-  const totalAmountPaise = instruments.reduce((sum, i) => sum + i.amount, 0);
-  const activeAmountPaise = instruments
-    .filter((i) => i.status === 'ACTIVE')
-    .reduce((sum, i) => sum + i.amount, 0);
+  const { tone, isDark } = useAppTheme();
+  const { user } = useAuth();
+  const cardBg = isDark ? tone.surface : '#ffffff';
 
-  const formatINR = (paise: number) => {
-    return `₹${(paise / 10000000).toFixed(2)} Cr`;
-  };
+  const displayName = user?.full_name?.split(' ')[0] || 'Officer';
+  const displayRole = user?.role ? user.role.replace(/_/g, ' ') : 'Registrar';
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header Profile Title */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerSuper}>AICTE REGULATION BUREAU</Text>
-          <Text style={styles.headerTitle}>Security Deposit Companion</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.notifBadge}
-          onPress={() => onNavigateTab('inbox')}
-        >
-          <Icon name="notifications" size={20} color="#00eeff" />
-          <View style={styles.badgeDot} />
-        </TouchableOpacity>
-      </View>
-
-      {/* KPI Balance Banner */}
-      <View style={styles.kpiCard}>
-        <Text style={styles.kpiLabel}>TOTAL CUSTODIAL EXPOSURE</Text>
-        <Text style={styles.kpiAmount}>{formatINR(totalAmountPaise)}</Text>
-        <View style={styles.kpiSubRow}>
-          <Text style={styles.kpiSubText}>Active Compliant: {formatINR(activeAmountPaise)}</Text>
-          <View style={styles.kpiPill}>
-            <Text style={styles.kpiPillText}>Table 1.4 Norms Met</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Quick Actions Cluster (M-06) */}
-      <View style={styles.quickActionsGrid}>
-        <TouchableOpacity
-          style={styles.quickActionItem}
-          onPress={onOpenQRScanner}
-        >
-          <View style={styles.quickActionIcon}>
-            <Icon name="qr" size={20} color="#00eeff" />
-          </View>
-          <Text style={styles.quickActionLabel}>Verify Receipt</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.quickActionItem}
-          onPress={onOpenDocCapture}
-        >
-          <View style={styles.quickActionIcon}>
-            <Icon name="scan" size={20} color="#00eeff" />
-          </View>
-          <Text style={styles.quickActionLabel}>Scan FDR Doc</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.quickActionItem}
-          onPress={() => onNavigateTab('cases')}
-        >
-          <View style={styles.quickActionIcon}>
-            <Icon name="search" size={20} color="#00eeff" />
-          </View>
-          <Text style={styles.quickActionLabel}>Search Registers</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.quickActionItem}
-          onPress={() => onNavigateTab('tasks')}
-        >
-          <View style={styles.quickActionIcon}>
-            <Icon name="checklist" size={20} color="#00eeff" />
-          </View>
-          <Text style={styles.quickActionLabel}>My Tasks</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Due-Soon Statutory Timeline */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Icon name="deadline" size={16} color="#fbbf24" />
-          <Text style={styles.sectionTitle}>Maturity & Escalation Ladder</Text>
+    <ScrollView
+      style={[styles.container, { backgroundColor: tone.bg }]}
+      contentContainerStyle={styles.content}
+    >
+      {/* 1. TopBar Header matching reference */}
+      <View style={styles.topbar}>
+        <View style={styles.topbarLeft}>
+          <Text style={[styles.wordmark, { color: tone.text1 }]}>
+            fdr<Text style={{ color: tone.accent }}>@</Text>portal
+          </Text>
         </View>
 
-        <View style={styles.timelineCard}>
-          <View style={styles.timelineRow}>
-            <View style={[styles.timelineNode, styles.nodeActive]} />
-            <View style={styles.timelineContent}>
-              <View style={styles.timelineHeader}>
-                <Text style={styles.timelineTitle}>T - 30 Days: AXIS-FDR-99201</Text>
-                <Text style={styles.timelineDate}>20 Nov 2026</Text>
-              </View>
-              <Text style={styles.timelineDesc}>
-                Statutory renewal obligation active. Direct branch confirmation L3 verified.
-              </Text>
+        <View style={styles.topbarRight}>
+          {/* Progress Mini (56%) */}
+          <View style={styles.progressMiniWrap}>
+            <View style={[styles.progressTrack, { backgroundColor: isDark ? tone.surfaceMuted : '#e2e8f0' }]}>
+              <View style={[styles.progressFill, { width: '56%', backgroundColor: tone.ink }]} />
             </View>
+            <Text style={[styles.progressText, { color: tone.text1 }]}>56%</Text>
           </View>
 
-          <View style={styles.timelineRow}>
-            <View style={styles.timelineNode} />
-            <View style={styles.timelineContent}>
-              <View style={styles.timelineHeader}>
-                <Text style={styles.timelineTitle}>T - 0 Days: PNB-771829 (Matured)</Text>
-                <Text style={styles.timelineDate}>25 Oct 2026</Text>
-              </View>
-              <Text style={styles.timelineDesc}>
-                Shortfall discrepancy open (₹25L of ₹35L). Automatic casework pending.
-              </Text>
-            </View>
+          {/* Role Pill */}
+          <View style={[styles.rolePill, { backgroundColor: tone.accentContainer }]}>
+            <Text style={[styles.rolePillText, { color: tone.accent }]}>{displayRole}</Text>
           </View>
-        </View>
-      </View>
 
-      {/* Recent Deposits Register Preview */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Icon name="instrument" size={16} color="#00eeff" />
-          <Text style={styles.sectionTitle}>Registered Security Deposits</Text>
-        </View>
-
-        {instruments.slice(0, 3).map((inst) => (
+          {/* Notification Bell */}
           <TouchableOpacity
-            key={inst.id}
-            style={styles.instrumentCard}
-            onPress={() => onSelectInstrument && onSelectInstrument(inst)}
+            style={[styles.bellBtn, { backgroundColor: cardBg }]}
+            onPress={() => onNavigateTab('inbox')}
+            accessibilityLabel="Notifications"
+            accessibilityRole="button"
           >
-            <View style={styles.cardTopRow}>
-              <Text style={styles.instNumber}>{inst.instrument_number}</Text>
-              <View
-                style={[
-                  styles.statusBadge,
-                  inst.status === 'ACTIVE'
-                    ? styles.statusActive
-                    : inst.status === 'EXPIRING'
-                    ? styles.statusExpiring
-                    : styles.statusMatured,
-                ]}
-              >
-                <Text style={styles.statusText}>{inst.status}</Text>
-              </View>
-            </View>
-
-            <Text style={styles.instOrg}>{inst.institution_name}</Text>
-            <View style={styles.cardBottomRow}>
-              <Text style={styles.instBank}>{inst.bank_name}</Text>
-              <Text style={styles.instAmount}>
-                ₹{(inst.amount / 100000).toFixed(0)} Lakhs
-              </Text>
-            </View>
+            <Icon name="notifications" size={18} color={tone.text1} />
+            <View style={styles.bellDot} />
           </TouchableOpacity>
-        ))}
+        </View>
       </View>
+
+      {/* 2. Hero Card with Peeking Mascot and Region Chip */}
+      <View style={[styles.heroCard, { backgroundColor: isDark ? tone.surface : '#dbe7fb' }]}>
+        <View style={styles.heroContent}>
+          <View style={styles.regionChip}>
+            <Text style={styles.regionChipText}>Region: South</Text>
+          </View>
+
+          <Text style={[styles.heroGreeting, { color: tone.text1 }]}>
+            Hello,{'\n'}{displayName}
+          </Text>
+        </View>
+
+        {/* Aura Ring SVG / Circle */}
+        <View style={styles.auraRing} pointerEvents="none" />
+
+        {/* Peeking Mascot */}
+        <View style={styles.koshWrapper} pointerEvents="none">
+          <Kosh pose="peek" size={110} />
+        </View>
+      </View>
+
+      {/* 3. Section: Needs Attention */}
+      <View style={styles.sectionWrap}>
+        <Text style={[styles.sectionLabel, { color: tone.text3 }]}>Needs attention</Text>
+        <View style={[styles.groupedCard, { backgroundColor: cardBg }]}>
+          {/* Row 1: Reply to an observation */}
+          <TouchableOpacity
+            style={[styles.listRow, { borderBottomColor: isDark ? tone.surfaceMuted : '#f1f5f9' }]}
+            onPress={() => onNavigateTab('cases')}
+          >
+            <View style={[styles.rowIconCircle, { backgroundColor: '#fef3c7' }]}>
+              <Icon name="checklist" size={18} color="#d97706" />
+            </View>
+            <View style={styles.rowMain}>
+              <Text style={[styles.rowTitle, { color: tone.text1 }]}>Reply to an observation</Text>
+              <Text style={[styles.rowSub, { color: '#d97706' }]}>Due 28 Oct 2026</Text>
+            </View>
+            <Text style={[styles.rowArrow, { color: tone.text3 }]}>›</Text>
+          </TouchableOpacity>
+
+          {/* Row 2: FDR maturing in 30 days */}
+          <TouchableOpacity
+            style={styles.listRow}
+            onPress={() => onNavigateTab('cases')}
+          >
+            <View style={[styles.rowIconCircle, { backgroundColor: '#fee2e2' }]}>
+              <Icon name="deadline" size={18} color="#dc2626" />
+            </View>
+            <View style={styles.rowMain}>
+              <Text style={[styles.rowTitle, { color: tone.text1 }]}>FDR maturing in 30 days</Text>
+              <Text style={[styles.rowSub, { color: tone.text3 }]}>Renewal not yet submitted</Text>
+            </View>
+            <Text style={[styles.rowArrow, { color: tone.text3 }]}>›</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* 4. Section: Main Actions */}
+      <View style={styles.sectionWrap}>
+        <Text style={[styles.sectionLabel, { color: tone.text3 }]}>Main</Text>
+        <View style={[styles.groupedCard, { backgroundColor: cardBg }]}>
+          {/* Row 1: Submit a new deposit */}
+          <TouchableOpacity
+            style={[styles.listRow, { borderBottomColor: isDark ? tone.surfaceMuted : '#f1f5f9' }]}
+            onPress={onOpenDocCapture || (() => onNavigateTab('cases'))}
+          >
+            <View style={[styles.rowIconCircle, { backgroundColor: tone.accentContainer }]}>
+              <Icon name="add" size={18} color={tone.accent} />
+            </View>
+            <View style={styles.rowMain}>
+              <Text style={[styles.rowTitle, { color: tone.text1 }]}>Submit a new deposit</Text>
+            </View>
+            <Text style={[styles.rowArrow, { color: tone.text3 }]}>›</Text>
+          </TouchableOpacity>
+
+          {/* Row 2: My documents */}
+          <TouchableOpacity
+            style={[styles.listRow, { borderBottomColor: isDark ? tone.surfaceMuted : '#f1f5f9' }]}
+            onPress={() => onNavigateTab('cases')}
+          >
+            <View style={[styles.rowIconCircle, { backgroundColor: tone.accentContainer }]}>
+              <Icon name="documents" size={18} color={tone.accent} />
+            </View>
+            <View style={styles.rowMain}>
+              <Text style={[styles.rowTitle, { color: tone.text1 }]}>My documents</Text>
+            </View>
+            <Text style={[styles.rowArrow, { color: tone.text3 }]}>›</Text>
+          </TouchableOpacity>
+
+          {/* Row 3: Maturity calendar */}
+          <TouchableOpacity
+            style={styles.listRow}
+            onPress={() => onNavigateTab('tasks')}
+          >
+            <View style={[styles.rowIconCircle, { backgroundColor: tone.accentContainer }]}>
+              <Icon name="calendar" size={18} color={tone.accent} />
+            </View>
+            <View style={styles.rowMain}>
+              <Text style={[styles.rowTitle, { color: tone.text1 }]}>Maturity calendar</Text>
+            </View>
+            <Text style={[styles.rowArrow, { color: tone.text3 }]}>›</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* 5. Live Registered Deposits (if available) */}
+      {instruments.length > 0 && (
+        <View style={styles.sectionWrap}>
+          <Text style={[styles.sectionLabel, { color: tone.text3 }]}>Active registers</Text>
+          <View style={[styles.groupedCard, { backgroundColor: cardBg }]}>
+            {instruments.slice(0, 3).map((inst, index) => (
+              <TouchableOpacity
+                key={inst.id}
+                style={[
+                  styles.listRow,
+                  index < Math.min(instruments.length, 3) - 1 && {
+                    borderBottomColor: isDark ? tone.surfaceMuted : '#f1f5f9',
+                  },
+                ]}
+                onPress={() => onSelectInstrument && onSelectInstrument(inst)}
+              >
+                <View style={[styles.rowIconCircle, { backgroundColor: tone.accentContainer }]}>
+                  <Icon name="instrument" size={18} color={tone.accent} />
+                </View>
+                <View style={styles.rowMain}>
+                  <Text style={[styles.rowTitle, { color: tone.text1 }]} numberOfLines={1}>
+                    {inst.institution_name}
+                  </Text>
+                  <Text style={[styles.rowSub, { color: tone.text3 }]}>
+                    {inst.instrument_number} • {formatPaiseINR(inst.amount)}
+                  </Text>
+                </View>
+                <Text style={[styles.rowArrow, { color: tone.text3 }]}>›</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 };
@@ -181,240 +221,178 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050505',
   },
   content: {
-    padding: 18,
-    gap: 18,
+    padding: 16,
+    gap: 14,
+    paddingBottom: 40,
   },
-  header: {
+  topbar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
+    justifyContent: 'space-between',
+    paddingVertical: 4,
   },
-  headerSuper: {
-    fontSize: 10,
-    color: '#00eeff',
-    fontWeight: '700',
-    letterSpacing: 1.5,
+  topbarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  headerTitle: {
+  wordmark: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#ffffff',
+    fontWeight: '800',
     letterSpacing: -0.5,
-    marginTop: 2,
   },
-  notifBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#151316',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 238, 255, 0.3)',
+  topbarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  progressMiniWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  progressTrack: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  rolePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  rolePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  bellBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
-  badgeDot: {
+  bellDot: {
     position: 'absolute',
-    top: 9,
-    right: 9,
+    top: 7,
+    right: 7,
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: '#ef4444',
   },
-  kpiCard: {
-    backgroundColor: '#151316',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 238, 255, 0.25)',
+  heroCard: {
+    borderRadius: 24,
     padding: 20,
+    minHeight: 160,
+    position: 'relative',
+    overflow: 'hidden',
+    justifyContent: 'space-between',
+    shadowColor: '#1e1b4b',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+  heroContent: {
+    zIndex: 2,
+    gap: 12,
+  },
+  regionChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  regionChipText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1a1a1e',
+  },
+  heroGreeting: {
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  auraRing: {
+    position: 'absolute',
+    right: -24,
+    top: -10,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    borderWidth: 2,
+    borderColor: '#b4c9f4',
+    zIndex: 1,
+  },
+  koshWrapper: {
+    position: 'absolute',
+    right: 4,
+    bottom: -18,
+    zIndex: 2,
+  },
+  sectionWrap: {
     gap: 6,
   },
-  kpiLabel: {
-    fontSize: 10,
-    color: '#94a3b8',
+  sectionLabel: {
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    paddingHorizontal: 4,
   },
-  kpiAmount: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#00eeff',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  groupedCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#1e1b4b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
-  kpiSubRow: {
+  listRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 6,
-  },
-  kpiSubText: {
-    fontSize: 11,
-    color: '#cbd5e1',
-  },
-  kpiPill: {
-    backgroundColor: 'rgba(61, 220, 151, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(61, 220, 151, 0.4)',
-  },
-  kpiPillText: {
-    color: '#3ddc97',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  quickActionItem: {
-    flex: 1,
-    backgroundColor: '#151316',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#334155',
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    alignItems: 'center',
-    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 12,
   },
-  quickActionIcon: {
+  rowIconCircle: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0, 238, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  quickActionLabel: {
-    color: '#e2e8f0',
-    fontSize: 10,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  section: {
-    gap: 10,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#cbd5e1',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  timelineCard: {
-    backgroundColor: '#151316',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    padding: 16,
-    gap: 16,
-  },
-  timelineRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  timelineNode: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#475569',
-    marginTop: 4,
-  },
-  nodeActive: {
-    backgroundColor: '#00eeff',
-  },
-  timelineContent: {
+  rowMain: {
     flex: 1,
-    gap: 2,
   },
-  timelineHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  rowTitle: {
+    fontSize: 14,
+    fontWeight: '700',
   },
-  timelineTitle: {
-    color: '#f8fafc',
+  rowSub: {
     fontSize: 12,
-    fontWeight: '700',
-  },
-  timelineDate: {
-    color: '#94a3b8',
-    fontSize: 10,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  timelineDesc: {
-    color: '#94a3b8',
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  instrumentCard: {
-    backgroundColor: '#151316',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    padding: 14,
-    gap: 6,
-  },
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  instNumber: {
-    color: '#00eeff',
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  statusBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  statusActive: {
-    backgroundColor: 'rgba(61, 220, 151, 0.2)',
-  },
-  statusExpiring: {
-    backgroundColor: 'rgba(251, 191, 36, 0.2)',
-  },
-  statusMatured: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-  },
-  statusText: {
-    color: '#f8fafc',
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  instOrg: {
-    color: '#ffffff',
-    fontSize: 13,
     fontWeight: '600',
-  },
-  cardBottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginTop: 2,
   },
-  instBank: {
-    color: '#94a3b8',
-    fontSize: 11,
-  },
-  instAmount: {
-    color: '#f1f5f9',
-    fontSize: 12,
-    fontWeight: '700',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  rowArrow: {
+    fontSize: 20,
+    fontWeight: '400',
+    lineHeight: 20,
   },
 });

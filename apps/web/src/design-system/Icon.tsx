@@ -1,131 +1,135 @@
 import React from 'react';
 import {
-  LayoutDashboard,
-  Landmark,
+  SquaresFour,
+  Bank,
   FileText,
   FolderOpen,
-  BadgeCheck,
+  SealCheck,
   ListChecks,
   Bell,
-  BellRing,
+  BellRinging,
   Clock,
   Calendar,
-  Inbox,
-  Search,
-  ListFilter,
-  FileUp,
-  ScanLine,
+  Tray,
+  MagnifyingGlass,
+  Funnel,
+  UploadSimple,
+  Scan,
   QrCode,
   Lock,
   Fingerprint,
-  Shield,
-  History,
-  Settings,
+  ShieldCheck,
+  ClockCounterClockwise,
+  Gear,
   User,
-  LogOut,
-  TriangleAlert,
-  OctagonX,
-  CircleCheck,
-  CircleX,
+  SignOut,
+  Warning,
+  XCircle,
+  CheckCircle,
   Hourglass,
-  RefreshCw,
-  CloudOff,
+  ArrowsClockwise,
+  CloudSlash,
   Link as LinkIcon,
-  FilePenLine,
-  CircleHelp,
-  Ban,
+  PencilSimpleLine,
+  Question,
+  Prohibit,
   Receipt,
   ChartBar,
-  Download,
-  Share,
+  DownloadSimple,
+  ShareNetwork,
   Plus,
-  Languages,
-  Smartphone,
+  Translate,
+  DeviceMobile,
   BookOpen,
-  ScrollText,
-  type LucideProps,
-} from 'lucide-react';
+  Scroll,
+  CaretRight,
+  Check,
+  type IconProps as PhosphorProps,
+} from '@phosphor-icons/react';
 
 /**
- * One open icon family for the web: Lucide ("regular"/outline weight),
- * chosen per MASTER_PROMPT §13.2's "spike picks one" instruction (the
- * repo already depended on lucide-react before this phase; Phosphor was
- * the alternative — Lucide wins here because it ships as individual
- * tree-shaken ES module icons with a stroke width that already sits close
- * to 1.5px, matching the "sit near SF Symbols' weight" rule, with no extra
- * install needed). SF Symbols and Material Symbols must NEVER be used on
- * web (DESIGN_SPEC.md §8 rule + licence restriction).
- *
- * Components reference a LOGICAL KEY (closed enum below), never a raw
- * lucide icon, so the whole app can never accidentally mix icon families
- * and so a future icon-set swap touches exactly this one file.
- * Keys mirror the table in design/DESIGN_SPEC.md §8 exactly.
+ * Authoritative web icon family: Phosphor Icons (MIT), with `duotone` weight
+ * for nav and list icons (azure), and `regular` elsewhere.
+ * Keys mirror the table in design/DESIGN_SPEC.md §7 / §8 exactly.
  */
 const ICONS = {
-  dashboard: LayoutDashboard,
-  institution: Landmark,
+  dashboard: SquaresFour,
+  institution: Bank,
   instrument: FileText,
   documents: FolderOpen,
-  verified: BadgeCheck,
+  verified: SealCheck,
   checklist: ListChecks,
   notifications: Bell,
-  notifications_active: BellRing,
+  notifications_active: BellRinging,
   deadline: Clock,
   calendar: Calendar,
-  inbox: Inbox,
-  search: Search,
-  filter: ListFilter,
-  upload: FileUp,
-  scan: ScanLine,
+  inbox: Tray,
+  search: MagnifyingGlass,
+  filter: Funnel,
+  upload: UploadSimple,
+  scan: Scan,
   qr: QrCode,
   lock: Lock,
   biometric: Fingerprint,
-  security: Shield,
-  history: History,
-  settings: Settings,
+  security: ShieldCheck,
+  history: ClockCounterClockwise,
+  settings: Gear,
   profile: User,
-  sign_out: LogOut,
-  warning: TriangleAlert,
-  error: OctagonX,
-  success: CircleCheck,
-  failed: CircleX,
+  sign_out: SignOut,
+  warning: Warning,
+  error: XCircle,
+  success: CheckCircle,
+  failed: XCircle,
   pending: Hourglass,
-  sync: RefreshCw,
-  offline: CloudOff,
+  sync: ArrowsClockwise,
+  offline: CloudSlash,
   link: LinkIcon,
-  declared: FilePenLine,
-  help: CircleHelp,
-  blocked: Ban,
+  declared: PencilSimpleLine,
+  help: Question,
+  blocked: Prohibit,
   receipt: Receipt,
   report: ChartBar,
-  download: Download,
-  share: Share,
+  download: DownloadSimple,
+  share: ShareNetwork,
   add: Plus,
-  language: Languages,
-  devices: Smartphone,
+  language: Translate,
+  devices: DeviceMobile,
   policy: BookOpen,
-  audit: ScrollText,
+  audit: Scroll,
+  chev: CaretRight,
+  check: Check,
 } as const;
 
 export type IconName = keyof typeof ICONS;
 
-export interface IconProps extends Omit<LucideProps, 'ref'> {
+export interface IconProps extends Omit<PhosphorProps, 'ref'> {
   name: IconName;
-  /** Accessible label. Omit (default) to mark the icon decorative (aria-hidden) when it always sits next to a text label — never the case for status, which must announce state via the label next to it, not the icon alone. */
+  /** Accessible label. Omit (default) to mark the icon decorative (aria-hidden). */
   label?: string;
+  weight?: 'duotone' | 'regular' | 'bold' | 'fill' | 'light' | 'thin';
 }
 
-export function Icon({ name, label, size = 20, strokeWidth = 1.5, ...rest }: IconProps) {
+export function Icon({
+  name,
+  label,
+  size = 22,
+  weight = 'duotone',
+  color,
+  className,
+  style,
+  ...rest
+}: IconProps) {
   const Cmp = ICONS[name];
   if (!Cmp) {
-    // Closed enum: a typo here is a compile error in TS call sites, but
-    // guard at runtime too for any dynamic `name` coming from data.
     return null;
   }
   return (
     <Cmp
       size={size}
-      strokeWidth={strokeWidth}
+      weight={weight}
+      color={color}
+      className={className}
+      style={style}
       aria-hidden={label ? undefined : true}
       aria-label={label}
       role={label ? 'img' : undefined}

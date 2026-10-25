@@ -34,8 +34,32 @@ class Settings(BaseSettings):
     clamav_port: int = 3310
     jwt_secret: str = "dev-insecure-jwt-secret-for-signing-session-tokens-32bytes"
     jwt_algorithm: str = "HS256"
-    jwt_expiration_seconds: int = 86400
+    # Short-lived access token (AUTH_ROLES_MATRIX.md §2.1: "access token (<=15 min) in
+    # memory, rotating refresh token ... bound to the device record"). Renamed from
+    # the old jwt_expiration_seconds (was 86400s/24h with no refresh token at all).
+    access_token_expiration_seconds: int = 900
     session_cookie_name: str = "fdr_session"
+    refresh_cookie_name: str = "fdr_refresh"
+    # AUTH_ROLES_MATRIX.md §2.2(9): "mobile refresh up to 30 days". Used as the
+    # absolute session expiry for all clients this session — role-differentiated
+    # idle/absolute timeouts (staff 15min/8h, institution 30min/12h, etc.) are not
+    # implemented yet, tracked in docs/phase-reports/R2.md.
+    refresh_token_expiration_days: int = 30
+    # Local dev clients only: web dev server (:3000) and the mobile Expo *web*
+    # preview target (:8082 — the only mobile target reachable in a sandbox with
+    # no device/emulator). A packaged iOS/Android app is not a browser and is
+    # never subject to CORS, so this list never needs to (and must not, for
+    # anything beyond local dev) include a production mobile origin.
+    cors_allowed_origins: list[str] = ["http://localhost:3000", "http://localhost:8082"]
+    # Fernet key (32 url-safe base64 bytes) encrypting TOTP secrets at rest. The dev default is
+    # a fixed, publicly-known key — fine for local/test, never for production. prod_guard should
+    # eventually reject this default the same way it rejects the other known-dev-only settings
+    # (tracked, not done this session).
+    totp_encryption_key: str = "4u8x9h2mKpQw7vN3zT6bR1sL5cE0dY_fJaGiVoWnXkM="
+    # AUTH_ROLES_MATRIX.md §2.2(8) defaults: lock after this many consecutive failures, for this
+    # many minutes. Config, not a hard constant — override per-deployment via env.
+    max_login_attempts: int = 10
+    lockout_minutes: int = 15
 
 
 settings = Settings()

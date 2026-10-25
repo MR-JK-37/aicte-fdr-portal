@@ -1062,4 +1062,3 @@ def apply_release_request_transition(
     return TransitionResult(
         str(release_request.id), current_status.value, to_status.value, str(st_id)
     )
-

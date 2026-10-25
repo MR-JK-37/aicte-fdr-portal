@@ -71,8 +71,17 @@ _STOPWORDS = {
 }
 
 
+_TYPO_MAP = {
+    "helo": "hello",
+    "hi": "hello",
+    "hey": "hello",
+    "deposite": "deposit",
+}
+
+
 def _tokenise(text: str) -> list[str]:
-    return [t for t in _TOKEN_PATTERN.findall(text.lower()) if t not in _STOPWORDS]
+    raw_tokens = _TOKEN_PATTERN.findall(text.lower())
+    return [_TYPO_MAP.get(t, t) for t in raw_tokens if t not in _STOPWORDS]
 
 
 def embed(text: str) -> list[float]:

@@ -11,7 +11,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -295,6 +295,29 @@ class AppUser(Base):
     step_up_valid_until: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Real credentials (R2). password_hash is argon2id; null means this account has no
+    # password set yet and cannot log in — never treated as "any password accepted".
+    # totp_secret_encrypted is a Fernet ciphertext, decrypted only at verification time
+    # (app/auth/security.py); it is set once enrolment is confirmed with a real code,
+    # not at the start of enrolment, so an abandoned enrolment never leaves a usable secret.
+    password_hash: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    totp_secret_encrypted: Mapped[str | None] = mapped_column(
+        String(256), nullable=True
+    )
+    failed_login_count: Mapped[int] = mapped_column(default=0)
+    locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    recovery_codes_hashed: Mapped[list[str] | None] = mapped_column(
+        ARRAY(String(128)), nullable=True
+    )
+    # Profile-completion fields (R2, GET /me/profile-completion). mobile_verified
+    # stays False forever until a real SMS/OTP provider exists — never set True by
+    # anything else in this codebase (see migration e5f6a7b8c9d0 for why that's
+    # correct, not a bug).
+    designation: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    mobile_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    mobile_verified: Mapped[bool] = mapped_column(default=False)
     delegation_limit: Mapped[float | None] = mapped_column(
         Numeric(14, 2), nullable=True
     )
@@ -306,6 +329,29 @@ class AppUser(Base):
     )  # 24h local hour, inclusive
     quiet_hours_end: Mapped[int] = mapped_column(default=8)  # 24h local hour, exclusive
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class AppSession(Base):
+    """One row per login (R2: session management). `refresh_token_hash` is the
+    current valid refresh token's SHA-256; `previous_token_hash` is kept after a
+    rotation specifically to detect reuse of an already-rotated-out token (a
+    presented token matching `previous_token_hash` but not `refresh_token_hash`
+    means the refresh token was stolen/replayed — see app/auth/router.py refresh())."""
+
+    __tablename__ = "app_sessions"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    app_user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_users.id"))
+    refresh_token_hash: Mapped[str] = mapped_column(String(64))
+    previous_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    device_label: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    ip_area: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    last_seen_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class DeviceToken(Base):

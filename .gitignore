@@ -16,4 +16,5 @@ infra/docker/garage.toml
 garage_data/
 garage_meta/
 backups/
+.local/
 

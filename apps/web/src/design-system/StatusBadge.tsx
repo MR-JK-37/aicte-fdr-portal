@@ -15,14 +15,15 @@ const TONE_ICON: Record<StatusTone, IconName> = {
 export interface StatusBadgeProps {
   tone: StatusTone;
   label: string;
+  className?: string;
 }
 
-/** Status is never colour alone (DESIGN_SPEC §2/§13.1): icon + text label always. */
-export function StatusBadge({ tone, label }: StatusBadgeProps) {
+/** Status is never colour alone (DESIGN_SPEC §2): icon + text label always. */
+export function StatusBadge({ tone, label, className = '' }: StatusBadgeProps) {
   return (
-    <span className={`ds-status-badge ds-status-badge--${tone}`}>
-      <Icon name={TONE_ICON[tone]} size={14} />
-      {label}
+    <span className={`pill pill-${tone} ${className}`} data-testid="status-badge">
+      <Icon name={TONE_ICON[tone]} size={13} />
+      <span>{label}</span>
     </span>
   );
 }

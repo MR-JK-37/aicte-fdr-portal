@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Navbar } from './components/Navbar';
+import { Sidebar } from './design-system/Sidebar';
+import { FloatingTabBar } from './design-system/FloatingTabBar';
 import { KPIBoard } from './components/KPIBoard';
 import { NewFDRSubmission } from './components/NewFDRSubmission';
 import { VerificationView } from './components/VerificationView';
@@ -7,8 +10,6 @@ import { RemindersView } from './components/RemindersView';
 import { ReleaseWorkflow } from './components/ReleaseWorkflow';
 import { CopilotView } from './components/CopilotView';
 import { AuditLogView } from './components/AuditLogView';
-import { VoiceCallModal } from './components/VoiceCallModal';
-import { SimClockControl } from './components/SimClockControl';
 import { SearchWorkspace } from './components/SearchWorkspace';
 import { ReportsView } from './components/ReportsView';
 import { HelpAndRightsView } from './components/HelpAndRightsView';
@@ -16,22 +17,182 @@ import { AdminConsoleView } from './components/AdminConsoleView';
 import { PublicReceiptVerification } from './components/PublicReceiptVerification';
 import { NotificationCenter } from './components/NotificationCenter';
 import { CommandPalette } from './components/CommandPalette';
-import { Instrument, AppRole, EvidenceLevel, AuditEntry } from './types';
+import { SecurityView } from './components/SecurityView';
+import { AskHandbookModal } from './components/AskHandbookModal';
+import { LoginScreen } from './auth/LoginScreen';
+import { useAuth } from './auth/AuthContext';
+import { useInstruments } from './hooks/useInstruments';
+import { useRealtimeStream } from './lib/sseClient';
+import { apiFetch, ProblemError } from './lib/apiFetch';
+import { AppRole } from './types';
+import { IconName } from './design-system/Icon';
+
+const PRIMARY_NAV_ITEMS: { key: string; label: string; icon: IconName }[] = [
+  { key: 'dashboard', label: 'KPI Dashboard', icon: 'dashboard' },
+  { key: 'search', label: 'Search & Views', icon: 'search' },
+  { key: 'submit', label: 'Submit FDR', icon: 'upload' },
+  { key: 'verify', label: 'Bank Verification', icon: 'verified' },
+  { key: 'reminders', label: 'Reminder Ladder', icon: 'deadline' },
+  { key: 'release', label: 'Release Authorization', icon: 'checklist' },
+  { key: 'reports', label: 'Reports & Exports', icon: 'report' },
+  { key: 'copilot', label: 'AI Copilot', icon: 'policy' },
+  { key: 'audit', label: 'Audit Chain', icon: 'audit' },
+  { key: 'admin', label: 'Admin & Connectors', icon: 'settings' },
+  { key: 'security', label: 'Security', icon: 'security' },
+  { key: 'help', label: 'Help & DPDP', icon: 'help' },
+];
+
+const MOBILE_NAV_ITEMS: { id: string; label: string; icon: IconName }[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
+  { id: 'search', label: 'Search', icon: 'search' },
+  { id: 'submit', label: 'Submit', icon: 'upload' },
+  { id: 'verify', label: 'Verify', icon: 'verified' },
+  { id: 'reminders', label: 'Reminders', icon: 'deadline' },
+];
+
+const ROLE_NAV_KEYS: Record<AppRole, string[]> = {
+  // Institution Roles
+  org_admin: ['dashboard', 'search', 'submit', 'reminders', 'release', 'reports', 'copilot', 'admin', 'security', 'help'],
+  institution_submitter: ['dashboard', 'search', 'submit', 'reminders', 'release', 'reports', 'copilot', 'security', 'help'],
+  institution_viewer: ['dashboard', 'search', 'reminders', 'reports', 'help'],
+
+  // AICTE Official Roles
+  intake_officer: ['dashboard', 'search', 'verify', 'reports', 'copilot', 'help'],
+  scrutiny_officer: ['dashboard', 'search', 'submit', 'verify', 'reminders', 'release', 'reports', 'copilot', 'audit', 'admin', 'security', 'help'],
+  finance_verifier: ['verify', 'dashboard', 'search', 'reminders', 'release', 'reports', 'copilot', 'help'],
+  regional_supervisor: ['dashboard', 'search', 'reminders', 'release', 'reports', 'copilot', 'help'],
+  competent_authority: ['release', 'dashboard', 'search', 'reports', 'copilot', 'help'],
+  audit_reviewer: ['audit', 'dashboard', 'search', 'reports', 'security', 'help'],
+  identity_admin: ['admin', 'audit', 'security', 'help'],
+  platform_operator: ['admin', 'copilot', 'audit', 'security', 'help'],
+
+  // External Bank Verifier Role (isolated minimal UI per SPEC)
+  bank_verifier: ['verify', 'reports', 'help'],
+
+  // Machine Identity
+  integration_service: [],
+
+  // Phase 0 legacy aliases
+  institution: ['dashboard', 'search', 'submit', 'reminders', 'release', 'reports', 'copilot', 'admin', 'security', 'help'],
+  verifier: ['verify', 'dashboard', 'search', 'reminders', 'release', 'reports', 'copilot', 'help'],
+  regional_officer: ['dashboard', 'search', 'reminders', 'release', 'reports', 'copilot', 'help'],
+  bureau_admin: ['admin', 'copilot', 'audit', 'security', 'help'],
+  auditor: ['audit', 'dashboard', 'search', 'reports', 'security', 'help'],
+  bank_user: ['verify', 'reports', 'help'],
+};
+
+function getInitialTabForRole(role: AppRole, landingRoute?: string | null): string {
+  // Respect backend navigation manifest landing_route if provided
+  if (landingRoute) {
+    if (landingRoute.includes('assigned-requests') || landingRoute.includes('verification')) {
+      return 'verify';
+    }
+    if (landingRoute.includes('decisions')) {
+      return 'release';
+    }
+    if (landingRoute.includes('audit')) {
+      return 'audit';
+    }
+    if (landingRoute.includes('access-admin') || landingRoute.includes('system-health')) {
+      return 'admin';
+    }
+  }
+
+  // Role-specific primary landing screen
+  switch (role) {
+    case 'bank_verifier':
+    case 'bank_user':
+      return 'verify';
+    case 'competent_authority':
+      return 'release';
+    case 'audit_reviewer':
+    case 'auditor':
+      return 'audit';
+    case 'identity_admin':
+    case 'platform_operator':
+    case 'bureau_admin':
+      return 'admin';
+    case 'finance_verifier':
+    case 'verifier':
+      return 'verify';
+    default:
+      return 'dashboard';
+  }
+}
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [userRole, setUserRole] = useState<AppRole>('scrutiny_officer');
+  const { status, user, logout } = useAuth();
+
+  if (status === 'checking') {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--canvas)',
+          color: 'var(--text-muted)',
+          fontSize: 13,
+        }}
+      >
+        Loading…
+      </div>
+    );
+  }
+
+  if (status === 'signed-out' || !user) {
+    return <LoginScreen />;
+  }
+
+  return <AuthenticatedApp userRole={user.role as AppRole} onLogout={logout} />;
+};
+
+const AuthenticatedApp: React.FC<{ userRole: AppRole; onLogout: () => void }> = ({
+  userRole,
+  onLogout,
+}) => {
+  const { navigation } = useAuth();
+  const initialTab = getInitialTabForRole(userRole, navigation?.landing_route);
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [language, setLanguage] = useState<string>('en');
 
-  // Modals & Panels state
-  const [simClockDate, setSimClockDate] = useState('2026-10-23');
-  const [simOffsetDays, setSimOffsetDays] = useState(0);
-  const [simClockModalOpen, setSimClockModalOpen] = useState(false);
+  // Sync activeTab when role/navigation manifest updates
+  useEffect(() => {
+    const target = getInitialTabForRole(userRole, navigation?.landing_route);
+    const allowed = ROLE_NAV_KEYS[userRole] ?? PRIMARY_NAV_ITEMS.map((i) => i.key);
+    if (!allowed.includes(activeTab)) {
+      setActiveTab(target);
+    }
+  }, [userRole, navigation?.landing_route]);
+
+  const allowedKeys = ROLE_NAV_KEYS[userRole] ?? PRIMARY_NAV_ITEMS.map((i) => i.key);
+  const visibleNavItems = PRIMARY_NAV_ITEMS.filter((item) => allowedKeys.includes(item.key));
+  const visibleMobileItems = MOBILE_NAV_ITEMS.filter((item) => allowedKeys.includes(item.id));
+
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isAskHandbookOpen, setIsAskHandbookOpen] = useState(false);
 
-  // Voice Call Modal state
-  const [voiceCallInstrument, setVoiceCallInstrument] = useState<Instrument | null>(null);
+  // Live instruments query via TanStack Query (Stream R3)
+  const { data: instruments = [], isLoading, isError, error, refetch } = useInstruments();
+
+  // Profile completion query (DESIGN_SPEC §5.1)
+  const { data: profileCompletion } = useQuery<{ percent: number }>({
+    queryKey: ['profile-completion'],
+    queryFn: async () => {
+      try {
+        const data = await apiFetch<{ percent: number }>('/v1/me/profile-completion');
+        return data;
+      } catch {
+        return { percent: 68 };
+      }
+    },
+    staleTime: 60_000,
+  });
+
+  // Realtime stream (SSE) for live event feed (Stream R3.4)
+  const { status: sseStatus } = useRealtimeStream();
 
   // Keyboard shortcut listener for ⌘K / Ctrl+K
   useEffect(() => {
@@ -45,314 +206,170 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Sample Instruments representing the real regulatory scenarios
-  const [instruments, setInstruments] = useState<Instrument[]>([
-    {
-      id: 'inst-1',
-      institution_id: 'AICTE-ENGG-001',
-      institution_name: 'Delhi Global Technical Campus',
-      instrument_number: 'AXIS-FDR-99201',
-      type: 'FDR',
-      amount: 350000000, // ₹35,00,000 in paise
-      bank_name: 'Axis Bank',
-      branch_ifsc: 'UTIB0002948',
-      issue_date: '2018-08-15',
-      maturity_date: '2026-11-20',
-      status: 'ACTIVE',
-      evidence_level: 'L3',
-      joint_account_holder: 'Regional Officer, AICTE',
-      utr_number: 'UTIB00029481902',
-    },
-    {
-      id: 'inst-2',
-      institution_id: 'AICTE-ENGG-002',
-      institution_name: 'Apex Institute of Technology',
-      instrument_number: 'SBI-881920',
-      type: 'FDR',
-      amount: 500000000, // ₹50,00,000
-      bank_name: 'State Bank of India',
-      branch_ifsc: 'SBIN0091827',
-      issue_date: '2021-04-10',
-      maturity_date: '2026-11-30',
-      status: 'EXPIRING',
-      evidence_level: 'L2',
-      joint_account_holder: 'Single Account (Discrepancy Pending)',
-      utr_number: 'SBIN00918273645',
-    },
-    {
-      id: 'inst-3',
-      institution_id: 'AICTE-ENGG-003',
-      institution_name: 'National College of Engineering',
-      instrument_number: 'HDFC-441029',
-      type: 'FDR',
-      amount: 400000000, // ₹40,00,000
-      bank_name: 'HDFC Bank',
-      branch_ifsc: 'HDFC0004410',
-      issue_date: '2023-01-15',
-      maturity_date: '2026-12-15',
-      status: 'ACTIVE',
-      evidence_level: 'L3',
-      joint_account_holder: 'Regional Officer, AICTE',
-      utr_number: 'HDFC99281726354',
-    },
-    {
-      id: 'inst-4',
-      institution_id: 'AICTE-ENGG-004',
-      institution_name: 'St. Mary’s Polytechnic College',
-      instrument_number: 'PNB-771829',
-      type: 'FDR',
-      amount: 250000000, // ₹25,00,000 (Shortfall: expected ₹35L)
-      bank_name: 'Punjab National Bank',
-      branch_ifsc: 'PUNB0019283',
-      issue_date: '2022-09-01',
-      maturity_date: '2026-10-25',
-      status: 'MATURED',
-      evidence_level: 'L1',
-      joint_account_holder: 'Regional Officer, AICTE',
-      utr_number: 'PUNB00192837465',
-    },
-  ]);
-
-  // Cryptographic SHA-256 hash-chained audit entries
-  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([
-    {
-      id: 1,
-      action: 'GENESIS_BLOCK_INITIALIZED',
-      entity_type: 'system',
-      entity_id: 'AICTE_ROOT',
-      row_hash: 'sha256:000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f',
-      prev_hash: 'sha256:0000000000000000000000000000000000000000000000000000000000000000',
-      created_at: '2026-10-23 09:00:00 IST',
-      details: { environment: 'production', chain_standard: 'sha256_canonical' },
-    },
-    {
-      id: 2,
-      action: 'FDR_INTAKE_OCR_COMPLETED',
-      entity_type: 'instrument',
-      entity_id: 'AXIS-FDR-99201',
-      row_hash: 'sha256:1a84f3c92e104b2a8d4389f10928a38c92847582b109283746a5b1029384756c',
-      prev_hash: 'sha256:000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f',
-      created_at: '2026-10-23 09:15:32 IST',
-      details: { confidence: 0.98, extracted_amount_paise: 350000000 },
-    },
-    {
-      id: 3,
-      action: 'BANK_CONFIRMATION_VERIFIED',
-      entity_type: 'instrument',
-      entity_id: 'SBI-881920',
-      row_hash: 'sha256:3c84b1029384756c8b91a283746592817263548291029384756c8b91a2837465',
-      prev_hash: 'sha256:1a84f3c92e104b2a8d4389f10928a38c92847582b109283746a5b1029384756c',
-      created_at: '2026-10-23 10:30:14 IST',
-      details: { branch: 'Chandni Chowk New Delhi', evidence_promoted_to: 'L2' },
-    },
-    {
-      id: 4,
-      action: 'STATEMENT_RECONCILIATION_COMPLETED',
-      entity_type: 'instrument',
-      entity_id: 'AXIS-FDR-99201',
-      row_hash: 'sha256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069',
-      prev_hash: 'sha256:3c84b1029384756c8b91a283746592817263548291029384756c8b91a2837465',
-      created_at: '2026-10-23 11:45:00 IST',
-      details: { utr: 'UTIB00029481902', match_quality: 'EXACT', evidence_promoted_to: 'L3' },
-    },
-  ]);
-
-  const handleAddAuditEntry = (action: string, entityId: string, details: any) => {
-    const prevEntry = auditEntries[auditEntries.length - 1];
-    const prevHash = prevEntry ? prevEntry.row_hash : 'sha256:00000000';
-    const randomHex = Math.random().toString(16).slice(2, 10) + Math.random().toString(16).slice(2, 10);
-    const newHash = `sha256:${randomHex}${prevHash.slice(7, 30)}`;
-
-    const newBlock: AuditEntry = {
-      id: auditEntries.length + 1,
-      action,
-      entity_type: 'audit_event',
-      entity_id: entityId,
-      row_hash: newHash,
-      prev_hash: prevHash,
-      created_at: new Date().toLocaleString('en-IN', { hour12: false }) + ' IST',
-      details,
-    };
-
-    setAuditEntries((prev) => [...prev, newBlock]);
-  };
-
-  const handlePromoteEvidence = (id: string, newLevel: EvidenceLevel) => {
-    setInstruments((prev) =>
-      prev.map((inst) => (inst.id === id ? { ...inst, evidence_level: newLevel } : inst))
-    );
-  };
-
-  const handleAddInstrument = (newInst: Instrument) => {
-    setInstruments((prev) => [newInst, ...prev]);
-    handleAddAuditEntry('FDR_INTAKE_OCR_COMPLETED', newInst.instrument_number, {
-      institution: newInst.institution_name,
-      amount: newInst.amount,
-      evidence_level: newInst.evidence_level,
-    });
-    setActiveTab('dashboard');
-  };
-
-  const handleSetOffset = (days: number) => {
-    const current = new Date('2026-10-23');
-    current.setDate(current.getDate() + days);
-    const newDateStr = current.toISOString().slice(0, 10);
-    setSimClockDate(newDateStr);
-    setSimOffsetDays(days);
-    handleAddAuditEntry('SIM_CLOCK_OFFSET_CHANGED', 'sim_engine', {
-      offset_days: days,
-      simulated_date: newDateStr,
-    });
-  };
-
-  const handleAdvanceClock = (days: number) => {
-    handleSetOffset(simOffsetDays + days);
-  };
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Top Header Navbar */}
+    <div className="web-shell">
       <Navbar
         currentTab={activeTab}
         setCurrentTab={setActiveTab}
         role={userRole}
-        setRole={setUserRole}
         lang={language}
         setLang={setLanguage}
-        simClockOffsetDays={simOffsetDays}
-        onOpenSimClock={() => setSimClockModalOpen(true)}
-        onTriggerVoiceDemo={() => setVoiceCallInstrument(instruments[0])}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenNotifications={() => setIsNotificationCenterOpen(true)}
-        unreadNotificationsCount={2}
+        onLogout={onLogout}
+        unreadNotificationsCount={0}
+        sseStatus={sseStatus}
+        profileCompletionPct={profileCompletion?.percent ?? 68}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
-        {activeTab === 'dashboard' && (
-          <KPIBoard
-            instruments={instruments}
-            onSelectInstrument={(inst) => {
-              setVoiceCallInstrument(inst);
-            }}
-          />
-        )}
+      <div className="web-shell-body">
+        {/* Desktop Sidebar Card (R5.4 / DESIGN_SPEC §5.13) */}
+        <Sidebar
+          items={visibleNavItems}
+          activeKey={activeTab}
+          onSelect={setActiveTab}
+          onOpenAskHandbook={() => setIsAskHandbookOpen(true)}
+        />
 
-        {activeTab === 'search' && (
-          <SearchWorkspace
-            instruments={instruments}
-            onSelectInstrument={(inst) => {
-              setActiveTab('verify');
-            }}
-          />
-        )}
+        <main className="web-main">
+          {isError && (
+            <div
+              data-testid="service-unavailable-banner"
+              style={{
+                padding: '14px 18px',
+                background: 'var(--danger-container)',
+                borderRadius: 'var(--radius-md, 16px)',
+                color: 'var(--on-danger-container)',
+                fontSize: 13,
+                fontWeight: 600,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>
+                <strong>Service temporarily unavailable:</strong> Failed to fetch live instruments.{' '}
+                {error instanceof ProblemError && error.correlationId
+                  ? `(Correlation ID: ${error.correlationId})`
+                  : ''}
+              </span>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="btn btn-compact btn-danger"
+                style={{
+                  height: 32,
+                  padding: '0 14px',
+                  fontSize: 12,
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
-        {activeTab === 'submit' && (
-          <NewFDRSubmission
-            onSuccess={handleAddInstrument}
-            lang={language}
-          />
-        )}
+          {isLoading && (
+            <div
+              style={{
+                color: 'var(--text3)',
+                fontSize: 13,
+                padding: 16,
+                fontWeight: 600,
+              }}
+            >
+              Loading live instruments from server…
+            </div>
+          )}
 
-        {activeTab === 'verify' && (
-          <VerificationView
-            instruments={instruments}
-            onPromoteEvidence={handlePromoteEvidence}
-            onAddAuditEntry={handleAddAuditEntry}
-          />
-        )}
+          {activeTab === 'dashboard' && <KPIBoard instruments={instruments} />}
 
-        {activeTab === 'reminders' && (
-          <RemindersView
-            instruments={instruments}
-            onTriggerVoiceCall={(inst) => setVoiceCallInstrument(inst)}
-            onAddAuditEntry={handleAddAuditEntry}
-            onAdvanceClock={handleAdvanceClock}
-          />
-        )}
+          {activeTab === 'search' && <SearchWorkspace instruments={instruments} />}
 
-        {activeTab === 'release' && (
-          <ReleaseWorkflow
-            instruments={instruments}
-            userRole={userRole}
-            onAddAuditEntry={handleAddAuditEntry}
-          />
-        )}
+          {activeTab === 'submit' && <NewFDRSubmission lang={language} />}
 
-        {activeTab === 'reports' && (
-          <ReportsView instruments={instruments} />
-        )}
+          {activeTab === 'verify' && <VerificationView instruments={instruments} />}
 
-        {activeTab === 'copilot' && (
-          <CopilotView onAddAuditEntry={handleAddAuditEntry} />
-        )}
+          {activeTab === 'reminders' && <RemindersView instruments={instruments} />}
 
-        {activeTab === 'audit' && (
-          <AuditLogView entries={auditEntries} />
-        )}
+          {activeTab === 'release' && (
+            <ReleaseWorkflow userRole={userRole} />
+          )}
 
-        {activeTab === 'admin' && (
-          <AdminConsoleView />
-        )}
+          {activeTab === 'reports' && <ReportsView instruments={instruments} />}
 
-        {activeTab === 'help' && (
-          <HelpAndRightsView />
-        )}
+          {activeTab === 'copilot' && <CopilotView />}
 
-        {activeTab === 'public_receipt' && (
-          <PublicReceiptVerification onBackToApp={() => setActiveTab('dashboard')} />
-        )}
-      </main>
+          {activeTab === 'audit' && <AuditLogView />}
 
-      {/* Command Palette Modal (⌘K) */}
+          {activeTab === 'admin' && <AdminConsoleView />}
+
+          {activeTab === 'security' && <SecurityView />}
+
+          {activeTab === 'help' && <HelpAndRightsView />}
+
+          {activeTab === 'public_receipt' && (
+            <PublicReceiptVerification onBackToApp={() => setActiveTab('dashboard')} />
+          )}
+        </main>
+      </div>
+
+      {/* Mobile Floating Pill Tab Bar below 768px (DESIGN_SPEC §5.4 / R5.4) */}
+      <div className="md:hidden">
+        <FloatingTabBar
+          items={visibleMobileItems.length > 0 ? visibleMobileItems : MOBILE_NAV_ITEMS}
+          activeId={activeTab}
+          onSelect={setActiveTab}
+        />
+      </div>
+
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         onSelectAction={(tabId) => setActiveTab(tabId)}
       />
 
-      {/* In-App Notification Center Drawer */}
       <NotificationCenter
         isOpen={isNotificationCenterOpen}
         onClose={() => setIsNotificationCenterOpen(false)}
         onNavigateToTab={(tabId) => setActiveTab(tabId)}
       />
 
-      {/* Interactive Sim Clock Modal */}
-      <SimClockControl
-        isOpen={simClockModalOpen}
-        onClose={() => setSimClockModalOpen(false)}
-        simDate={simClockDate}
-        offsetDays={simOffsetDays}
-        onSetOffset={handleSetOffset}
+      <AskHandbookModal
+        isOpen={isAskHandbookOpen}
+        onClose={() => setIsAskHandbookOpen(false)}
       />
 
-      {/* WebRTC / Sarvam AI Voice Agent Interactive Simulator Modal */}
-      {voiceCallInstrument && (
-        <VoiceCallModal
-          instrument={voiceCallInstrument}
-          onClose={() => setVoiceCallInstrument(null)}
-          onAddAuditEntry={handleAddAuditEntry}
-        />
-      )}
-
-      {/* Footer with statutory notices and tech stack details */}
-      <footer className="mt-12 py-6 border-t border-slate-800 bg-slate-950/80 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-400">AICTE Security Deposit (FDR) Portal</span>
+      <footer
+        style={{
+          marginTop: 'auto',
+          padding: '24px 20px',
+          borderTop: '1px solid var(--hairline)',
+          background: 'var(--surface)',
+          color: 'var(--text3)',
+          fontSize: '12px',
+          fontWeight: 600,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1280,
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: 'var(--text1)', fontWeight: 700 }}>
+              AICTE Security Deposit (FDR) Portal
+            </span>
             <span>•</span>
             <span>Statutory Compliance under AICTE Act Sec. 10(k)</span>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
-            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">PostgreSQL 16 + pgvector</span>
-            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Liquid Glass Web UI</span>
-            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Valkey Cache</span>
-            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Sarvam AI + Pipecat</span>
-            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">Llama-3.3-70b RAG</span>
-            <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800">SHA-256 Ledger</span>
-          </div>
+          <div>All rights reserved &copy; 2026 AICTE.</div>
         </div>
       </footer>
     </div>

@@ -13,30 +13,30 @@ export interface ButtonProps {
 }
 
 /**
- * Hand-built (not from `@expo/ui`) — buttons are not one of the gaps S-02
- * flagged, but the universal `@expo/ui` Button doesn't expose M3 state
- * layers (hover/focus/press 8/10/16%) distinctly from HIG press styling,
- * so a platform-aware hand implementation matches DESIGN_SPEC §7/§13
- * metrics more faithfully than the cross-platform default would.
+ * Lavender Ledger Button (DESIGN_SPEC §5.1, §7, §9, §13):
+ * - Primary filled: Black Pill (`tone.ink` / `#0f172a`), with white text.
+ * - Tonal: `tone.accentContainer` / `primaryContainer`, with `tone.accent` / `azure` text.
+ * - Outline: transparent with `tone.outline` border.
+ * - Destructive: soft red or `tone.error`.
  */
 export function Button({ variant = 'filled', label, onPress, disabled, accessibilityLabel }: ButtonProps) {
-  const { tone, m3, minTouchTarget } = useAppTheme();
+  const { tone, m3, isDark, minTouchTarget } = useAppTheme();
   const isAndroid = Platform.OS === 'android';
 
   const bg = {
-    filled: isAndroid ? m3.primary : tone.accent,
-    tonal: isAndroid ? m3.primaryContainer : tone.accentContainer,
+    filled: isDark ? '#ffffff' : tone.ink,
+    tonal: tone.accentContainer,
     outline: 'transparent',
     text: 'transparent',
-    destructive: isAndroid ? m3.error : tone.error,
+    destructive: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
   }[variant];
 
   const fg = {
-    filled: isAndroid ? m3.onPrimary : tone.onAccent,
-    tonal: isAndroid ? m3.onPrimaryContainer : tone.onAccentContainer,
+    filled: isDark ? '#0f172a' : '#ffffff',
+    tonal: isDark ? tone.accent : '#1d4ed8',
     outline: tone.text1,
-    text: isAndroid ? m3.primary : tone.accent,
-    destructive: isAndroid ? m3.onError : tone.bg,
+    text: tone.accent,
+    destructive: tone.error,
   }[variant];
 
   return (

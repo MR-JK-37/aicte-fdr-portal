@@ -1,29 +1,18 @@
+/* Self-hosted fonts (Inter + Plus Jakarta Sans) */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/plus-jakarta-sans/800.css';
+
+/* Design tokens & primitives */
+@import '@aicte-fdr/design-tokens/css/tokens.css';
+@import './design-system/primitives.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  --bg-void: #050505;
-  --purple-deep: #3b0a6b;
-  --purple-glow: #701a75;
-  --cyan-neon: #00eeff;
-  --cyan-glow: #38bdf8;
-  
-  --font-serif: 'Playfair Display', 'Cormorant Garamond', 'Cinzel', Georgia, serif;
-  --font-display: 'Outfit', sans-serif;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-
-  --surface-glass: rgba(11, 6, 20, 0.75);
-  --surface-glass-bright: rgba(25, 14, 43, 0.85);
-  --border-glass: rgba(0, 238, 255, 0.18);
-  --border-purple: rgba(112, 26, 117, 0.4);
-  --border-glow-cyan: rgba(0, 238, 255, 0.5);
-  
-  --text-primary: #f8fafc;
-  --text-secondary: #c4b5fd;
-  --text-muted: #8b7ca8;
-}
 
 * {
   box-sizing: border-box;
@@ -31,218 +20,61 @@
   padding: 0;
 }
 
-body {
-  font-family: var(--font-sans);
-  background-color: var(--bg-void);
-  color: var(--text-primary);
-  min-height: 100vh;
-  overflow-x: hidden;
-  line-height: 1.5;
-  background-image: 
-    radial-gradient(ellipse 65% 50% at 50% -10%, rgba(59, 10, 107, 0.55), transparent 70%),
-    radial-gradient(ellipse 40% 40% at 85% 20%, rgba(0, 238, 255, 0.15), transparent 60%),
-    radial-gradient(ellipse 45% 45% at 15% 75%, rgba(59, 10, 107, 0.4), transparent 65%),
-    radial-gradient(ellipse 30% 30% at 85% 85%, rgba(0, 238, 255, 0.12), transparent 50%),
-    repeating-linear-gradient(rgba(0, 238, 255, 0.015) 0 1px, transparent 1px 60px),
-    repeating-linear-gradient(90deg, rgba(59, 10, 107, 0.02) 0 1px, transparent 1px 60px);
-  background-attachment: fixed;
+html {
+  background: var(--canvas);
+  color: var(--text1);
+  font-family: var(--font-body);
+  -webkit-text-size-adjust: 100%;
 }
 
-/* Luxury Editorial Typography */
-.font-editorial {
-  font-family: var(--font-serif);
+body {
+  font-family: var(--font-body);
+  background-color: var(--canvas);
+  color: var(--text1);
+  min-height: 100vh;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
   letter-spacing: -0.02em;
 }
 
-.text-gradient-luxury {
-  background: linear-gradient(135deg, #ffffff 0%, #ede4f9 40%, #00eeff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.num, .money, time {
+  font-variant-numeric: tabular-nums;
 }
 
-.text-gradient-purple-cyan {
-  background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #00eeff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+code, .mono, .identifier {
+  font-family: var(--font-mono);
 }
 
-.subtitle-spaced {
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--cyan-neon);
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 
-/* Glass Panels & Luxury Cards */
-.glass-panel, .glass-card {
-  background: rgba(11, 6, 20, 0.72) !important;
-  backdrop-filter: blur(24px) saturate(190%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
-  border: 1px solid rgba(0, 238, 255, 0.16) !important;
-  border-radius: 18px !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(59, 10, 107, 0.35), inset 0 0 16px rgba(0, 238, 255, 0.03) !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+/* Animations */
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-.glass-panel:hover, .glass-card:hover {
-  border-color: rgba(0, 238, 255, 0.35) !important;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 238, 255, 0.2), inset 0 0 20px rgba(59, 10, 107, 0.2) !important;
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-/* Glowing Neon Elements */
-.border-glow-cyan {
-  border: 1px solid rgba(0, 238, 255, 0.4);
-  box-shadow: 0 0 20px rgba(0, 238, 255, 0.25);
+/* Responsive container */
+.app-container {
+  max-width: var(--content-max, 1200px);
+  margin: 0 auto;
+  padding: 16px;
+  width: 100%;
 }
 
-.border-glow-purple {
-  border: 1px solid rgba(112, 26, 117, 0.6);
-  box-shadow: 0 0 25px rgba(59, 10, 107, 0.5);
-}
-
-/* Luxury Buttons */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 22px;
-  background: linear-gradient(135deg, #3b0a6b 0%, #1e1b4b 60%, #0891b2 100%);
-  color: #ffffff;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 13px;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 238, 255, 0.4);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 18px rgba(0, 238, 255, 0.25);
-  cursor: pointer;
-  transition: all 0.25s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, #581c87 0%, #3b0a6b 50%, #00eeff 100%);
-  border-color: #00eeff;
-  box-shadow: 0 6px 24px rgba(0, 238, 255, 0.4), 0 0 30px rgba(59, 10, 107, 0.6);
-  transform: translateY(-1px);
-}
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 18px;
-  background: rgba(25, 14, 43, 0.6);
-  color: #e2e8f0;
-  font-family: var(--font-sans);
-  font-weight: 500;
-  font-size: 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-secondary:hover {
-  background: rgba(59, 10, 107, 0.5);
-  border-color: rgba(0, 238, 255, 0.4);
-  color: #00eeff;
-}
-
-/* Badges */
-.badge-l0 {
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  padding: 3px 10px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.badge-l1 {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fcd34d;
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  padding: 3px 10px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.badge-l2 {
-  background: rgba(168, 85, 247, 0.18);
-  color: #e9d5ff;
-  border: 1px solid rgba(168, 85, 247, 0.4);
-  padding: 3px 10px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.25);
-}
-
-.badge-l3 {
-  background: rgba(0, 238, 255, 0.15);
-  color: #00eeff;
-  border: 1px solid rgba(0, 238, 255, 0.5);
-  padding: 3px 10px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  box-shadow: 0 0 16px rgba(0, 238, 255, 0.35);
-}
-
-.badge-evidence {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* Fullscreen Modal Overlay (Guaranteed fixed overlay) */
-.modal-overlay {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  background: rgba(5, 5, 5, 0.88) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
-  z-index: 99999 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 16px !important;
-  animation: fadeInModal 0.25s ease-out forwards;
-}
-
-@keyframes fadeInModal {
-  from { opacity: 0; transform: scale(0.97); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
-}
-::-webkit-scrollbar-track {
-  background: #050505;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(59, 10, 107, 0.6);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 238, 255, 0.2);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 238, 255, 0.4);
+@media (min-width: 768px) {
+  .app-container {
+    padding: 24px;
+  }
 }

@@ -86,8 +86,15 @@ def acquire_scheduler_lease(
         session.add(run)
     else:
         # Check if active lease held by another worker
-        if run.status == "RUNNING" and run.leased_until and run.leased_until > now_utc and run.leased_by != worker:
-            raise RuntimeError(f"Scheduler '{scheduler_id}' is leased to '{run.leased_by}' until {run.leased_until}")
+        if (
+            run.status == "RUNNING"
+            and run.leased_until
+            and run.leased_until > now_utc
+            and run.leased_by != worker
+        ):
+            raise RuntimeError(
+                f"Scheduler '{scheduler_id}' is leased to '{run.leased_by}' until {run.leased_until}"
+            )
         run.leased_by = worker
         run.leased_until = expires_at
         run.last_heartbeat_at = now_utc
@@ -120,7 +127,11 @@ def check_scheduler_health(
     ).scalar_one_or_none()
 
     if run is None:
-        return {"healthy": False, "status": "NEVER_RUN", "alert": "Scheduler has never executed"}
+        return {
+            "healthy": False,
+            "status": "NEVER_RUN",
+            "alert": "Scheduler has never executed",
+        }
 
     if run.status == "RUNNING" and run.last_heartbeat_at:
         age_seconds = (now_utc - run.last_heartbeat_at).total_seconds()
@@ -159,7 +170,7 @@ def run_scheduler(
     # Determine policy enforcement mode:
     # In production, require_approved_schedule defaults to True.
     if require_approved_schedule is None:
-        require_approved_schedule = (settings.env == "production")
+        require_approved_schedule = settings.env == "production"
 
     schedule_policy: PolicyVersion | None = None
     schedule_version = "v1-default"
@@ -173,7 +184,9 @@ def run_scheduler(
                 # Record alert and skip
                 alert_text = "Reminder schedule not approved"
                 run_record = session.execute(
-                    select(SchedulerRun).where(SchedulerRun.scheduler_id == "maturity_lifecycle_scanner")
+                    select(SchedulerRun).where(
+                        SchedulerRun.scheduler_id == "maturity_lifecycle_scanner"
+                    )
                 ).scalar_one_or_none()
                 if run_record:
                     run_record.metadata_payload = {
@@ -193,7 +206,9 @@ def run_scheduler(
             else:
                 # Try finding unapproved example draft
                 example_draft = session.execute(
-                    select(PolicyVersion).where(PolicyVersion.policy_id == "REMINDER-SCHEDULE-EXAMPLE")
+                    select(PolicyVersion).where(
+                        PolicyVersion.policy_id == "REMINDER-SCHEDULE-EXAMPLE"
+                    )
                 ).scalar_one_or_none()
                 if example_draft:
                     schedule_policy = example_draft
@@ -204,7 +219,9 @@ def run_scheduler(
 
     # Parse windows from policy config if available
     if schedule_policy and schedule_policy.config_payload:
-        maturity_config = schedule_policy.config_payload.get("events", {}).get("maturity", {})
+        maturity_config = schedule_policy.config_payload.get("events", {}).get(
+            "maturity", {}
+        )
         offsets = maturity_config.get("offsets_days_before")
         if offsets and isinstance(offsets, list):
             active_windows = [(f"T-{d}", d) for d in sorted(offsets, reverse=True)]
@@ -214,12 +231,16 @@ def run_scheduler(
         run_record = acquire_scheduler_lease(session, worker_id=worker_id, as_of=as_of)
     except (RuntimeError, AssertionError):
         # If lease acquisition fails due to another active runner, return skipped
-        return SchedulerResult(skipped=True, reason="Scheduler lease held by another worker")
+        return SchedulerResult(
+            skipped=True, reason="Scheduler lease held by another worker"
+        )
 
     instruments = (
         session.execute(
             select(Instrument).where(
-                Instrument.status.in_([InstrumentStatus.ACTIVE, InstrumentStatus.EXPIRING]),
+                Instrument.status.in_(
+                    [InstrumentStatus.ACTIVE, InstrumentStatus.EXPIRING]
+                ),
                 Instrument.maturity_date.isnot(None),
             )
         )
@@ -285,12 +306,16 @@ def run_scheduler(
     escalations: list[Escalation] = []
 
     # 1. Overdue verification requests (>7 days awaiting response)
-    overdue_bcr = session.execute(
-        select(BankConfirmationRequest).where(
-            BankConfirmationRequest.status == "AWAITING_RESPONSE",
-            BankConfirmationRequest.requested_at <= as_of - timedelta(days=7),
+    overdue_bcr = (
+        session.execute(
+            select(BankConfirmationRequest).where(
+                BankConfirmationRequest.status == "AWAITING_RESPONSE",
+                BankConfirmationRequest.requested_at <= as_of - timedelta(days=7),
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     for bcr in overdue_bcr:
         existing_esc = session.execute(
@@ -312,12 +337,16 @@ def run_scheduler(
             escalations.append(esc)
 
     # 2. Overdue observations (>14 days awaiting institution response)
-    overdue_obs = session.execute(
-        select(ScrutinyObservation).where(
-            ScrutinyObservation.status == "AWAITING_INSTITUTION",
-            ScrutinyObservation.created_at <= as_of - timedelta(days=14),
+    overdue_obs = (
+        session.execute(
+            select(ScrutinyObservation).where(
+                ScrutinyObservation.status == "AWAITING_INSTITUTION",
+                ScrutinyObservation.created_at <= as_of - timedelta(days=14),
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     for obs in overdue_obs:
         existing_esc = session.execute(

@@ -1,123 +1,98 @@
-# DESIGN_SPEC.md — AICTE FDR Portal
+# DESIGN_SPEC.md — "Lavender Ledger" v2.1 (reference-matched) — web + iOS + Android
 
-Authoritative design rules for web, iOS and Android. Tokens: `tokens.css`, `tokens.ts` (verified by `check_tokens.py`). Summary in `docs/MASTER_PROMPT.md` §13. If a platform API named here does not exist in the pinned version, follow the stated fallback and record it in `docs/STACK_LOCK.md`.
+Supersedes the v1 dark/Liquid-Glass spec (archived in `design/archive-v1-dark/`). Source of truth for colour: `tokens.ts` → generated `tokens.css`, verified by `python3 -I design/check_tokens.py` (192 contrast checks). The visual contract is `design/preview.html` (regenerate with `python3 -I design/build_preview.py`). **If code and preview differ, fix the code.** Research notes and sources: `docs/DESIGN_RESEARCH.md`.
 
-## 1. Intent
-A calm, authoritative, government-grade financial-compliance tool that feels native on each platform:
-- **Web + iOS:** Apple Human Interface Guidelines — clarity, deference to content, depth; Liquid Glass for the navigation/control layer.
-- **Android:** Material Design 3 (Expressive where verified) with Material Symbols for every icon.
-- It must never look like a template or generated UI. Restraint, hierarchy, alignment, and real content states carry the quality — not decoration.
+## 1. Intent: match the reference, adapted to this product
+The owner supplied a reference sheet (9 mobile screens of a light-lavender consumer app). The goal is that every screen of this product *looks and behaves the same way*: same palette character, same card/list/button/tab-bar/sheet language, same proportions, same hierarchy, same friendliness. What changes is only what must change:
+- Own name, wordmark, mascot and copy (the reference product's brand assets are not reproduced). The mascot is an original character, "Kosh", drawn in the same soft-3D, glossy, friendly style (see §8).
+- Icons follow platform rules (Android Material Symbols, iOS SF Symbols, web Phosphor Duotone) but are tinted and weighted to give the same blue duotone look.
+- Accessibility: the reference's pale blues were measured and nudged where needed to reach WCAG AA (§2).
+- Every number and status is real (from the API), including the top-bar progress slot (§5).
 
-## 2. Colour (dark is the hero theme; light follows the system)
-Base `#050505`, violet `#3b0a6b`, cyan `#00eeff`. Violet is for **fills, tint, selected-row wash, glass tinting and glows** — never text or icon colour on the dark base (1.40:1).
+## 2. Colour (measured from the reference, then AA-corrected)
+Pixel-sampled reference values → our tokens: outer backdrop `#dce4fc` → `canvasDeep #dde5fb`; app background `#f4f4fc` → `canvas #f4f5fd`; cards `#fcfcfc–#fdfdff` → `surface #ffffff`; field/textarea `#ebeef7` → `field #eceff8`; progress track `#e3e8fb` → `fieldStrong #e1e6f8`; black buttons `#181818–#272727` → `ink #1a1a1e`; soft-red pill bg `#fce6e8` → `dangerContainer #fde4e6`; icon/label blue `#3b78d8` → `azure #3b78d8` (non-text); "Pro" pill periwinkle `#7393e8` → `roleFill #4570da` (darkened so white text passes 4.5:1); hero banner `#c4d3f2 → #f6f5fd` → `heroFrom #c9d7f7 → heroTo #f5f6fe`.
 
-| Pair (dark) | Ratio | Use |
-|---|---|---|
-| `#f0f0f0` on `#050505` / on `#2c292d` | 17.88 / 12.60 | Primary text |
-| `#b9b9b9` on `#050505` / `#2c292d` | 10.39 / 7.32 | Secondary text |
-| `#919191` on `#050505` / `#2c292d` | 6.47 / 4.56 | Tertiary text (AA minimum — never go darker than this on dark surfaces) |
-| `#646464` | — | Disabled/decorative only (never informative) |
-| `#00eeff` on `#050505` / `#2c292d` | 14.24 / 10.04 | Accent text, icons, focus ring |
-| `#00363b` on `#00eeff` | 9.22 | Text/icon on cyan fills (buttons, chips) |
-| `#84f3ff` on `#004f55` | 7.22 | Tonal accent container |
-| `#eedbff` on `#3b0a6b` | 11.25 | Text on violet container |
-| `#958e98` on `#050505` | 6.41 | Control borders (≥3:1 required, met) |
-| `#4a454e` on `#050505` | 2.19 | Hairlines/dividers only (decorative) |
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| canvas / canvasDeep | `#f4f5fd` / `#dde5fb` | `#0c0e1b` / `#080a14` | App background / page backdrop on wide screens |
+| surface / surfaceMuted | `#ffffff` / `#f8f9fe` | `#151833` / `#1b1f3d` | Cards, sheets, tab bar / inner wells |
+| field / fieldStrong | `#eceff8` / `#e1e6f8` | `#212649` / `#2a305a` | Inputs, textarea, search, segmented track / progress track |
+| azure | `#3b78d8` | `#7aa5ff` | **Icons, toggle-on, progress fill** (≥3:1, non-text only) |
+| primary | `#2d63cf` | `#8fb0ff` | Blue **text**: active tab label, links (5.53:1 on white, 4.72:1 on the capsule) |
+| primaryContainer | `#e6edff` | `#1e2d75` | Active tab capsule, selected wash |
+| roleFill / onRoleFill | `#4570da` / `#ffffff` | `#8fb0ff` / `#0a1a5e` | Role pill (the reference's "Pro" pill) |
+| ink / onInk | `#1a1a1e` / `#ffffff` | `#f3f4fb` / `#0c0e1b` | **Black pill primary buttons**, selected chips and segments, thin progress line |
+| dangerContainer / onDangerContainer | `#fde4e6` / `#b0303f` | `#5a1428` / `#ffd9e0` | Soft-red pill ("Reject", "Sign out") |
+| text1 / text2 / text3 | `#14141a / #474b62 / #656981` | `#f3f4fb / #bdc1d8 / #9a9fba` | All ≥4.5:1 on canvas, surface, muted, field |
+| outline / hairline | `#80859f` / `#e6e9f6` | `#7f85a8` / `#2b3058` | Control borders (≥3:1) / dividers (decorative) |
+| ok · warn · info · error · pending · neutral (+Container/on…) | see `tokens.ts` | see `tokens.ts` | Status pills (icon + label + tint, never colour alone) |
 
-Status colours (dark): ok `#3ddc97`, warn `#ffb020`, info `#7aa7ff`, error `#ff5c7a`, pending `#b69cff`, neutral `#9aa0ad` (≥4.5:1 on all dark surfaces). Light-theme counterparts are darker (ok `#0b6b45`, warn `#8a5a00`, info `#1f4fb3`, error `#b3123a`, pending `#5b3fb0`, neutral `#555b66`; ≥5.6:1 on `#fef7fc`). **Status is never colour alone** — always icon + text label.
-
-Surfaces (tonal elevation, dark): `#050505` base → `#0f0d11` → `#151316` → `#1d1b1e` → `#211f22` → `#2c292d`. Light: `#fef7fc` → `#f8f1f6` → `#f2ebf0` → `#ece5ea` → `#e7e0e5`.
-Elevation on dark is expressed by tonal steps and hairlines, not heavy shadows.
+Rules: (1) one black-pill primary action per screen; blue-filled buttons are rare secondary emphasis; (2) no hard card borders — soft shadow + whitespace; (3) icon blue is `azure`, blue text is `primary` — never the other way round; (4) gradients only on the hero card, the progress fill and illustrations; (5) no raw hex outside `tokens.*` (lint `no-raw-colour`); (6) evidence attributes are separate pills: Declared (neutral), Extracted (pending tint), Bank-confirmed (ok + check), Ledger-reconciled (info + link), Inconclusive/Rejected (warn/error).
 
 ## 3. Typography
-- Web/iOS: SF Pro on Apple devices via the system stack (never self-host SF on the web); **Inter** (OFL, self-hosted, subset) as the non-Apple fallback; Noto Sans Devanagari / Noto Sans Tamil for Indic scripts. Sizes per `typeApple`. Tabular numerals for money, dates, counts. Monospace for identifiers (FDR no., UTR) with grouping (e.g. `XXXX 1234`).
-- Android: Roboto / Roboto Flex, scale per `typeM3`. Respect user font scale up to 200% — layouts must reflow, never clip.
-- Indian number grouping for ₹ (1,00,00,000) via `Intl.NumberFormat('en-IN')` / locale equivalents. Amounts right-aligned in tables with currency symbol in the header, not each cell, unless mixed currency.
+Reference: very bold, geometric, tight headings; small quiet section labels; bold list-row titles.
+- Web: display/headings/wordmark **Plus Jakarta Sans 800** (OFL, self-hosted subset); body **Inter 500**; Noto Sans Devanagari/Tamil fallbacks. Tabular numerals for money/dates.
+- iOS: SF Pro (system) with heavy weights for titles (Large Title 34/800, Title 22/700), 17/600 row titles, 12/600 section labels.
+- Android: Roboto Flex via the M3 scale, titles at weight 700–800, honouring font scale to 200%.
+- Scale (web, `typeWeb`): Hero greeting 31–36/34–42 ·800 · Screen title 28/32 ·800 · Section title 20/26 ·800 · Row title 15–16/20 ·700 · Body 16/24 ·500 · Footnote 13/18 · Section label 12/16 ·700 (text3, sentence case).
+- Amounts Indian grouping (`₹ 35,00,000`); dates `24 Oct 2026`; identifiers monospace and masked (`XXXX 4417`).
 
-## 4. Layout
-- 4-pt grid. Content max width 1280 px for reading screens; tables use full width with sticky header and column chooser.
-- Web: left sidebar (glass, 264 px, collapsible to 72 px) + toolbar (glass) + content on solid surfaces. Dense tables: 36 px rows on pointer, 44 px on touch. Detail screens: summary header (identity, state chips, key dates) → tabs → content; a right-hand "provenance & activity" drawer is available everywhere.
-- Phone: single column, sticky primary action, cards for list rows (title, state chip, two key facts, chevron), full detail on tap.
-- Tablet/foldable/desktop: list-detail panes; Android uses window-size classes (compact/medium/expanded); iPad uses adaptable sidebar/tab bar.
-- Forms: label above input, helper text below, inline validation on blur, error summary at top for long forms, never placeholder-as-label.
+## 4. Shape, space, elevation (measured: phone width 210 px in the sheet ≈ 390 pt)
+Cards radius 20; chips/buttons/inputs-in-cards pill (button height 48 — measured: 26 px on a 211-px-wide phone ≈ 48 pt; compact 40); fields in cards radius 14; sheets top radius 28; tab bar radius 28 with an inner capsule radius 22; avatar circle. Screen gutter 12–16; card padding 14–16; list rows 52–56 high with a hairline between rows. Shadows `shadow.card`, `shadow.floating`, `shadow.sheet` (soft, bluish, low contrast). Backdrop behind a sheet: `scrim` at 30–40% + blur 6 px.
 
-## 5. Component inventory (build once per platform; same semantics)
-Buttons (filled/tonal/outline/text/destructive), icon buttons, chips (filter/assist/status), evidence-attribute chips (shape+icon+label), inputs (text, amount with ₹ prefix, date, select, search, file), segmented control, tabs, list rows, cards (content, solid), tables (sortable, virtualised), data-diff view (before/after per field), **timeline** (state transitions with actor/reason), **provenance drawer**, **checklist table** (SATISFIED / NOT SATISFIED / PENDING SOURCE / NOT APPLICABLE), document viewer (zoom/rotate/pages) + extraction overlay, toast/snackbar, banner (degraded/unconfigured/staging), dialog/sheet/popover, step-up auth sheet, empty state (icon + 1 line + 1 action), skeletons, progress (determinate for uploads), badge counts, avatar (initials only, no stock photos), date range picker, command palette (web), pull-to-refresh (mobile).
-Mandatory states for every data view: loading, empty, error (with correlation ID), forbidden, offline/unavailable, stale-version conflict.
+## 5. Components (the reference's vocabulary; build once per platform with identical names)
+1. **TopBar** (every main screen): wordmark left · thin black **ProgressMini** (56 px line + `NN%`) · bell (filled, black; live unread dot) · **RolePill** (periwinkle-blue filled, white bold text, shows the signed-in role, read-only). The progress slot shows **profile completion computed by the server** (`GET /v1/me/profile-completion`: name, designation, verified mobile, language, MFA enrolled, optional passkey, notification permission on mobile). It is real data; at 100% it shows a check instead of the number. Web: same bar inside the top bar.
+2. **HeroCard** (role home only): gradient `heroFrom → heroTo`, info chip top-left (`Region: South`), round black edit button top-right (opens Profile), a big ring + sparkles behind **Kosh peeking over the bottom edge**, two-line bold greeting bottom-left, one line of real status.
+3. **GroupedList**: section label (12/700 text3) + white card of rows: leading duotone icon in `azure` (22–24), bold title, optional small subtitle, optional trailing value, chevron. Two or three groups per screen ("Needs attention", "Main", "Policies and terms").
+4. **FloatingTabBar**: white pill (radius 28, floating shadow, 12 px side inset, 64 high) with 4 equal tabs; **all icons are azure duotone; inactive labels are text1 bold 11; the active tab gets a light-blue capsule (`primaryContainer`) and a `primary` bold label**. Home indicator sits below. Role-specific tabs from `GET /me/navigation`.
+5. **Buttons**: black pill (primary), soft-blue pill, **soft-red pill** (destructive), full-width in cards and sheets; side-by-side pair "black + soft-red" for binary decisions (Return/Reject).
+6. **Chips/Segmented**: filter chips (selected = black pill, others white) and segmented control (track `field`, selected = black pill) — e.g. All · Reminders · Observations · Decisions; avatar-picker tabs Name · Shape · Mood · Colour.
+7. **Cards with inputs**: grey `field` inputs inside white cards, a `0/500` counter on textareas, select rows with trailing icon, toggle row (azure track, white knob).
+8. **ProfileCard**: big circular avatar (initials; photo only if the user uploads one) with a small round azure **edit badge**; region label top-left; pencil top-right.
+9. **CompletionCard**: `fieldStrong` card with one sentence, a gradient azure progress bar and `NN%`.
+10. **BottomSheet**: grabber, rounded top 28, Kosh illustration + one sentence + black pill; blurred, dimmed backdrop. Desktop: centred modal. Mobile implementation: a JS sheet (Reanimated + Gesture Handler) over an `expo-blur` `BlurView` scrim, because `@expo/ui`'s BottomSheet is a native modal that cannot blur the app behind it and ignores custom backdrops (verified in SDK 58 docs). On Android `BlurView` needs a `BlurTargetView` around the app root and `blurMethod="dimezisBlurViewSdk31Plus"`; below Android 12 fall back to a plain dimmed scrim. `@expo/ui` BottomSheet remains the fallback for simple, non-blurred sheets.
+11. **EmptyState**: Kosh in a calm pose, bold one-liner, one faint explanatory sentence; no action unless there is a real one.
+12. **ListPerson/Institution row**: avatar (initials), bold name, small grey sub-line, chevron.
+13. Web additions in the same language: floating **sidebar card** (pill nav items, same capsule active state), hero banner, KPI cards (value is `—` until loaded), tables inside white cards with `primarySoft` row hover, evidence legend card.
+14. Also: `DiffView`, `Timeline`, `ProvenanceDrawer`, `StepUpSheet`, `DataTable` → `CaseCard` on phones, `Toast`/`Banner`, `Skeleton`. Mandatory states for every data view: loading, empty, error (with correlation ID), forbidden, offline/unavailable, stale-version conflict.
 
-## 6. Liquid Glass — web and iOS
-**Where:** sidebar, top toolbar, bottom tab bar (iOS), floating action cluster, popovers/menus, sheet grabber area, segmented controls, toasts.
-**Where not:** tables, cards, forms, document viewer, charts, anything the user reads at length. Do not stack glass on glass. At most ~3 glass surfaces visible at once.
-**Variants:** *regular* (default, adaptive legibility) — use for almost everything. *clear* (more transparent) only over rich media with a dimming layer; this app has little media, so avoid.
-**Web recipe:** see `.glass` in `tokens.css` — `backdrop-filter: blur(24px) saturate(180%)` (+`-webkit-`), translucent tint via `color-mix`, 1 px border, inner top highlight, soft shadow. Optional enhancements (feature-detected, never required): SVG `feDisplacementMap` edge refraction (Chromium only), `-apple-visual-effect` on iOS 26 Safari behind `@supports` (verify). Fallbacks: `@supports not (backdrop-filter…)`, `prefers-reduced-transparency`, `prefers-contrast: more`, and an in-app "Reduce transparency" toggle (`data-reduce-transparency`) all produce opaque surfaces with a visible border. Test scroll performance on a mid-range Android phone; if frame drops occur, reduce blur radius or switch the surface to solid.
-**iOS native:** `expo-glass-effect` (`GlassView`/container with `glassEffectStyle: 'regular'`) on iOS 26+; below iOS 26 use system material blur with the same tint tokens; honour Reduce Transparency (`AccessibilityInfo.isReduceTransparencyEnabled`). Tab bar via Expo Router native tabs (system Liquid Glass tab bar, minimise on scroll). Verify prop names in the pinned SDK (spike S-03).
+## 6. Screen-by-screen mapping from the reference (build these exactly)
+| Reference screen | This product | Notes |
+|---|---|---|
+| Mood picker sheet (tabs + 4×3 tile grid + black Save) | **Profile → Choose your avatar** (tabs Name · Shape · Mood · Colour; 12 Kosh avatar tiles; Save) | Optional personalisation; initials remain the default; no personal photo required |
+| Home (hero "Hello, Ivan", "Best" and "Main" lists, tab bar) | **Role home**: hero greeting + real status; "Needs attention" list; "Main" list of role actions | Lists come from the API (observations, due soon, queues) |
+| Profile (avatar card, toggle, Main list, Policies list) | **Profile**: avatar card with region, toggle ("Show my name to institutions" or role-relevant), Main (Two-step verification, Passkeys, Devices and sessions, Language, Appearance), Policies and terms | Same structure |
+| Chat request (header, bubble, textarea + black Send, black + soft-red pair) | **Observation reply** (institution) and **Release decision** (authority): header card, message bubble, reason textarea with counter, black primary, black + soft-red pair (Return / Reject) | Step-up sheet before approval |
+| Blurred background + bottom sheet with mascot + black button | **Ask the handbook** sheet (policy Q&A with clause citation), also used for onboarding tips and step-up | AI is bounded: always cites a stored clause or says it cannot find one |
+| Notifications empty state with chips | **Notifications** (All · Reminders · Observations · Decisions) with Kosh empty state | Real inbox |
+| People (search card + available profiles list) | **Institutions / Users directory** (Intake, IAM roles) | Scope-filtered |
+| Profile completion (avatar with edit badge, progress card 56%, grey fields, select row, black Save) | **Complete your profile** (also the first-run checklist) | Drives the top-bar progress |
+| Tab bar variants | The four-tab bar per role (see `docs/AUTH_ROLES_MATRIX.md`) | |
+| (none) | Sign-in, MFA, step-up, errors, reports, audit, admin | Same components and spacing |
 
-## 7. Material 3 on Android
-- Components from `@expo/ui/jetpack-compose` where available (spike S-02); otherwise faithful implementations: state layers (8/10/16% hover/focus/press), ripple, tonal elevation, shapes (`m3Shape`), predictive back, edge-to-edge insets.
-- Navigation: NavigationBar (compact) → NavigationRail (medium/expanded) → permanent drawer on very wide screens; top app bar small/medium/large with scroll collapse; FAB/extended FAB only for the single primary create action per screen; bottom sheets and snackbars for transient flows.
-- **Colour:** brand-seeded `m3Dark` / `m3Light` (no wallpaper dynamic colour by default; optional off-by-default setting "Use device colours").
-- **Expressive:** adopt expressive motion (spring), shape and typography emphasis only if the pinned Compose Material 3 / `@expo/ui` exposes it; otherwise standard M3. Never fake it with ad-hoc animations.
-- **Material Symbols only.** Android notification small icon is also a Material Symbol exported as a monochrome drawable. Default style Outlined, weight 400, grade 0, optical size 24; FILL=1 for selected state. Include the Apache-2.0 notice in About → Licences.
+## 7. Icons
+- One logical key set (reuse the table in `design/archive-v1-dark/DESIGN_SPEC_v1_dark.md` §8) and one `<Icon name>` wrapper per platform.
+- **Android: Material Symbols only.** With the pinned SDK 58, `expo-symbols` renders Material Symbols on Android (`SymbolView name={{ ios, android, web }}`; weights via `expo-symbols/androidWeights/*`); alternative `@expo/material-symbols` (+ `@expo/ui` `Icon`). Outlined, weight 500 for list icons, FILL 1 on the selected tab, tinted `azure`. Verify props against the pinned docs (spike S-02) and record in `STACK_LOCK.md`. Notification small icon is a Material Symbol exported as a monochrome drawable.
+- **iOS: SF Symbols only**, `type="hierarchical"` (gives the two-tone depth seen in the reference), tint `azure`, weight semibold.
+- **Web: Phosphor Icons (MIT), `duotone` weight** for nav and list icons (gives the reference's two-tone look), `regular` elsewhere; one wrapper with a closed enum. No other set.
+- No emoji. No raster icons. The preview's hand-drawn duotone icons are placeholders for the real sets.
 
-## 8. Icons — one logical key set, three renderers
-Components reference logical keys only; a platform map resolves them. **Verify each symbol exists in the pinned icon packs/SF Symbols app** (record gaps in `docs/STACK_LOCK.md`).
+## 8. Mascot "Kosh" and illustration (original, soft-3D)
+Style to match the reference: glossy soft-3D render feel, rounded, friendly, one hero character with a few expressive poses, peeking over card edges, sitting in rings with sparkles.
+Kosh: a blue shield-coin with a white rounded face plate, small oval dark eyes with a highlight, rosy cheeks and a smile; two little blue hands for the "peeking" pose. Gradients `#8fb4ff → #3b78d8 → #2556b8`, soft top-left highlight, rim line, soft ground shadow. Poses (SVG for web, react-native-svg for mobile): `smile`, `wow` (sheet), `calm` (empty), `peek` (hero), `search`, `document`, `lock`, `offline`, `error`, `celebrate`; plus 12 avatar variants (pose × tint). Reference drawing is in `design/build_preview.py` (`kosh()`).
+Do not reproduce the reference product's character (large round eyes with brows, fluffy fur, black or blue creature), its logo or wordmark. `design-reviewer` fails any resemblance. Kosh appears on: sign-in, role-home hero, empty states, sheets, onboarding, error pages — never on dense data screens.
 
-| Logical key | Material Symbols (Android) | SF Symbols (iOS) | Web (Lucide/Phosphor; spike picks one) |
-|---|---|---|---|
-| dashboard | `dashboard` | `square.grid.2x2` | LayoutDashboard |
-| institution | `account_balance` | `building.columns` | Landmark |
-| instrument | `description` | `doc.text` | FileText |
-| documents | `folder_open` | `folder` | FolderOpen |
-| verified (bank-confirmed) | `verified` | `checkmark.seal` | BadgeCheck |
-| checklist | `fact_check` | `checklist` | ListChecks |
-| notifications | `notifications` | `bell` | Bell |
-| notifications_active | `notifications_active` | `bell.badge` | BellRing |
-| deadline | `schedule` | `clock` | Clock |
-| calendar | `calendar_month` | `calendar` | Calendar |
-| inbox | `inbox` | `tray` | Inbox |
-| search | `search` | `magnifyingglass` | Search |
-| filter | `filter_list` | `line.3.horizontal.decrease` | ListFilter |
-| upload | `upload_file` | `arrow.up.doc` | FileUp |
-| scan | `document_scanner` | `doc.viewfinder` | ScanLine |
-| qr | `qr_code_scanner` | `qrcode.viewfinder` | QrCode |
-| lock | `lock` | `lock` | Lock |
-| biometric | `fingerprint` | `faceid` | Fingerprint |
-| security | `shield` | `shield` | Shield |
-| history | `history` | `clock.arrow.circlepath` | History |
-| settings | `settings` | `gearshape` | Settings |
-| profile | `person` | `person` | User |
-| sign_out | `logout` | `rectangle.portrait.and.arrow.right` | LogOut |
-| warning | `warning` | `exclamationmark.triangle` | TriangleAlert |
-| error | `error` | `xmark.octagon` | OctagonX |
-| success | `check_circle` | `checkmark.circle` | CircleCheck |
-| failed | `cancel` | `xmark.circle` | CircleX |
-| pending | `hourglass_top` | `hourglass` | Hourglass |
-| sync | `sync` | `arrow.triangle.2.circlepath` | RefreshCw |
-| offline | `cloud_off` | `icloud.slash` | CloudOff |
-| link (ledger) | `link` | `link` | Link |
-| declared | `edit_note` | `square.and.pencil` | FilePenLine |
-| help | `help` | `questionmark.circle` | CircleHelp |
-| blocked | `block` | `nosign` | Ban |
-| receipt | `receipt_long` | `doc.plaintext` | Receipt |
-| report | `bar_chart` | `chart.bar` | ChartBar |
-| download | `download` | `arrow.down.circle` | Download |
-| share | `share` | `square.and.arrow.up` | Share |
-| add | `add` | `plus` | Plus |
-| language | `translate` | `globe` | Languages |
-| devices | `devices` | `iphone` | Smartphone |
-| policy | `policy` | `text.book.closed` | BookOpen |
-| audit | `manage_search` | `list.bullet.rectangle` | ScrollText |
+## 9. Navigation
+- Phone (iOS, Android, web <768): `FloatingTabBar` as above. **Implementation: `expo-router/ui` headless `Tabs / TabSlot / TabList / TabTrigger`** (Expo's native tabs cannot be restyled this way: on iOS 26 the system draws the bar and ignores `backgroundColor`; on Android they render the standard M3 NavigationBar). Content gets bottom padding equal to bar height + inset. Android keeps M3 behaviour (ripple/state layers, 48 dp targets, predictive back); iOS keeps haptics and swipe-back.
+- Web ≥768: floating sidebar card + top bar with search (⌘K), progress, bell, role pill, avatar. Max content width 1200.
+- The role pill is read-only and comes from the session; there is no role switcher anywhere.
+- Optional enhancement (default off): iOS 26 Liquid Glass tab bar via native tabs, if the owner prefers system look over the reference look.
 
-Rules: no emoji; no mixing sets within a platform; web keeps stroke ≈1.5 px to sit near SF Symbols' weight; SF Symbols never on web/Android; Material Symbols never on iOS/web.
+## 10. Motion and feedback
+Spring-like 160–320 ms; tab change cross-fade; sheet slides up with scrim fade; button press scale .98 + light haptic (iOS) / ripple (Android); progress fill animates once; Kosh may blink once on empty states (respect Reduce Motion). No looping decoration.
 
-## 9. Motion
-Spring-like, 160–320 ms; transitions communicate hierarchy (sheet up, push, tab cross-fade). No parallax, no looping decorative animation. Honour Reduce Motion (replace with fades).
+## 11. Content design
+Short, warm but precise sentences ("Nothing here yet", "Reminders, observations and decisions will appear here as soon as they happen."). Sentence-case labels. Never claim verification not evidenced. Errors: what happened, what is safe, what to do, correlation ID. Hindi/Tamil +40% length without clipping.
 
-## 10. Content design
-Plain, precise, bureaucracy-free English; short sentences; dates as `24 Oct 2026`; amounts as `₹ 35,00,000`; never "AI-powered" marketing copy; never claim certification or verification the system hasn't evidenced. Empty states say what's missing and what the user can do. Error messages say what happened, what is safe, what to do, and show the correlation ID.
-
-## 11. Accessibility acceptance
-WCAG 2.1 AA (2.2 target): all text ≥4.5:1, UI/graphics ≥3:1, visible focus, full keyboard path, no focus trap, ARIA only when native semantics are insufficient, screen-reader names include state ("Bank-confirmed, source: State Bank of India letter dated 12 Sep 2026"), reflow at 320 CSS px and 400% zoom, target size ≥44 pt/48 dp, no information by colour alone, motion/transparency/contrast preferences honoured, language attributes set, form errors programmatically associated.
-
-## 12. QA gates (blocking)
-`python3 -I design/check_tokens.py` passes · axe-core zero serious/critical · Playwright visual matrix attached · device screenshot matrix attached · `design-reviewer` PASS on every screen listed in the phase.
+## 12. Accessibility and QA gates (blocking)
+WCAG 2.1 AA (2.2 target); visible 3 px focus ring; screen-reader names include state; Dynamic type/font scale 200%; Reduce Motion / Transparency / Increased Contrast. Gates: `check_tokens.py` passes · no raw colours (lint) · screenshots 390/768/1280/1920 × light/dark × en/hi/ta compared with `preview.html` · device screenshots (small/large iPhone, iPad, Pixel, tablet, 200% font) · axe zero serious/critical · `design-reviewer` PASS for every screen · icon-source lint (Android Material Symbols only; iOS SF Symbols only; web Phosphor only).

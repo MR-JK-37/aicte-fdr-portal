@@ -1,327 +1,349 @@
 import React from 'react';
-import { Shield, Clock, User, Globe, PhoneCall, Bell, Search, QrCode, MoreHorizontal } from 'lucide-react';
+import { Wordmark } from '../design-system/Wordmark';
+import { Icon } from '../design-system/Icon';
 import { AppRole } from '../types';
+import { useAuth } from '../auth/AuthContext';
 
-interface NavbarProps {
+export interface NavbarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
   role: AppRole;
-  setRole: (role: AppRole) => void;
   lang: string;
   setLang: (lang: string) => void;
-  simClockOffsetDays: number;
-  onOpenSimClock: () => void;
-  onTriggerVoiceDemo: () => void;
   onOpenCommandPalette?: () => void;
   onOpenNotifications?: () => void;
+  onLogout?: () => void;
   unreadNotificationsCount?: number;
+  sseStatus?: 'connecting' | 'live' | 'disconnected';
+  profileCompletionPct?: number;
 }
 
+/**
+ * TopBar Navbar component (Stream R5.4 / DESIGN_SPEC §5.1 / G-24).
+ * Floating header on lavender canvas:
+ * Wordmark + AICTE title · ⌘K search · thin black ProgressMini · live SSE indicator ·
+ * bell with unread dot · language selector · read-only Role Pill · sign-out.
+ */
 export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   setCurrentTab,
   role,
-  setRole,
   lang,
   setLang,
-  simClockOffsetDays,
-  onOpenSimClock,
-  onTriggerVoiceDemo,
   onOpenCommandPalette,
   onOpenNotifications,
-  unreadNotificationsCount = 2,
+  onLogout,
+  unreadNotificationsCount = 0,
+  sseStatus = 'disconnected',
+  profileCompletionPct = 68,
 }) => {
-  // Primary core tabs that existing tests check
-  const primaryTabs = [
-    { id: 'dashboard', label: 'KPI Dashboard' },
-    { id: 'search', label: 'Search & Views' },
-    { id: 'submit', label: 'Submit FDR (L1)' },
-    { id: 'verify', label: 'Bank Verification (L2/L3)' },
-    { id: 'reminders', label: 'Reminder Ladder' },
-    { id: 'release', label: 'Release Authorization' },
-    { id: 'reports', label: 'Reports & Exports' },
-    { id: 'copilot', label: 'AI Copilot & SQL' },
-    { id: 'audit', label: 'Audit Chain' },
-    { id: 'admin', label: 'Admin & Connectors' },
-    { id: 'help', label: 'Help & DPDP' },
-  ];
+  const { user } = useAuth();
+  const initials = user?.full_name
+    ? user.full_name
+        .split(' ')
+        .map((n: string) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    : 'AK';
 
   return (
     <header
-      className="glass-panel"
+      data-testid="topbar"
+      className="topbar"
       style={{
-        borderRadius: '0 0 20px 20px',
-        borderTop: 'none',
-        padding: '12px 24px',
         position: 'sticky',
         top: 0,
-        zIndex: 40,
-        backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(0, 238, 255, 0.25)',
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(59, 10, 107, 0.4)',
+        zIndex: 'var(--z-nav, 40)',
+        background: 'var(--surface)',
+        boxShadow: 'var(--shadow-card)',
+        padding: '0 20px',
+        height: '64px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '14px',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
-        {/* Logo and Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
+      {/* Brand & Title */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <Wordmark />
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-display, "Plus Jakarta Sans", sans-serif)',
+                fontWeight: 800,
+                fontSize: '16px',
+                lineHeight: '20px',
+                color: 'var(--text1)',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              AICTE FDR Portal
+            </span>
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: 700,
+                background: 'var(--primary-container)',
+                color: 'var(--primary)',
+                padding: '2px 6px',
+                borderRadius: 'var(--radius-pill, 999px)',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+              }}
+            >
+              Regulation
+            </span>
+          </div>
+          <span
             style={{
-              width: 38,
-              height: 38,
-              borderRadius: 10,
-              background: 'linear-gradient(135deg, #3b0a6b, #00eeff)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 0 16px rgba(0, 238, 255, 0.45)',
+              fontSize: '11px',
+              fontWeight: 600,
+              color: 'var(--text3)',
+              lineHeight: '14px',
             }}
           >
-            <Shield size={20} color="#fff" />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span
-                style={{
-                  fontFamily: 'var(--font-serif)',
-                  fontWeight: 700,
-                  fontSize: '18px',
-                  letterSpacing: '-0.02em',
-                  background: 'linear-gradient(135deg, #ffffff 30%, #ede4f9 70%, #00eeff 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                AICTE FDR Portal
-              </span>
-              <span
-                style={{
-                  fontSize: '9px',
-                  background: 'rgba(59, 10, 107, 0.6)',
-                  color: '#00eeff',
-                  border: '1px solid rgba(0, 238, 255, 0.4)',
-                  padding: '2px 6px',
-                  borderRadius: 6,
-                  fontWeight: 700,
-                  letterSpacing: '0.05em',
-                }}
-              >
-                REGULATION
-              </span>
-            </div>
-            <div style={{ fontSize: '10px', color: '#c4b5fd', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              Security Deposit Compliance Engine
-            </div>
-          </div>
+            Security Deposit Compliance Engine
+          </span>
         </div>
+      </div>
 
-        {/* Global Command Palette Trigger Button */}
-        {onOpenCommandPalette && (
-          <button
-            onClick={onOpenCommandPalette}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '6px 12px',
-              borderRadius: 8,
-              background: 'rgba(0, 0, 0, 0.4)',
-              border: '1px solid rgba(0, 238, 255, 0.25)',
-              color: '#94a3b8',
-              fontSize: '12px',
-              cursor: 'pointer',
-            }}
-            title="Press ⌘K or Ctrl+K to jump anywhere"
-          >
-            <Search size={14} className="text-cyan-400" />
-            <span className="hidden sm:inline">Search / Jump</span>
-            <kbd style={{ fontSize: '10px', padding: '1px 5px', borderRadius: 4, background: 'rgba(255,255,255,0.1)', color: '#00eeff' }}>
-              ⌘K
-            </kbd>
-          </button>
-        )}
-
-        {/* Navigation Tabs Bar */}
-        <nav
+      {/* Global Command Palette Trigger Button (⌘K) */}
+      {onOpenCommandPalette && (
+        <button
+          type="button"
+          onClick={onOpenCommandPalette}
+          title="Press ⌘K or Ctrl+K to jump anywhere"
+          aria-label="Search or jump (⌘K)"
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '3px',
-            background: 'rgba(0, 0, 0, 0.35)',
-            padding: '3px',
-            borderRadius: 10,
-            border: '1px solid var(--border-glass)',
-            overflowX: 'auto',
-            maxWidth: '100%',
+            gap: '8px',
+            height: '36px',
+            padding: '0 12px',
+            borderRadius: 'var(--radius-pill, 999px)',
+            background: 'var(--field)',
+            border: 'none',
+            color: 'var(--text2)',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'background var(--dur-fast, 160ms)',
           }}
         >
-          {primaryTabs.map((tab) => {
-            const active = currentTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setCurrentTab(tab.id)}
-                style={{
-                  padding: '5px 11px',
-                  borderRadius: 7,
-                  fontSize: '12px',
-                  fontWeight: active ? 600 : 500,
-                  color: active ? '#ffffff' : 'var(--text-secondary)',
-                  background: active
-                    ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(37, 99, 235, 0.25))'
-                    : 'transparent',
-                  border: active ? '1px solid rgba(6, 182, 212, 0.4)' : '1px solid transparent',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Quick Actions & Role Switcher */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* Notification Bell */}
-          {onOpenNotifications && (
-            <button
-              onClick={onOpenNotifications}
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '6px',
-                borderRadius: 8,
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-glass)',
-                color: '#e2e8f0',
-                cursor: 'pointer',
-              }}
-              title="Notifications"
-            >
-              <Bell size={16} />
-              {unreadNotificationsCount > 0 && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '-3px',
-                    right: '-3px',
-                    width: '14px',
-                    height: '14px',
-                    borderRadius: '50%',
-                    background: '#ef4444',
-                    color: '#fff',
-                    fontSize: '9px',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {unreadNotificationsCount}
-                </span>
-              )}
-            </button>
-          )}
-
-          {/* Public Receipt Verification Switch */}
-          <button
-            onClick={() => setCurrentTab('public_receipt')}
+          <Icon name="search" size={16} color="var(--azure)" />
+          <span className="hidden sm:inline">Search / Jump</span>
+          <kbd
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '6px 10px',
-              borderRadius: 8,
-              background: currentTab === 'public_receipt' ? 'rgba(0, 238, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-              border: currentTab === 'public_receipt' ? '1px solid #00eeff' : '1px solid var(--border-glass)',
-              color: currentTab === 'public_receipt' ? '#00eeff' : 'var(--text-secondary)',
-              fontSize: '11px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-            title="Public Verification Gateway (No Auth)"
-          >
-            <QrCode size={13} />
-            <span className="hidden md:inline">Public Verify</span>
-          </button>
-
-          {/* Sim Clock Button */}
-          <button
-            onClick={onOpenSimClock}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              padding: '5px 10px',
-              borderRadius: 8,
-              background: simClockOffsetDays > 0 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-              border: simClockOffsetDays > 0 ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--border-glass)',
-              color: simClockOffsetDays > 0 ? '#fbbf24' : 'var(--text-secondary)',
-              fontSize: '11px',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            <Clock size={13} />
-            <span>Clock {simClockOffsetDays > 0 ? `+${simClockOffsetDays}d` : 'Live'}</span>
-          </button>
-
-          {/* AI Voice Call Trigger */}
-          <button
-            onClick={onTriggerVoiceDemo}
-            className="ring-pulse"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              padding: '6px 12px',
-              borderRadius: 8,
-              background: 'linear-gradient(135deg, #3b0a6b 0%, #00eeff 100%)',
-              border: '1px solid rgba(0, 238, 255, 0.6)',
-              color: '#ffffff',
               fontSize: '11px',
               fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 0 16px rgba(0, 238, 255, 0.4)',
+              padding: '2px 6px',
+              borderRadius: '6px',
+              background: 'var(--surface)',
+              color: 'var(--text2)',
+              boxShadow: 'var(--shadow-card)',
             }}
           >
-            <PhoneCall size={13} />
-            <span>AI Voice Call</span>
-          </button>
+            ⌘K
+          </kbd>
+        </button>
+      )}
 
-          {/* Language Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(255, 255, 255, 0.05)', padding: '3px 6px', borderRadius: 8, border: '1px solid var(--border-glass)' }}>
-            <Globe size={13} color="var(--text-muted)" />
-            <select
-              value={lang}
-              onChange={(e) => setLang(e.target.value)}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '11px', fontWeight: 500, outline: 'none', cursor: 'pointer' }}
-            >
-              <option value="en" style={{ background: '#0f172a' }}>EN</option>
-              <option value="hi" style={{ background: '#0f172a' }}>हिंदी</option>
-              <option value="ta" style={{ background: '#0f172a' }}>தமிழ்</option>
-            </select>
-          </div>
+      {/* Actions, Profile Completion, SSE, Notifications, Role */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
 
-          {/* Role Switcher */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(255, 255, 255, 0.05)', padding: '3px 6px', borderRadius: 8, border: '1px solid var(--border-glass)' }}>
-            <User size={13} color="var(--text-muted)" />
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as AppRole)}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: '11px', fontWeight: 500, outline: 'none', cursor: 'pointer' }}
-            >
-              <option value="institution" style={{ background: '#0f172a' }}>Institution</option>
-              <option value="scrutiny_officer" style={{ background: '#0f172a' }}>Scrutiny Officer</option>
-              <option value="competent_authority" style={{ background: '#0f172a' }}>Competent Authority</option>
-              <option value="bureau_admin" style={{ background: '#0f172a' }}>Bureau Admin</option>
-              <option value="auditor" style={{ background: '#0f172a' }}>Auditor</option>
-            </select>
-          </div>
+        {/* Realtime Stream (SSE) Status Indicator */}
+        <div
+          data-testid="sse-status-indicator"
+          title={`Realtime Feed: ${sseStatus}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            height: '32px',
+            padding: '0 10px',
+            borderRadius: 'var(--radius-pill, 999px)',
+            background: 'var(--field)',
+            fontSize: '11px',
+            fontWeight: 700,
+            color: 'var(--text2)',
+          }}
+        >
+          <span
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              backgroundColor:
+                sseStatus === 'live'
+                  ? 'var(--ok, #0b7a4b)'
+                  : sseStatus === 'connecting'
+                  ? 'var(--warn, #8f5a00)'
+                  : 'var(--text3, #80859f)',
+            }}
+          />
+          <span className="hidden lg:inline">
+            {sseStatus === 'live' ? 'Live' : sseStatus === 'connecting' ? 'Connecting…' : 'Offline'}
+          </span>
         </div>
+
+        {/* Public Receipt Verification Gateway */}
+        <button
+          type="button"
+          onClick={() => setCurrentTab('public_receipt')}
+          title="Public Verification Gateway (No Auth)"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            height: '36px',
+            padding: '0 12px',
+            borderRadius: 'var(--radius-pill, 999px)',
+            background: currentTab === 'public_receipt' ? 'var(--primary-container)' : 'var(--field)',
+            border: 'none',
+            color: currentTab === 'public_receipt' ? 'var(--primary)' : 'var(--text2)',
+            fontSize: '12px',
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          <Icon name="qr" size={15} color="var(--azure)" />
+          <span className="hidden md:inline">Public Verify</span>
+        </button>
+
+        {/* Notification Bell */}
+        {onOpenNotifications && (
+          <button
+            type="button"
+            data-testid="bell"
+            onClick={onOpenNotifications}
+            title="Notifications"
+            aria-label={`Notifications (${unreadNotificationsCount} unread)`}
+            className="bellw"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-pill, 999px)',
+              background: 'var(--field)',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <Icon name="notifications" size={18} color="var(--ink)" />
+            {unreadNotificationsCount > 0 && (
+              <span
+                data-testid="bell-dot"
+                className="bell-dot"
+                style={{
+                  position: 'absolute',
+                  top: '2px',
+                  right: '2px',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: 'var(--danger)',
+                }}
+              />
+            )}
+          </button>
+        )}
+
+        {/* Language Selector combobox (accessible name Language) */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            height: '36px',
+            padding: '0 8px',
+            borderRadius: 'var(--radius-pill, 999px)',
+            background: 'var(--field)',
+          }}
+        >
+          <Icon name="language" size={14} color="var(--text3)" />
+          <select
+            aria-label="Language"
+            value={lang}
+            onChange={(e) => setLang(e.target.value)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text1)',
+              fontSize: '12px',
+              fontWeight: 600,
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="en">EN</option>
+            <option value="hi">हिंदी</option>
+            <option value="ta">தமிழ்</option>
+          </select>
+        </div>
+
+        {/* Read-only Role Pill */}
+        <span
+          data-testid="role-pill"
+          className="pill-role"
+          title="Your role (set by server, not switchable)"
+          style={{
+            background: 'var(--role-fill)',
+            color: 'var(--on-role-fill)',
+            textTransform: 'capitalize',
+            letterSpacing: '0.02em',
+          }}
+        >
+          {role.replace(/_/g, ' ')}
+        </span>
+
+        {/* User Avatar Initials (ui-refrence.png) */}
+        <div
+          className="avatar sm"
+          title={user?.full_name || 'User Profile'}
+          style={{
+            cursor: 'pointer',
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #c9d7f7, #e6edff)',
+            color: 'var(--primary)',
+            display: 'grid',
+            placeItems: 'center',
+            fontWeight: 800,
+            fontSize: '13px',
+            fontFamily: 'var(--font-display)',
+            boxShadow: 'var(--shadow-card)',
+            flexShrink: 0,
+          }}
+        >
+          {initials}
+        </div>
+
+        {/* Sign Out Button */}
+        {onLogout && (
+          <button
+            type="button"
+            onClick={onLogout}
+            title="Sign out"
+            aria-label="Sign out"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-pill, 999px)',
+              background: 'var(--field)',
+              border: 'none',
+              color: 'var(--text2)',
+              cursor: 'pointer',
+            }}
+          >
+            <Icon name="sign_out" size={16} color="var(--text2)" />
+          </button>
+        )}
       </div>
     </header>
   );

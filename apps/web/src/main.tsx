@@ -1,7 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
 import { App } from './App';
 import { DesignSystemShowcase } from './design-system/DesignSystemShowcase';
+import { AuthProvider } from './auth/AuthContext';
+import { StepUpProvider } from './auth/StepUpContext';
 import './index.css';
 
 // Internal, dev-only route: no router dependency needed for a single
@@ -10,6 +14,16 @@ const isShowcaseRoute = typeof window !== 'undefined' && window.location.pathnam
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    {isShowcaseRoute ? <DesignSystemShowcase /> : <App />}
+    {isShowcaseRoute ? (
+      <DesignSystemShowcase />
+    ) : (
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <StepUpProvider>
+            <App />
+          </StepUpProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    )}
   </React.StrictMode>
 );

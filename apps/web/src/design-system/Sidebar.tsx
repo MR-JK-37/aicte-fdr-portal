@@ -1,6 +1,6 @@
 import React from 'react';
-import clsx from 'clsx';
 import { Icon, type IconName } from './Icon';
+import { Kosh } from './Kosh';
 
 export interface SidebarItem {
   key: string;
@@ -12,42 +12,69 @@ export interface SidebarProps {
   items: SidebarItem[];
   activeKey: string;
   onSelect: (key: string) => void;
-  collapsed?: boolean;
-  brand?: React.ReactNode;
-  /** Violet-tinted glass variant (DESIGN_SPEC §13.1: violet is tint/glow only, never text/icon colour). */
+  className?: string;
+  style?: React.CSSProperties;
   tinted?: boolean;
+  onOpenAskHandbook?: () => void;
 }
 
 /**
- * Navigation-layer Liquid Glass shell (DESIGN_SPEC §6/§13.2). Uses the
- * shared `.glass` class from tokens.css, which already implements the
- * `backdrop-filter: blur(24px) saturate(180%)` recipe with -webkit- prefix,
- * the `@supports not (backdrop-filter)` fallback, and the
- * `prefers-reduced-transparency` / `data-reduce-transparency="true"` /
- * `prefers-contrast: more` opaque overrides — nothing re-implemented here.
+ * Floating Sidebar Card (Stream R5.4 / DESIGN_SPEC §5.13 / G-24).
+ * Solid white surface, radius 20, soft shadow, pill navigation buttons
+ * with Phosphor azure duotone icons and capsule active state.
+ * Includes "Need help? Ask the handbook" with Kosh mascot (ui-refrence.png).
  */
-export function Sidebar({ items, activeKey, onSelect, collapsed, brand, tinted }: SidebarProps) {
+export const Sidebar: React.FC<SidebarProps> = ({
+  items,
+  activeKey,
+  onSelect,
+  className = '',
+  style,
+  onOpenAskHandbook,
+}) => {
   return (
-    <nav
-      className={clsx('ds-sidebar glass glass--panel', tinted && 'glass--violet', collapsed && 'ds-sidebar--collapsed')}
-      aria-label="Primary"
+    <aside
+      className={`sidebar-card ${className}`}
+      style={style}
+      aria-label="Navigation Sidebar"
     >
-      {brand && <div className="ds-sidebar__brand">{brand}</div>}
-      <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {items.map((item) => (
-          <li key={item.key}>
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}>
+        {items.map((item) => {
+          const isActive = item.key === activeKey;
+          return (
             <button
+              key={item.key}
               type="button"
-              className={clsx('ds-sidebar__item', item.key === activeKey && 'ds-sidebar__item--active')}
-              aria-current={item.key === activeKey ? 'page' : undefined}
+              className={`sidebar-item ${isActive ? 'is-active' : ''}`}
+              aria-current={isActive ? 'page' : undefined}
               onClick={() => onSelect(item.key)}
             >
-              <Icon name={item.icon} size={20} />
-              {!collapsed && <span>{item.label}</span>}
+              <Icon name={item.icon} size={20} color="var(--azure)" />
+              <span>{item.label}</span>
             </button>
-          </li>
-        ))}
-      </ul>
-    </nav>
+          );
+        })}
+      </nav>
+
+      {onOpenAskHandbook && (
+        <div
+          data-testid="sidebar-ask-handbook"
+          className="sideft"
+          onClick={onOpenAskHandbook}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onOpenAskHandbook();
+            }
+          }}
+          title="Ask Approval Process Handbook"
+        >
+          <Kosh size={72} pose="smile" />
+          <small>Need help? Ask the handbook</small>
+        </div>
+      )}
+    </aside>
   );
-}
+};

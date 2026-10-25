@@ -38,10 +38,14 @@ def _find_drafts_dir(override: Path | None = None) -> Path:
         return DEFAULT_DRAFTS_DIR
     if ALT_DRAFTS_DIR.exists():
         return ALT_DRAFTS_DIR
-    raise FileNotFoundError(f"Policy drafts directory not found at {DEFAULT_DRAFTS_DIR} or {ALT_DRAFTS_DIR}")
+    raise FileNotFoundError(
+        f"Policy drafts directory not found at {DEFAULT_DRAFTS_DIR} or {ALT_DRAFTS_DIR}"
+    )
 
 
-def load_policy_drafts(session: Session, drafts_dir: Path | None = None) -> list[PolicyVersion]:
+def load_policy_drafts(
+    session: Session, drafts_dir: Path | None = None
+) -> list[PolicyVersion]:
     """Reads JSON files from config/policy-drafts and upserts them into policy_versions."""
     target_dir = _find_drafts_dir(drafts_dir)
     loaded: list[PolicyVersion] = []
@@ -58,13 +62,17 @@ def load_policy_drafts(session: Session, drafts_dir: Path | None = None) -> list
         # Normalize status: only 'draft' or 'BLOCKED' allowed on import
         if raw_status.upper() == "BLOCKED" or "BLOCKED" in str(blocked_reason or ""):
             status = "BLOCKED"
-            blocked_reason = blocked_reason or "awaiting AICTE written confirmation (D-01)"
+            blocked_reason = (
+                blocked_reason or "awaiting AICTE written confirmation (D-01)"
+            )
         else:
             status = "draft"
             blocked_reason = None
 
         source_info = data.get("source", {})
-        document_name = source_info.get("document") or data.get("$comment", path.name)[:255]
+        document_name = (
+            source_info.get("document") or data.get("$comment", path.name)[:255]
+        )
         clause = source_info.get("clause") or (data.get("checklist") and "6.46") or None
         source_url = source_info.get("url")
 
@@ -97,7 +105,10 @@ def load_policy_drafts(session: Session, drafts_dir: Path | None = None) -> list
             logger.info("Imported policy draft %s with status %s", policy_id, status)
         else:
             # Update draft payload if hash changed and still in draft/BLOCKED
-            if existing.status in ("draft", "BLOCKED") and existing.document_hash != doc_hash:
+            if (
+                existing.status in ("draft", "BLOCKED")
+                and existing.document_hash != doc_hash
+            ):
                 existing.config_payload = data
                 existing.document_hash = doc_hash
                 existing.status = status

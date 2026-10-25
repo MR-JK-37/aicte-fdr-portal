@@ -12,11 +12,17 @@ logger = logging.getLogger(__name__)
 
 
 class WebPushAdapter:
-    def __init__(self, vapid_private_key: str | None = None, vapid_claims: dict | None = None) -> None:
-        self.vapid_private_key = vapid_private_key or os.environ.get("VAPID_PRIVATE_KEY")
+    def __init__(
+        self, vapid_private_key: str | None = None, vapid_claims: dict | None = None
+    ) -> None:
+        self.vapid_private_key = vapid_private_key or os.environ.get(
+            "VAPID_PRIVATE_KEY"
+        )
         self.is_configured = bool(self.vapid_private_key)
 
-    def send_push(self, endpoint: str, p256dh: str, auth: str, payload: PushPayload) -> SendResult:
+    def send_push(
+        self, endpoint: str, p256dh: str, auth: str, payload: PushPayload
+    ) -> SendResult:
         """Dispatches Web Push notification using VAPID signing."""
         if not endpoint:
             return SendResult(

@@ -1,0 +1,508 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lavender Ledger design preview</title><style>/* tokens.css — AICTE FDR Portal design tokens (web). Source of truth is tokens.ts; keep in sync (CI diffs them).
+   Brand: #050505 base · #3b0a6b violet (tint/container ONLY — 1.40:1 on base, never text/icon) · #00eeff cyan accent.
+   All text/icon pairs below were contrast-checked; see DESIGN_SPEC.md §2. */
+
+:root {
+  color-scheme: dark light;
+
+  /* ---- Brand ---- */
+  --brand-base: #050505;
+  --brand-violet: #3b0a6b;
+  --brand-cyan: #00eeff;
+
+  /* ---- Dark theme (default / hero) ---- */
+  --bg: #050505;
+  --surface-low: #0f0d11;
+  --surface: #151316;
+  --surface-high: #1d1b1e;
+  --surface-higher: #211f22;
+  --surface-highest: #2c292d;
+  --state-hover: #373438;            /* hover/pressed wash on highest */
+
+  --text-1: #f0f0f0;                 /* 12.6–17.9:1 on all surfaces */
+  --text-2: #b9b9b9;                 /* 7.3–10.4:1 */
+  --text-3: #919191;                 /* 4.56–6.47:1 (min AA) */
+  --text-disabled: #646464;          /* decorative/disabled only */
+  --on-surface: #e7e1e5;
+  --on-surface-variant: #ccc4cf;
+  --outline: #958e98;                /* control borders: ≥4.5:1 */
+  --outline-variant: #4a454e;        /* hairlines/dividers: decorative */
+
+  --accent: #00eeff;                 /* text/icon/focus on any dark surface (≥10:1) */
+  --on-accent: #00363b;              /* text on cyan fills: 9.22:1 */
+  --accent-container: #004f55;
+  --on-accent-container: #84f3ff;    /* 7.22:1 */
+  --violet-container: #3b0a6b;       /* fills/tint/selected wash */
+  --on-violet-container: #eedbff;    /* 11.25:1 */
+  --secondary: #dab9ff;
+  --tertiary: #f2b7c0;
+
+  --ok: #3ddc97;  --warn: #ffb020;  --info: #7aa7ff;  --error: #ff5c7a;  --pending: #b69cff;  --neutral: #9aa0ad;
+  --ok-bg: color-mix(in oklab, #3ddc97 14%, transparent);
+  --warn-bg: color-mix(in oklab, #ffb020 14%, transparent);
+  --info-bg: color-mix(in oklab, #7aa7ff 14%, transparent);
+  --error-bg: color-mix(in oklab, #ff5c7a 14%, transparent);
+  --pending-bg: color-mix(in oklab, #b69cff 14%, transparent);
+
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+
+  /* ---- Glass (navigation/control layer ONLY) ---- */
+  --glass-tint: color-mix(in oklab, #1d1b1e 58%, transparent);
+  --glass-tint-violet: color-mix(in oklab, #3b0a6b 22%, #151316 40%);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-highlight: rgba(255, 255, 255, 0.14);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --glass-blur: 24px;
+  --glass-saturate: 180%;
+  --glass-solid-fallback: #1d1b1e;   /* used when blur is unavailable or transparency is reduced */
+
+  /* ---- Shape (Apple continuous-corner feel on web/iOS) ---- */
+  --r-xs: 8px; --r-sm: 12px; --r-md: 16px; --r-lg: 22px; --r-xl: 28px; --r-full: 999px;
+
+  /* ---- Spacing (4-pt grid) ---- */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
+
+  /* ---- Type ---- */
+  --ff-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, "Noto Sans", "Noto Sans Devanagari", "Noto Sans Tamil", system-ui, sans-serif;
+  --ff-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --fs-large-title: 2.125rem; --fs-title-1: 1.75rem; --fs-title-2: 1.375rem; --fs-title-3: 1.25rem;
+  --fs-headline: 1.0625rem; --fs-body: 1.0625rem; --fs-callout: 1rem; --fs-subhead: 0.9375rem; --fs-footnote: 0.8125rem; --fs-caption: 0.75rem;
+  --lh-tight: 1.2; --lh-normal: 1.45;
+
+  /* ---- Motion ---- */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 160ms; --dur-base: 240ms; --dur-slow: 320ms;
+
+  /* ---- Layers ---- */
+  --z-nav: 40; --z-popover: 60; --z-modal: 80; --z-toast: 100;
+}
+
+/* ---- Light theme ----
+   The app sets <html data-theme="light|dark"> at startup (inline script in index.html: stored preference,
+   else matchMedia('(prefers-color-scheme: light)')). The media block is a no-JS safety net only. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fef7fc; --surface-low: #f8f1f6; --surface: #f2ebf0; --surface-high: #ece5ea; --surface-higher: #e9e2e7; --surface-highest: #e7e0e5; --state-hover: #ded8dd;
+  --text-1: #1d1b1e; --text-2: #4a454e; --text-3: #615d61; --text-disabled: #948f94;
+  --on-surface: #1d1b1e; --on-surface-variant: #4a454e; --outline: #7b757f; --outline-variant: #ccc4cf;
+  --accent: #006971; --on-accent: #ffffff; --accent-container: #84f3ff; --on-accent-container: #002023;
+  --violet-container: #eedbff; --on-violet-container: #2a0053; --secondary: #734aa5; --tertiary: #805159;
+  --ok: #0b6b45; --warn: #8a5a00; --info: #1f4fb3; --error: #b3123a; --pending: #5b3fb0; --neutral: #555b66;
+  --ok-bg: color-mix(in oklab, #0b6b45 10%, transparent); --warn-bg: color-mix(in oklab, #8a5a00 10%, transparent);
+  --info-bg: color-mix(in oklab, #1f4fb3 10%, transparent); --error-bg: color-mix(in oklab, #b3123a 10%, transparent);
+  --pending-bg: color-mix(in oklab, #5b3fb0 10%, transparent);
+  --glass-tint: color-mix(in oklab, #fef7fc 62%, transparent);
+  --glass-tint-violet: color-mix(in oklab, #eedbff 40%, #fef7fc 50%);
+  --glass-border: rgba(29, 27, 30, 0.10); --glass-highlight: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 8px 32px rgba(29, 27, 30, 0.14); --glass-solid-fallback: #f2ebf0;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+  --bg: #fef7fc; --surface-low: #f8f1f6; --surface: #f2ebf0; --surface-high: #ece5ea; --surface-higher: #e9e2e7; --surface-highest: #e7e0e5; --state-hover: #ded8dd;
+  --text-1: #1d1b1e; --text-2: #4a454e; --text-3: #615d61; --text-disabled: #948f94;
+  --on-surface: #1d1b1e; --on-surface-variant: #4a454e; --outline: #7b757f; --outline-variant: #ccc4cf;
+  --accent: #006971; --on-accent: #ffffff; --accent-container: #84f3ff; --on-accent-container: #002023;
+  --violet-container: #eedbff; --on-violet-container: #2a0053; --secondary: #734aa5; --tertiary: #805159;
+  --ok: #0b6b45; --warn: #8a5a00; --info: #1f4fb3; --error: #b3123a; --pending: #5b3fb0; --neutral: #555b66;
+  --ok-bg: color-mix(in oklab, #0b6b45 10%, transparent); --warn-bg: color-mix(in oklab, #8a5a00 10%, transparent);
+  --info-bg: color-mix(in oklab, #1f4fb3 10%, transparent); --error-bg: color-mix(in oklab, #b3123a 10%, transparent);
+  --pending-bg: color-mix(in oklab, #5b3fb0 10%, transparent);
+  --glass-tint: color-mix(in oklab, #fef7fc 62%, transparent);
+  --glass-tint-violet: color-mix(in oklab, #eedbff 40%, #fef7fc 50%);
+  --glass-border: rgba(29, 27, 30, 0.10); --glass-highlight: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 8px 32px rgba(29, 27, 30, 0.14); --glass-solid-fallback: #f2ebf0;
+  }
+}
+
+/* ---- Glass primitives: navigation/control layer only ---- */
+.glass {
+  background: var(--glass-tint);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+}
+.glass--violet { background: var(--glass-tint-violet); }
+.glass--pill   { border-radius: var(--r-full); }
+.glass--panel  { border-radius: var(--r-lg); }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass { background: var(--glass-solid-fallback); }
+}
+/* user/OS preferences -> opaque, clearly bordered surfaces */
+:root[data-reduce-transparency="true"] .glass,
+:root[data-contrast="more"] .glass { background: var(--glass-solid-fallback); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--outline); box-shadow: none; }
+@media (prefers-reduced-transparency: reduce) { .glass { background: var(--glass-solid-fallback); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--outline); box-shadow: none; } }
+@media (prefers-contrast: more) { .glass { background: var(--glass-solid-fallback); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--outline); } }
+@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
+
+/* ---- Base ---- */
+html { background: var(--bg); color: var(--text-1); font-family: var(--ff-sans); -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-size: var(--fs-body); line-height: var(--lh-normal); -webkit-font-smoothing: antialiased; }
+.num, .money, time { font-variant-numeric: tabular-nums; }
+code, .mono, .identifier { font-family: var(--ff-mono); }
+:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--r-xs); }
+
+/* ---- Tailwind v4 mapping (import this file BEFORE @import "tailwindcss" in app CSS) ---- */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface-low: var(--surface-low);
+  --color-surface: var(--surface);
+  --color-surface-high: var(--surface-high);
+  --color-surface-highest: var(--surface-highest);
+  --color-text-1: var(--text-1); --color-text-2: var(--text-2); --color-text-3: var(--text-3);
+  --color-accent: var(--accent); --color-on-accent: var(--on-accent);
+  --color-violet-container: var(--violet-container);
+  --color-ok: var(--ok); --color-warn: var(--warn); --color-info: var(--info); --color-error: var(--error); --color-pending: var(--pending);
+  --color-outline: var(--outline); --color-outline-variant: var(--outline-variant);
+  --radius-sm: var(--r-sm); --radius-md: var(--r-md); --radius-lg: var(--r-lg); --radius-xl: var(--r-xl);
+  --font-sans: var(--ff-sans); --font-mono: var(--ff-mono);
+}
+
+*{box-sizing:border-box} body{margin:0;background:var(--canvas-deep);padding:32px 24px 64px;font-family:var(--font-body)}
+.page-h{max-width:1500px;margin:0 auto 8px;font-family:var(--font-display)} .page-h h1{margin:0 0 4px;font-size:28px} .page-h p{margin:0;color:var(--text-2)}
+.sec{max-width:1500px;margin:32px auto 12px;font:800 13px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+.phones{max-width:1500px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:28px 20px;justify-items:center}
+figure{margin:0;text-align:center} figcaption{margin-top:10px;font:700 13px var(--font-body);color:var(--text-2)}
+.phone{position:relative;width:330px;height:760px;background:var(--canvas);border-radius:38px;box-shadow:0 0 0 7px #fff,0 14px 40px rgba(35,40,110,.14);overflow:hidden;text-align:left}
+.status{position:absolute;top:12px;left:26px;right:24px;display:flex;justify-content:space-between;font-size:13px;z-index:3;color:#1a1a1e} .status span{letter-spacing:2px;font-size:10px}
+.homebar{position:absolute;left:50%;bottom:6px;width:112px;height:4px;border-radius:2px;background:#1a1a1e;transform:translateX(-50%);z-index:3}
+.screen{position:absolute;inset:0;padding:44px 12px 96px;display:flex;flex-direction:column;gap:10px;overflow:hidden} .screen>*{flex:none} .screen>.empty{flex:1}
+.screen.center{justify-content:center;padding-bottom:24px} .sheetscreen{justify-content:flex-end;padding-bottom:30px;background:linear-gradient(var(--canvas),var(--canvas))}
+.topbar{display:flex;align-items:center;gap:10px;height:42px;margin:2px 4px 0}
+.wm{display:flex;align-items:center;gap:1px;font:800 20px/1 var(--font-display);letter-spacing:-.05em;color:#1a1a1e} .wm.big{font-size:24px;padding:4px 10px 10px} .wm svg{margin:0 1px}
+.topprog{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:6px} .topprog b{font:800 12px var(--font-body)} .topprog .progress-ink{flex:1;max-width:44px;min-width:18px}
+.topbar .pill-role{height:28px;padding:0 10px;font-size:12px;flex:none} .topbar{gap:8px}
+.bellw{display:inline-flex;margin:0 2px}
+.ic{flex:none} .grow{flex:1;min-width:0}
+.card0{padding:0}
+.hero{min-height:178px;padding:16px} .hero h2{position:absolute;left:16px;bottom:18px;font:800 31px/34px var(--font-display);margin:0;letter-spacing:-.025em;color:var(--text-1)}
+.chipw{display:inline-block;background:rgba(255,255,255,.7);border-radius:999px;padding:7px 12px;font:800 12px var(--font-body);color:var(--text-1)}
+.pencil{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;background:#1a1a1e;display:grid;place-items:center}
+.ring{position:absolute;right:-30px;top:6px;width:190px;height:190px} .ring.big{right:34px;top:10px;width:260px} .kpeek{position:absolute;right:-4px;bottom:-30px}
+.sp{position:absolute;width:12px;height:12px;background:#c4d5fa;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%)} .s1{left:112px;top:62px} .s2{left:70px;top:126px}
+.sub{color:var(--text-2);margin:0;font-size:14px;line-height:20px} .sub.dark{color:var(--text-1);font-weight:700} .sub.b{font-weight:800;margin-bottom:8px} .faint{color:var(--text-3);font-size:13px;line-height:18px;margin:0;font-weight:500}
+.fine{color:var(--text-3);font-size:12px;line-height:16px;text-align:center;margin:4px 0}
+.row b{font:700 15px/20px var(--font-body)} .row small{display:block;color:var(--text-3);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .row b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block} .row .r{margin-left:auto;display:inline;color:var(--text-3);font-weight:700;font-size:13px}
+.row{min-height:52px} .section-label{padding:12px 14px 4px}
+.h{font:800 28px/32px var(--font-display);letter-spacing:-.02em;margin:6px 4px 2px} .h2{font:800 20px/26px var(--font-display);margin:6px 4px 0}
+.searchbar{display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:var(--radius-md);background:var(--surface);box-shadow:var(--shadow-card);color:var(--text-3);font-weight:600;font-size:14px}
+.searchbar.in{background:var(--field);box-shadow:none;margin-top:10px;border-radius:999px}
+.chiprow{display:flex;flex-wrap:wrap;gap:8px;margin:0 2px}
+.stack-c{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px} .stack-c h1,.stack-c h3{margin:4px 0 0;font:800 24px/29px var(--font-display);letter-spacing:-.02em} .stack-c h3{font-size:18px;line-height:24px;padding:0 6px}
+.stackg{display:flex;flex-direction:column;gap:8px} .lab{font:700 13px var(--font-body);color:var(--text-2)} .w100{width:100%} .w100 button{flex:1} .lnk{color:var(--primary);font-weight:700;font-size:14px}
+.card{padding:14px} .card .t{font:800 14px var(--font-body);display:block}
+.between{display:flex;align-items:center;justify-content:space-between;gap:8px} .between b{font:700 15px var(--font-body)}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--primary-container);color:var(--primary);display:grid;place-items:center;font:800 15px var(--font-display);flex:none} .avatar.xl{width:96px;height:96px;font-size:30px;background:linear-gradient(135deg,#c9d7f7,#e6edff)} .avatar.sm{width:38px;height:38px;font-size:13px}
+.profc{display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;padding:34px 14px 16px} .profc b{font:800 16px var(--font-display);margin-top:8px} .profc small{color:var(--text-3);font-weight:600}
+.reg{position:absolute;left:14px;top:12px;font:800 12px var(--font-body)} .pencil2{position:absolute;right:12px;top:10px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center}
+.avc{display:grid;place-items:center;position:relative;padding:20px} .badge{position:absolute;left:50%;margin-left:26px;bottom:18px;width:28px;height:28px;border-radius:50%;background:var(--azure);display:grid;place-items:center;box-shadow:0 0 0 3px #fff}
+.compl{background:var(--field-strong)} .compl p{margin:0 0 10px;font:700 13px/18px var(--font-body)} .compl .pc{display:block;text-align:right;font:800 13px var(--font-body);margin-top:-4px}
+.compl .progress{height:7px;background:#fff}
+.fieldg{height:46px;border-radius:14px;background:var(--field);display:flex;align-items:center;justify-content:space-between;padding:0 14px;color:var(--text-3);font-weight:600;font-size:14px;margin-bottom:8px} .fieldg.sel{color:var(--text-1);font-weight:700}
+.hd{display:flex;align-items:center;gap:10px} .hd b{display:block;font:800 14px var(--font-body)} .hd small{color:var(--text-3);font-weight:600;font-size:12px} .wrapl{align-items:flex-start}
+.bubble{background:var(--field);border-radius:14px;padding:12px;margin-top:10px} .bubble b{font:800 13px var(--font-body)} .bubble p{margin:4px 0 6px;font-weight:500;font-size:13px;line-height:18px} .r2{display:block;text-align:right;color:var(--text-3);font-weight:600}
+.textarea.sm{height:60px} .textarea{height:92px;border-radius:14px;background:var(--field);padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between;color:var(--text-3);font-weight:600;font-size:14px;margin:8px 0 12px} .textarea i{align-self:flex-end;font-style:normal;font-size:12px}
+.two2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px} .two2 .btn{padding:0}
+.tile{aspect-ratio:1;border-radius:14px;background:var(--field);display:grid;place-items:center} .tile.sel{box-shadow:inset 0 0 0 2px var(--azure);background:var(--surface)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 4px 4px} .sectionlabel{font:700 12px var(--font-body);color:var(--text-3);margin:12px 4px 8px} .pad0{padding:10px}
+.sm4 button{padding:0 8px!important;font-size:13px}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:0 28px} .empty b{font:800 16px var(--font-display)}
+.tabbar{position:absolute;bottom:18px;left:10px;right:10px;padding:6px} .tabbar a{padding:6px 0 4px}
+.blur>*:not(.scrimv):not(.sheetv){filter:blur(3px)} .fake{height:16px;border-radius:8px;background:var(--field-strong);margin-bottom:10px;width:70%} .fake.s{width:45%}
+.scrimv{position:absolute;inset:0;background:rgba(40,50,100,.30)} .sheetv{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-radius:28px 28px 0 0;padding:10px 16px 28px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow-sheet)}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--field-strong);margin:0 auto}
+.sm4,.segmented{font-family:var(--font-body)}
+.segmented>button,.mono,td,.pill,.chip,.btn{white-space:nowrap}
+.webwrap{max-width:1500px;margin:0 auto;border-radius:28px;background:var(--canvas);box-shadow:0 0 0 7px #fff,0 14px 40px rgba(35,40,110,.14);overflow:hidden}
+.web{display:grid;grid-template-columns:264px 1fr;gap:20px;padding:20px;min-height:800px}
+.sidebar{display:flex;flex-direction:column;gap:12px;padding:18px 12px;height:100%} .sidebar nav{display:flex;flex-direction:column;gap:4px}
+.sidebar nav a{display:flex;align-items:center;gap:12px;height:46px;padding:0 14px;border-radius:999px;color:var(--text-1);font:700 14px var(--font-body)} .sidebar nav a svg{color:var(--azure)}
+.sidebar nav a[aria-current=page]{background:linear-gradient(180deg,var(--primary-container),color-mix(in srgb,var(--primary-container) 50%,#fff));color:var(--primary)}
+.sideft{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--surface-muted);border-radius:18px;padding:14px;color:var(--text-2);font-weight:700;text-align:center}
+.wtop{display:flex;align-items:center;gap:14px} .searchbar.wide{flex:1;max-width:560px} .searchbar kbd{margin-left:auto;font:700 11px var(--font-mono);background:var(--field);padding:3px 8px;border-radius:8px}
+.herow{margin:20px 0 16px;min-height:230px;padding:28px;display:block} .heroT{position:relative;z-index:2} .herow h1{margin:14px 0 6px;font:800 36px/42px var(--font-display);letter-spacing:-.025em} .herow .btn{margin-top:14px}
+.ring.big{position:absolute;right:96px;top:-10px} .kpeekw{position:absolute;right:120px;bottom:-26px} .herow::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% 30%,rgba(255,255,255,.5),transparent 55%)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px} .kpi{display:flex;flex-direction:column;gap:8px;align-items:flex-start} .kpi small{color:var(--text-3);font-weight:700} .big{font:800 36px/40px var(--font-display)}
+.two-col{display:grid;grid-template-columns:1.9fr 1fr;gap:16px} h3{margin:0 0 8px;font:800 18px var(--font-display)} table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+th{text-align:left;font:700 12px var(--font-body);color:var(--text-3);padding:8px 10px} td{padding:12px 10px;border-top:1px solid var(--hairline)} td small{display:block;color:var(--text-3);font-weight:600;font-size:12px} .num{text-align:right!important}
+td:first-child{white-space:normal} .mono{font-family:var(--font-mono);font-size:12px;color:var(--text-3)}
+.legend{display:flex;flex-direction:column;gap:12px;margin-top:12px} .legend div{display:flex;align-items:center;justify-content:space-between;gap:8px} .legend small{color:var(--text-3);font-weight:600;font-size:12px;text-align:right}
+@media (max-width:1100px){.web{grid-template-columns:1fr}.sidebar{display:none}.kpis{grid-template-columns:1fr 1fr}.two-col{grid-template-columns:1fr}}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><symbol id="i-home" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></symbol><symbol id="i-folder" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></symbol><symbol id="i-bell" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1112 0v5l2 2H4z"/><path d="M10 21h4" fill="none"/></symbol><symbol id="i-user" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0z"/></symbol><symbol id="i-users" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0114 0z"/><circle cx="17" cy="9" r="2.8"/><path d="M15 14.5a6 6 0 017 5.5h-5"/></symbol><symbol id="i-chev" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6" fill="none"/></symbol><symbol id="i-search" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5" fill="none"/></symbol><symbol id="i-shield" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol><symbol id="i-doc" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6" fill="none"/></symbol><symbol id="i-clock" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" fill="none"/></symbol><symbol id="i-lock" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3" fill="none"/></symbol><symbol id="i-finger" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 11v4a4 4 0 01-4 4M8 11a4 4 0 118 0v2M5 12a7 7 0 1114 0v3M12 15v1a7 7 0 01-2 5" fill="none"/></symbol><symbol id="i-inbox" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5" fill="none"/></symbol><symbol id="i-list" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h5" fill="none"/></symbol><symbol id="i-cal" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4" fill="none"/></symbol><symbol id="i-gear" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" fill="none"/></symbol><symbol id="i-globe" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" fill="none"/></symbol><symbol id="i-plus" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" fill="none"/></symbol><symbol id="i-check" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7" fill="none"/></symbol><symbol id="i-pen" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16z"/></symbol><symbol id="i-bank" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6z"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18" fill="none"/></symbol><symbol id="i-file" viewBox="0 0 24 24" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/></symbol></svg>
+<div class="page-h"><h1>Lavender Ledger — design preview</h1><p>Every screen mirrors the reference layout one-to-one (top bar with wordmark, progress, bell and role pill; hero card with mascot; grouped list cards; floating pill tab bar; black pill buttons; soft-red pill; bottom sheet over blur; empty state). Sample text only.</p></div>
+<div class="sec">Mobile — iOS and Android share the look; each keeps its own icons, type and motion</div><div class="phones"><figure><div class="phone"><div class="status"><b>9:41</b><span>●●● ◔ ▭</span></div><div class="screen center"><div class="stack-c"><svg width="104" height="104" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b1" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h1" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b1)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h1)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f1)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M50 71q10 9 20 0" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg><h1>Welcome back</h1><p class="sub">Sign in to the AICTE security deposit portal</p></div>
+<div class="segmented w100"><button aria-selected="true">Institution</button><button>AICTE staff</button><button>Bank</button></div>
+<div class="card stackg"><label class="lab">Official e-mail</label><input class="input" value="registrar@college.example" readonly><label class="lab">Password</label><input class="input" type="password" value="••••••••••" readonly><a class="lnk">Forgot password?</a></div>
+<button class="btn btn-primary btn-block">Continue</button><button class="btn btn-soft btn-block"><svg class="ic" width="20" height="20" style=""><use href="#i-finger"/></svg> Use a passkey</button>
+<p class="fine"><svg class="ic" width="14" height="14" style=""><use href="#i-lock"/></svg> Two-step verification is required after you sign in.</p></div></div><figcaption>Sign in</figcaption></figure><figure><div class="phone"><div class="status"><b>9:41</b><span>●●● ◔ ▭</span></div><div class="screen sheetscreen"><div class="card pad0"><div class="segmented w100 sm4"><button>Name</button><button>Shape</button><button aria-selected="true">Mood</button><button>Colour</button></div>
+<p class="sectionlabel">Choose a mood</p><div class="grid4"><div class="tile sel"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b2" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h2" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b2)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h2)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f2)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M50 71q10 9 20 0" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div><div class="tile"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b3" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h3" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b3)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h3)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f3)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M54 70q6 9 12 0q-6-5-12 0z" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div><div class="tile"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b4" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h4" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b4)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h4)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f4)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M52 72h16" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div><div class="tile"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b5" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h5" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f5" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b5)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h5)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f5)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M50 71q10 9 20 0" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div><div class="tile"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b6" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h6" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f6" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b6)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h6)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f6)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M54 70q6 9 12 0q-6-5-12 0z" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div><div class="tile"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b7" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h7" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f7" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b7)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h7)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f7)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M52 72h16" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div><div class="tile"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b8" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h8" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f8" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b8)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h8)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f8)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M50 71q10 9 20 0" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div><div class="tile"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b9" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h9" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f9" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b9)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h9)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f9)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M54 70q6 9 12 0q-6-5-12 0z" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div><div class="tile"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b10" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h10" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f10" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b10)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h10)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f10)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M52 72h16" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div><div class="tile"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b11" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h11" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f11" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b11)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h11)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f11)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M50 71q10 9 20 0" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div><div class="tile"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b12" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h12" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f12" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b12)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h12)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f12)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M54 70q6 9 12 0q-6-5-12 0z" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div><div class="tile"><svg width="46" height="46" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b13" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h13" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f13" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b13)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h13)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f13)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M52 72h16" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div></div></div><button class="btn btn-primary btn-block">Save</button></div></div><figcaption>Choose your avatar</figcaption></figure><figure><div class="phone"><div class="status"><b>9:41</b><span>●●● ◔ ▭</span></div><div class="screen"><div class="topbar"><div class="wm"><span>fdr</span><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#3b78d8" stroke-width="4"/><circle cx="13" cy="13" r="3.6" fill="#1a1a1e"/></svg><span>portal</span></div><div class="topprog"><div class="progress-ink"><i style="width:56%"></i></div><b>56%</b></div><span class="bellw"><svg class="ic" width="22" height="22" style="color:#1a1a1e"><use href="#i-bell"/></svg></span><span class="pill pill-role">Registrar</span></div>
+<div class="hero card0"><span class="chipw">Region: South</span><span class="pencil"><svg class="ic" width="16" height="16" style="color:#fff"><use href="#i-pen"/></svg></span><svg class="ring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="70" fill="none" stroke="#b4c9f4" stroke-width="2"/></svg><span class="sp s1"></span><span class="sp s2"></span>
+<h2>Hello,<br>Asha</h2><div class="kpeek"><svg width="150" height="150" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b14" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h14" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f14" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b14)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h14)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f14)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M50 71q10 9 20 0" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<rect x="14" y="88" width="26" height="16" rx="8" fill="#2d63cf"/><rect x="80" y="88" width="26" height="16" rx="8" fill="#2d63cf"/><path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div></div>
+<div class="card-group"><div class="section-label">Needs attention</div><div class="row"><svg class="ic" width="24" height="24" style="color:var(--azure)"><use href="#i-doc"/></svg><div class="grow"><b>Reply to an observation</b><small>Due 28 Oct 2026</small></div><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div><div class="row"><svg class="ic" width="24" height="24" style="color:var(--azure)"><use href="#i-clock"/></svg><div class="grow"><b>FDR maturing in 30 days</b><small>Renewal not yet submitted</small></div><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div></div>
+<div class="card-group"><div class="section-label">Main</div><div class="row"><svg class="ic" width="24" height="24" style="color:var(--azure)"><use href="#i-plus"/></svg><div class="grow"><b>Submit a new deposit</b></div><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div><div class="row"><svg class="ic" width="24" height="24" style="color:var(--azure)"><use href="#i-folder"/></svg><div class="grow"><b>My documents</b></div><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div><div class="row"><svg class="ic" width="24" height="24" style="color:var(--azure)"><use href="#i-cal"/></svg><div class="grow"><b>Maturity calendar</b></div><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div></div>
+<nav class="tabbar"><a aria-current=page><svg class="ic" width="26" height="26" style=""><use href="#i-home"/></svg><span>Home</span></a><a ><svg class="ic" width="26" height="26" style=""><use href="#i-folder"/></svg><span>Deposits</span></a><a ><svg class="ic" width="26" height="26" style=""><use href="#i-inbox"/></svg><span>Inbox</span></a><a ><svg class="ic" width="26" height="26" style=""><use href="#i-user"/></svg><span>Profile</span></a></nav><div class="homebar"></div></div></div><figcaption>Home · Institution</figcaption></figure><figure><div class="phone"><div class="status"><b>9:41</b><span>●●● ◔ ▭</span></div><div class="screen"><div class="topbar"><div class="wm"><span>fdr</span><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#3b78d8" stroke-width="4"/><circle cx="13" cy="13" r="3.6" fill="#1a1a1e"/></svg><span>portal</span></div><div class="topprog"><div class="progress-ink"><i style="width:56%"></i></div><b>56%</b></div><span class="bellw"><svg class="ic" width="22" height="22" style="color:#1a1a1e"><use href="#i-bell"/></svg></span><span class="pill pill-role">Scrutiny</span></div>
+<div class="card profc"><span class="reg">Region: South</span><span class="pencil2"><svg class="ic" width="14" height="14" style="color:var(--text-1)"><use href="#i-pen"/></svg></span><div class="avatar xl">AK</div><b>Anil Kumar</b><small>Scrutiny Officer</small></div>
+<div class="card between"><b>Show my name to institutions</b><span class="switch" role="switch" aria-checked="true"></span></div>
+<div class="card-group"><div class="section-label">Main</div><div class="row"><svg class="ic" width="24" height="24" style="color:var(--azure)"><use href="#i-shield"/></svg><div class="grow"><b>Two-step verification</b></div><small class="r">On</small><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div><div class="row"><svg class="ic" width="24" height="24" style="color:var(--azure)"><use href="#i-finger"/></svg><div class="grow"><b>Passkeys</b></div><small class="r">1</small><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div><div class="row"><svg class="ic" width="24" height="24" style="color:var(--azure)"><use href="#i-globe"/></svg><div class="grow"><b>Language</b></div><small class="r">English</small><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div></div>
+<div class="card-group"><div class="section-label">Policies and terms</div><div class="row"><svg class="ic" width="24" height="24" style="color:var(--azure)"><use href="#i-file"/></svg><div class="grow"><b>Privacy policy</b></div><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div></div>
+<nav class="tabbar"><a ><svg class="ic" width="26" height="26" style=""><use href="#i-home"/></svg><span>Home</span></a><a ><svg class="ic" width="26" height="26" style=""><use href="#i-list"/></svg><span>Cases</span></a><a ><svg class="ic" width="26" height="26" style=""><use href="#i-inbox"/></svg><span>Inbox</span></a><a aria-current=page><svg class="ic" width="26" height="26" style=""><use href="#i-user"/></svg><span>Profile</span></a></nav><div class="homebar"></div></div></div><figcaption>Profile</figcaption></figure><figure><div class="phone"><div class="status"><b>9:41</b><span>●●● ◔ ▭</span></div><div class="screen"><div class="topbar"><div class="wm"><span>fdr</span><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#3b78d8" stroke-width="4"/><circle cx="13" cy="13" r="3.6" fill="#1a1a1e"/></svg><span>portal</span></div><div class="topprog"></div><span class="bellw"><svg class="ic" width="22" height="22" style="color:#1a1a1e"><use href="#i-bell"/></svg></span><span class="pill pill-role">Authority</span></div>
+<div class="card between wrapl"><div class="hd"><div class="avatar">AI</div><div><b>Apex Institute of Technology</b><small>Release request · FDR XXXX 4417</small></div></div></div>
+<div class="card"><div class="bubble"><b>Recommendation</b><p>All six clause 6.46 rows are satisfied.</p><small class="r2">Yesterday, 18:38</small></div></div>
+<div class="card"><p class="sub dark">Add a reason for your decision</p><div class="textarea sm"><span>Reason (optional)</span><i>0/500</i></div><button class="btn btn-primary btn-block">Approve with step-up</button></div>
+<div class="card"><p class="sub dark">If it cannot be approved</p><div class="two2"><button class="btn btn-primary">Return</button><button class="btn btn-danger-soft">Reject</button></div></div>
+<nav class="tabbar"><a ><svg class="ic" width="26" height="26" style=""><use href="#i-home"/></svg><span>Home</span></a><a aria-current=page><svg class="ic" width="26" height="26" style=""><use href="#i-shield"/></svg><span>Decisions</span></a><a ><svg class="ic" width="26" height="26" style=""><use href="#i-inbox"/></svg><span>Inbox</span></a><a ><svg class="ic" width="26" height="26" style=""><use href="#i-user"/></svg><span>Profile</span></a></nav><div class="homebar"></div></div></div><figcaption>Release decision</figcaption></figure><figure><div class="phone"><div class="status"><b>9:41</b><span>●●● ◔ ▭</span></div><div class="screen blur"><div class="topbar"><div class="wm"><span>fdr</span><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#3b78d8" stroke-width="4"/><circle cx="13" cy="13" r="3.6" fill="#1a1a1e"/></svg><span>portal</span></div><div class="topprog"></div><span class="bellw"><svg class="ic" width="22" height="22" style="color:#1a1a1e"><use href="#i-bell"/></svg></span><span class="pill pill-role">Institution</span></div><div class="h">Hello, Asha</div><div class="card"><div class="fake"></div><div class="fake s"></div></div><div class="card"><div class="fake"></div></div>
+<div class="scrimv"></div><div class="sheetv"><div class="grab"></div><div class="stack-c"><svg width="112" height="112" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b15" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h15" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f15" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b15)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h15)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f15)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M54 70q6 9 12 0q-6-5-12 0z" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg><h3>Ask me about the Approval Process Handbook. I always show the clause.</h3></div><button class="btn btn-primary btn-block">Open</button></div></div></div><figcaption>Ask the handbook (sheet)</figcaption></figure><figure><div class="phone"><div class="status"><b>9:41</b><span>●●● ◔ ▭</span></div><div class="screen"><div class="topbar"><div class="wm"><span>fdr</span><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#3b78d8" stroke-width="4"/><circle cx="13" cy="13" r="3.6" fill="#1a1a1e"/></svg><span>portal</span></div><div class="topprog"><div class="progress-ink"><i style="width:56%"></i></div><b>56%</b></div><span class="bellw"><svg class="ic" width="22" height="22" style="color:#1a1a1e"><use href="#i-bell"/></svg></span><span class="pill pill-role">Institution</span></div>
+<div class="h2">Notifications</div><div class="chiprow"><span class="chip is-active">All</span><span class="chip">Reminders</span><span class="chip">Observations</span><span class="chip">Decisions</span></div>
+<div class="empty"><svg width="92" height="92" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b16" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h16" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f16" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b16)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h16)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f16)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M52 72h16" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg><b>Nothing here yet</b><p class="faint">Reminders, observations and decisions will appear here as soon as they happen.</p></div><nav class="tabbar"><a ><svg class="ic" width="26" height="26" style=""><use href="#i-home"/></svg><span>Home</span></a><a ><svg class="ic" width="26" height="26" style=""><use href="#i-folder"/></svg><span>Deposits</span></a><a aria-current=page><svg class="ic" width="26" height="26" style=""><use href="#i-inbox"/></svg><span>Inbox</span></a><a ><svg class="ic" width="26" height="26" style=""><use href="#i-user"/></svg><span>Profile</span></a></nav><div class="homebar"></div></div></div><figcaption>Notifications · empty</figcaption></figure><figure><div class="phone"><div class="status"><b>9:41</b><span>●●● ◔ ▭</span></div><div class="screen"><div class="topbar"><div class="wm"><span>fdr</span><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#3b78d8" stroke-width="4"/><circle cx="13" cy="13" r="3.6" fill="#1a1a1e"/></svg><span>portal</span></div><div class="topprog"><div class="progress-ink"><i style="width:56%"></i></div><b>56%</b></div><span class="bellw"><svg class="ic" width="22" height="22" style="color:#1a1a1e"><use href="#i-bell"/></svg></span><span class="pill pill-role">Intake</span></div>
+<div class="h2">Institutions</div><div class="card"><b class="t">Find an institution by name or AICTE ID</b><div class="searchbar in"><svg class="ic" width="20" height="20" style="color:var(--text-3)"><use href="#i-search"/></svg><span>Search name or AICTE ID</span></div></div>
+<div class="card-group"><div class="section-label">Available institutions</div><div class="row"><div class="avatar sm">AI</div><div class="grow"><b>Apex Institute of Tech.</b><small>Karnataka · …4417</small></div><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div><div class="row"><div class="avatar sm">NC</div><div class="grow"><b>National College</b><small>Tamil Nadu · …9021</small></div><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div><div class="row"><div class="avatar sm">SM</div><div class="grow"><b>St. Mary's Polytechnic</b><small>Kerala · …7718</small></div><svg class="ic" width="18" height="18" style="color:var(--text-3)"><use href="#i-chev"/></svg></div></div>
+<nav class="tabbar"><a ><svg class="ic" width="26" height="26" style=""><use href="#i-home"/></svg><span>Home</span></a><a aria-current=page><svg class="ic" width="26" height="26" style=""><use href="#i-bank"/></svg><span>Institutions</span></a><a ><svg class="ic" width="26" height="26" style=""><use href="#i-inbox"/></svg><span>Inbox</span></a><a ><svg class="ic" width="26" height="26" style=""><use href="#i-user"/></svg><span>Profile</span></a></nav><div class="homebar"></div></div></div><figcaption>Institutions</figcaption></figure><figure><div class="phone"><div class="status"><b>9:41</b><span>●●● ◔ ▭</span></div><div class="screen"><div class="topbar"><div class="wm"><span>fdr</span><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#3b78d8" stroke-width="4"/><circle cx="13" cy="13" r="3.6" fill="#1a1a1e"/></svg><span>portal</span></div><div class="topprog"><div class="progress-ink"><i style="width:56%"></i></div><b>56%</b></div><span class="bellw"><svg class="ic" width="22" height="22" style="color:#1a1a1e"><use href="#i-bell"/></svg></span><span class="pill pill-role">Registrar</span></div>
+<div class="card avc"><div class="avatar xl">AS</div><span class="badge"><svg class="ic" width="14" height="14" style="color:#fff"><use href="#i-pen"/></svg></span></div>
+<div class="card compl"><p>Complete your profile to unlock all notifications and alerts</p><div class="progress"><i style="width:56%"></i></div><b class="pc">56%</b></div>
+<div class="card"><p class="sub dark b">Personal details</p><div class="fieldg">Full name</div><div class="fieldg">Designation</div></div>
+<div class="card"><p class="sub dark b">Preferred language</p><div class="fieldg sel">English <svg class="ic" width="20" height="20" style="color:var(--azure)"><use href="#i-globe"/></svg></div></div>
+<button class="btn btn-primary btn-block">Save</button></div></div><figcaption>Complete your profile</figcaption></figure></div>
+<div class="sec">Web — same tokens; the floating sidebar becomes the floating pill tab bar below 768 px</div><div class="webwrap"><div class="web"><aside class="sidebar card"><div class="wm big"><span>fdr</span><svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#3b78d8" stroke-width="4"/><circle cx="13" cy="13" r="3.6" fill="#1a1a1e"/></svg><span>portal</span></div><nav><a aria-current=page><svg class="ic" width="22" height="22" style=""><use href="#i-home"/></svg><span>Dashboard</span></a><a ><svg class="ic" width="22" height="22" style=""><use href="#i-list"/></svg><span>Cases</span></a><a ><svg class="ic" width="22" height="22" style=""><use href="#i-folder"/></svg><span>Instruments</span></a><a ><svg class="ic" width="22" height="22" style=""><use href="#i-inbox"/></svg><span>Inbox</span></a><a ><svg class="ic" width="22" height="22" style=""><use href="#i-shield"/></svg><span>Verification</span></a><a ><svg class="ic" width="22" height="22" style=""><use href="#i-cal"/></svg><span>Maturity calendar</span></a><a ><svg class="ic" width="22" height="22" style=""><use href="#i-doc"/></svg><span>Reports</span></a><a ><svg class="ic" width="22" height="22" style=""><use href="#i-gear"/></svg><span>Admin</span></a></nav><div class="sideft"><svg width="72" height="72" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b17" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h17" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f17" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b17)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h17)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f17)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M50 71q10 9 20 0" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg><small>Need help? Ask the handbook</small></div></aside>
+<main><header class="wtop"><div class="searchbar wide"><svg class="ic" width="20" height="20" style="color:var(--text-3)"><use href="#i-search"/></svg><span>Search FDR no., institution, bank</span><kbd>Ctrl K</kbd></div><div class="topprog"><div class="progress-ink"><i style="width:56%"></i></div><b>56%</b></div><span class="bellw"><svg class="ic" width="22" height="22" style="color:#1a1a1e"><use href="#i-bell"/></svg></span><span class="pill pill-role">Scrutiny Officer</span><div class="avatar sm">AK</div></header>
+<div class="hero herow"><div class="heroT"><span class="chipw">South region</span><h1>Good afternoon,<br>Anil</h1><p class="sub">Saturday, 24 Oct 2026</p><button class="btn btn-primary"><svg class="ic" width="18" height="18" style="color:#fff"><use href="#i-plus"/></svg> New observation</button></div><svg class="ring big" width="260" height="260"><circle cx="130" cy="130" r="122" fill="none" stroke="#b4c9f4" stroke-width="2"/></svg><div class="kpeekw"><svg width="190" height="190" viewBox="0 0 120 120" aria-hidden="true"><defs>
+<linearGradient id="b18" x1=".1" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#8fb4ff"/><stop offset=".55" stop-color="#3b78d8"/><stop offset="1" stop-color="#2556b8"/></linearGradient>
+<radialGradient id="h18" cx=".3" cy=".2" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<linearGradient id="f18" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e6edff"/></linearGradient></defs>
+<ellipse cx="60" cy="112" rx="32" ry="5" fill="#2556b8" opacity=".16"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#b18)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55C37 102 19 85 19 55V23z" fill="url(#h18)"/>
+<path d="M60 8l41 15v32c0 30-18 47-41 55" fill="none" stroke="#1d47a0" stroke-opacity=".25" stroke-width="2"/>
+<rect x="29" y="34" width="62" height="50" rx="22" fill="url(#f18)"/>
+<ellipse cx="46" cy="55" rx="5.2" ry="6.6" fill="#16213f"/><ellipse cx="74" cy="55" rx="5.2" ry="6.6" fill="#16213f"/>
+<circle cx="47.8" cy="52.6" r="1.9" fill="#fff"/><circle cx="75.8" cy="52.6" r="1.9" fill="#fff"/>
+<circle cx="37" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/><circle cx="83" cy="66" r="4.2" fill="#ffb7c2" opacity=".55"/>
+<path d="M50 71q10 9 20 0" fill="none" stroke="#16213f" stroke-width="3.2" stroke-linecap="round"/>
+<rect x="14" y="88" width="26" height="16" rx="8" fill="#2d63cf"/><rect x="80" y="88" width="26" height="16" rx="8" fill="#2d63cf"/><path d="M101 14l2.6 5.4 5.4 2.6-5.4 2.6L101 30l-2.6-5.4L93 22l5.4-2.6z" fill="#dbe6ff"/></svg></div></div>
+<section class="kpis"><div class="card kpi"><small>Active instruments</small><b class="big">—</b><span class="pill pill-neutral">live from database</span></div><div class="card kpi"><small>Expiring in 90 days</small><b class="big">—</b><span class="pill pill-warn">live from database</span></div><div class="card kpi"><small>Open observations</small><b class="big">—</b><span class="pill pill-error">live from database</span></div><div class="card kpi"><small>Awaiting bank</small><b class="big">—</b><span class="pill pill-pending">live from database</span></div></section>
+<section class="two-col"><div class="card"><div class="between"><h3>Needs action</h3><div class="segmented"><button aria-selected="true">Mine</button><button>Team</button></div></div><table><thead><tr><th>Institution</th><th>FDR no.</th><th class="num">Amount</th><th>Maturity</th><th>Status</th></tr></thead><tbody><tr><td><b>Apex Institute of Technology</b><small>Karnataka</small></td><td class="mono">XXXX 4417</td><td class="num">₹ 50,00,000</td><td>14 Dec 2026</td><td><span class="pill pill-warn">Expiring in 51 days</span></td></tr><tr><td><b>National College of Engineering</b><small>Tamil Nadu</small></td><td class="mono">XXXX 9021</td><td class="num">₹ 35,00,000</td><td>02 Mar 2027</td><td><span class="pill pill-ok">Active · Bank-confirmed</span></td></tr><tr><td><b>St. Mary's Polytechnic</b><small>Kerala</small></td><td class="mono">XXXX 7718</td><td class="num">₹ 15,00,000</td><td>30 Oct 2026</td><td><span class="pill pill-error">Overdue reply</span></td></tr><tr><td><b>Delhi Global Technical Campus</b><small>Delhi</small></td><td class="mono">XXXX 3302</td><td class="num">₹ 25,00,000</td><td>19 Jan 2027</td><td><span class="pill pill-pending">Awaiting bank</span></td></tr></tbody></table></div>
+<div class="card"><h3>Evidence attributes</h3><p class="sub">Never one score. Each fact keeps its source.</p><div class="legend"><div><span class="pill pill-neutral">Declared</span><small>Institution said so</small></div><div><span class="pill pill-pending">Extracted</span><small>Read from a document</small></div><div><span class="pill pill-ok"><svg class="ic" width="14" height="14" style=""><use href="#i-check"/></svg> Bank-confirmed</span><small>Bank answered</small></div><div><span class="pill pill-info"><svg class="ic" width="14" height="14" style=""><use href="#i-shield"/></svg> Ledger-reconciled</span><small>Matched a statement line</small></div><div><span class="pill pill-warn">Inconclusive</span><small>Needs a human decision</small></div></div></div></section>
+<p class="fine">Design preview. Values shown as — are filled from the database at run time; names and amounts here are illustrative.</p></main></div></div></body></html>

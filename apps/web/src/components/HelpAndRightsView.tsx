@@ -89,75 +89,94 @@ export const HelpAndRightsView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Header Banner */}
-      <div className="glass-panel p-6 rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-purple-950/40">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '28px', boxShadow: 'var(--shadow-card)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: 40, height: 40, borderRadius: '12px', background: 'var(--primary-container)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <HelpCircle size={20} color="var(--azure)" />
+          </div>
           <div>
-            <div className="flex items-center gap-3">
-              <span className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                <HelpCircle size={22} />
-              </span>
-              <h1 className="text-2xl font-bold tracking-tight text-white">Help, Support & DPDP Rights</h1>
-            </div>
-            <p className="mt-1 text-sm text-slate-400">
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: 'var(--text1)' }}>Help, Support &amp; DPDP Rights</h1>
+            <p style={{ marginTop: '2px', fontSize: '13px', color: 'var(--text3)' }}>
               Statutory guidance, grievance redressal, and DPDP Act 2023 data rights portal (F-21, F-22)
             </p>
           </div>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-2 mt-6 border-b border-slate-800 pb-2">
+        <div style={{ display: 'flex', gap: '8px', marginTop: '24px', background: 'var(--field)', padding: '4px', borderRadius: '14px', border: '1px solid var(--border)', width: 'fit-content' }}>
           <button
             onClick={() => setActiveTab('faq')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'faq'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '10px',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              border: 'none',
+              background: activeTab === 'faq' ? 'var(--surface)' : 'transparent',
+              color: activeTab === 'faq' ? 'var(--text1)' : 'var(--text3)',
+              boxShadow: activeTab === 'faq' ? 'var(--shadow-card)' : 'none',
+              transition: 'all 0.15s ease',
+            }}
           >
-            APH Handbook & FAQs
+            APH Handbook &amp; FAQs
           </button>
           <button
             onClick={() => setActiveTab('tickets')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'tickets'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '10px',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              border: 'none',
+              background: activeTab === 'tickets' ? 'var(--surface)' : 'transparent',
+              color: activeTab === 'tickets' ? 'var(--text1)' : 'var(--text3)',
+              boxShadow: activeTab === 'tickets' ? 'var(--shadow-card)' : 'none',
+              transition: 'all 0.15s ease',
+            }}
           >
-            Grievances & Tickets ({tickets.length})
+            Grievances &amp; Tickets ({tickets.length})
           </button>
           <button
             onClick={() => setActiveTab('dpdp')}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'dpdp'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '10px',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              border: 'none',
+              background: activeTab === 'dpdp' ? 'var(--surface)' : 'transparent',
+              color: activeTab === 'dpdp' ? 'var(--text1)' : 'var(--text3)',
+              boxShadow: activeTab === 'dpdp' ? 'var(--shadow-card)' : 'none',
+              transition: 'all 0.15s ease',
+            }}
           >
-            DPDP Data Rights & Retention
+            DPDP Data Rights &amp; Retention
           </button>
         </div>
       </div>
 
       {toastMessage && (
-        <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
-          <CheckCircle2 size={14} />
+        <div style={{ padding: '14px 18px', borderRadius: '14px', background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <CheckCircle2 size={16} color="#059669" />
           {toastMessage}
         </div>
       )}
 
       {/* Tab 1: FAQ & Knowledge Base */}
       {activeTab === 'faq' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
           {faqs.map((faq, idx) => (
-            <div key={idx} className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
-              <div className="flex items-start gap-2.5">
-                <FileText size={18} className="text-cyan-400 shrink-0 mt-0.5" />
-                <h3 className="font-semibold text-sm text-white">{faq.q}</h3>
+            <div key={idx} style={{ padding: '22px', borderRadius: '20px', background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <FileText size={18} color="var(--azure)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <h3 style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text1)' }}>{faq.q}</h3>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed pl-7">{faq.a}</p>
+              <p style={{ fontSize: '12px', color: 'var(--text3)', lineHeight: 1.6, paddingLeft: '28px' }}>{faq.a}</p>
             </div>
           ))}
         </div>
@@ -165,29 +184,29 @@ export const HelpAndRightsView: React.FC = () => {
 
       {/* Tab 2: Tickets & Grievance Submission */}
       {activeTab === 'tickets' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
           {/* Create Ticket Form */}
-          <div className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-4 bg-slate-900/50 h-fit">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">Submit Formal Grievance</h2>
-            <form onSubmit={handleCreateTicket} className="space-y-4 text-xs">
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px', boxShadow: 'var(--shadow-card)', height: 'fit-content', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Submit Formal Grievance</h2>
+            <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '12px' }}>
               <div>
-                <label className="text-slate-400 font-semibold block mb-1">Subject</label>
+                <label style={{ color: 'var(--text2)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Subject</label>
                 <input
                   type="text"
                   value={ticketSubject}
                   onChange={(e) => setTicketSubject(e.target.value)}
                   placeholder="Summary of issue or regulatory query..."
-                  className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400 text-xs"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '12px', background: 'var(--field)', border: '1px solid var(--border)', color: 'var(--text1)', fontSize: '12px' }}
                   required
                 />
               </div>
 
               <div>
-                <label className="text-slate-400 font-semibold block mb-1">Category</label>
+                <label style={{ color: 'var(--text2)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Category</label>
                 <select
                   value={ticketCategory}
                   onChange={(e) => setTicketCategory(e.target.value as any)}
-                  className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400 text-xs"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '12px', background: 'var(--field)', border: '1px solid var(--border)', color: 'var(--text1)', fontSize: '12px' }}
                 >
                   <option value="handbook_query">Handbook Interpretation (APH)</option>
                   <option value="deposit_discrepancy">FDR Discrepancy Contestation</option>
@@ -197,11 +216,11 @@ export const HelpAndRightsView: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-slate-400 font-semibold block mb-1">Priority</label>
+                <label style={{ color: 'var(--text2)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Priority</label>
                 <select
                   value={ticketPriority}
                   onChange={(e) => setTicketPriority(e.target.value as any)}
-                  className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400 text-xs"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '12px', background: 'var(--field)', border: '1px solid var(--border)', color: 'var(--text1)', fontSize: '12px' }}
                 >
                   <option value="low">Low (General Query)</option>
                   <option value="medium">Medium (Standard)</option>
@@ -212,7 +231,23 @@ export const HelpAndRightsView: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl font-semibold bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center justify-center gap-2 transition-colors"
+                style={{
+                  width: '100%',
+                  marginTop: '8px',
+                  padding: '12px',
+                  borderRadius: '9999px',
+                  fontWeight: 700,
+                  background: 'var(--ink)',
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(17, 24, 39, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
               >
                 <Send size={14} /> Submit Grievance
               </button>
@@ -220,23 +255,23 @@ export const HelpAndRightsView: React.FC = () => {
           </div>
 
           {/* Tickets List */}
-          <div className="lg:col-span-2 space-y-3">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider">Active Casework & Tickets</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Casework &amp; Tickets</h2>
             {tickets.map((t) => (
-              <div key={t.id} className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs font-semibold text-cyan-300">{t.id}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 text-slate-300 border border-slate-700">
+              <div key={t.id} style={{ padding: '18px 20px', borderRadius: '18px', background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, color: 'var(--azure)' }}>{t.id}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', background: 'var(--field)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
                       {t.priority}
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-cyan-950 text-cyan-300 border border-cyan-800">
+                    <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', background: 'var(--primary-container)', color: 'var(--azure)' }}>
                       {t.status.replace('_', ' ')}
                     </span>
                   </div>
                 </div>
-                <h3 className="font-semibold text-sm text-white">{t.subject}</h3>
-                <div className="text-[11px] text-slate-500 flex items-center gap-4">
+                <h3 style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text1)' }}>{t.subject}</h3>
+                <div style={{ fontSize: '11px', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <span>Created: {t.createdAt}</span>
                   <span>Updated: {t.updatedAt}</span>
                 </div>
@@ -248,72 +283,72 @@ export const HelpAndRightsView: React.FC = () => {
 
       {/* Tab 3: DPDP Rights & Retention */}
       {activeTab === 'dpdp' && (
-        <div className="space-y-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Statutory Retention Schedule Table */}
-          <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
-            <div className="p-4 border-b border-slate-800 bg-slate-900/60 flex items-center gap-2">
-              <Lock size={16} className="text-cyan-400" />
-              <h2 className="text-xs font-bold text-white uppercase tracking-wider">
+          <div style={{ background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--field)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Lock size={16} color="var(--azure)" />
+              <h2 style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 DPDP Act 2023 Statutory Data Retention Schedules
               </h2>
             </div>
-            <div className="p-4 space-y-3 text-xs">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-                  <div className="font-semibold text-white">Active Deposits</div>
-                  <div className="text-cyan-400 font-mono mt-1 font-bold">7 Years post-discharge</div>
-                  <div className="text-[11px] text-slate-400 mt-1">Regulatory financial compliance</div>
+            <div style={{ padding: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--field)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text1)', fontSize: '13px' }}>Active Deposits</div>
+                  <div style={{ color: 'var(--azure)', fontFamily: 'var(--font-mono)', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>7 Years post-discharge</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>Regulatory financial compliance</div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-                  <div className="font-semibold text-white">Cryptographic Audit Logs</div>
-                  <div className="text-emerald-400 font-mono mt-1 font-bold">Indefinite (WORM)</div>
-                  <div className="text-[11px] text-slate-400 mt-1">Ed25519 tamper-evident ledger</div>
+                <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--field)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text1)', fontSize: '13px' }}>Cryptographic Audit Logs</div>
+                  <div style={{ color: '#059669', fontFamily: 'var(--font-mono)', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>Indefinite (WORM)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>Ed25519 tamper-evident ledger</div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-                  <div className="font-semibold text-white">Bank Statements</div>
-                  <div className="text-purple-400 font-mono mt-1 font-bold">10 Years</div>
-                  <div className="text-[11px] text-slate-400 mt-1">Banking reconciliation audits</div>
+                <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--field)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text1)', fontSize: '13px' }}>Bank Statements</div>
+                  <div style={{ color: '#7C3AED', fontFamily: 'var(--font-mono)', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>10 Years</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>Banking reconciliation audits</div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-                  <div className="font-semibold text-white">Malicious Quarantine</div>
-                  <div className="text-red-400 font-mono mt-1 font-bold">30 Days</div>
-                  <div className="text-[11px] text-slate-400 mt-1">Automatic purge post-forensics</div>
+                <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--field)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text1)', fontSize: '13px' }}>Malicious Quarantine</div>
+                  <div style={{ color: '#DC2626', fontFamily: 'var(--font-mono)', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>30 Days</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>Automatic purge post-forensics</div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Data Principal Rights Request Tracker */}
-          <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
-            <div className="p-4 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Shield size={16} className="text-cyan-400" />
-                <h2 className="text-xs font-bold text-white uppercase tracking-wider">
+          <div style={{ background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--field)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Shield size={16} color="var(--azure)" />
+                <h2 style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   Data Principal Rights Tracker (Section 11, 12, 13)
                 </h2>
               </div>
-              <span className="text-[11px] text-slate-400 font-mono">Statutory Response Window: 30 Days</span>
+              <span style={{ fontSize: '11px', color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>Statutory Response Window: 30 Days</span>
             </div>
 
-            <div className="p-4 space-y-3">
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {dpdpRequests.map((req) => (
-                <div key={req.id} className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between text-xs">
+                <div key={req.id} style={{ padding: '14px 18px', borderRadius: '14px', background: 'var(--field)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', fontSize: '12px' }}>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-cyan-300">{req.id}</span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 text-slate-300">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--azure)' }}>{req.id}</span>
+                      <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', background: 'var(--surface)', color: 'var(--text2)', border: '1px solid var(--border)' }}>
                         {req.requestType.replace('_', ' ')}
                       </span>
                     </div>
-                    <div className="mt-1 text-slate-300 font-medium">{req.subjectName}</div>
-                    <div className="text-[11px] text-slate-500">Submitted: {req.submittedAt}</div>
+                    <div style={{ marginTop: '4px', color: 'var(--text1)', fontWeight: 600 }}>{req.subjectName}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '2px' }}>Submitted: {req.submittedAt}</div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-cyan-950 text-cyan-300 border border-cyan-800">
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', background: req.status === 'processed' ? '#ECFDF5' : 'var(--primary-container)', color: req.status === 'processed' ? '#059669' : 'var(--azure)' }}>
                       {req.status.replace('_', ' ')}
                     </span>
-                    <div className="mt-1 text-[11px] text-slate-400">
+                    <div style={{ marginTop: '4px', fontSize: '11px', color: 'var(--text3)' }}>
                       {req.statutoryDaysRemaining > 0 ? `${req.statutoryDaysRemaining} days remaining` : 'Completed'}
                     </div>
                   </div>

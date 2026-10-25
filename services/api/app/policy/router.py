@@ -76,7 +76,9 @@ def get_policy_detail(
 ):
     pv = session.get(PolicyVersion, policy_version_id)
     if not pv:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Policy version not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Policy version not found"
+        )
     return pv
 
 
@@ -87,7 +89,10 @@ def import_drafts(
 ):
     loaded = load_policy_drafts(session)
     session.commit()
-    return {"message": f"Successfully loaded {len(loaded)} drafts", "count": len(loaded)}
+    return {
+        "message": f"Successfully loaded {len(loaded)} drafts",
+        "count": len(loaded),
+    }
 
 
 @router.post("/{policy_version_id}/approve", response_model=PolicyVersionResponse)
@@ -100,7 +105,9 @@ def approve_policy(
     try:
         user = session.get(AppUser, principal.id)
         if not user:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+            )
         pv = approve_policy_version(
             session,
             policy_version_id,

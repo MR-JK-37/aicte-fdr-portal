@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_principal
 from app.authz import Principal
-from app.db import SessionLocal
+from app.db import SessionLocal, set_app_context
 from app.models.workflow import SSEEvent
 
 logger = logging.getLogger(__name__)
@@ -24,11 +24,15 @@ router = APIRouter(prefix="/v1", tags=["realtime"])
 
 def is_event_authorized_for_principal(event: SSEEvent, principal: Principal) -> bool:
     """Per-event re-authorisation before emission (MASTER_PROMPT §10.8).
-    
+
     Verifies that the principal still possesses the authority/scope to see this event.
     """
     # 1. Operators and bureau admins have broad operational visibility
-    role_val = principal.role.value if hasattr(principal.role, "value") else str(principal.role)
+    role_val = (
+        principal.role.value
+        if hasattr(principal.role, "value")
+        else str(principal.role)
+    )
     if role_val in ("platform_operator", "bureau_admin"):
         return True
 
@@ -37,7 +41,11 @@ def is_event_authorized_for_principal(event: SSEEvent, principal: Principal) -> 
         return True
 
     # 3. Institution event
-    if event.institution_id and principal.institution_id and event.institution_id == principal.institution_id:
+    if (
+        event.institution_id
+        and principal.institution_id
+        and event.institution_id == principal.institution_id
+    ):
         return True
 
     # 4. Role-based event
@@ -45,7 +53,9 @@ def is_event_authorized_for_principal(event: SSEEvent, principal: Principal) -> 
         return True
 
     # 5. Broadcast / maintenance events (no recipient or institution specified)
-    return bool(not event.recipient_user_id and not event.institution_id and not event.role)
+    return bool(
+        not event.recipient_user_id and not event.institution_id and not event.role
+    )
 
 
 async def sse_generator(
@@ -55,10 +65,14 @@ async def sse_generator(
 ) -> AsyncGenerator[str, None]:
     """Generates SSE stream with Last-Event-ID catch-up replay and live heartbeat."""
     current_seq = last_event_id_val
+    role_val = principal.role.value if hasattr(principal.role, "value") else str(principal.role)
+    inst_val = str(principal.institution_id) if principal.institution_id else None
+    user_val = str(principal.id)
 
     # 1. Catch-up phase: replay buffered events from sse_events table
     db: Session = SessionLocal()
     try:
+        set_app_context(db, role=role_val, institution_id=inst_val, user_id=user_val)
         if current_seq > 0:
             buffered_events = (
                 db.execute(
@@ -82,12 +96,13 @@ async def sse_generator(
     heartbeat_interval = 15  # seconds per MASTER_PROMPT §10.8
     try:
         while True:
-            if await request.is_disconnected():
+            if request is not None and await request.is_disconnected():
                 break
 
             # Poll for new events in sse_events beyond current_seq
             db = SessionLocal()
             try:
+                set_app_context(db, role=role_val, institution_id=inst_val, user_id=user_val)
                 new_events = (
                     db.execute(
                         select(SSEEvent)

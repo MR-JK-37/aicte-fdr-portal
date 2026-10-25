@@ -27,7 +27,7 @@ def register_device(
     app_version: str | None = None,
 ) -> DeviceInstallation:
     """Registers or refreshes a device installation token.
-    
+
     If the push_token was previously linked to another user, deactivates the prior association
     to strictly prevent cross-user token reuse on device handover.
     """
@@ -122,7 +122,7 @@ def revoke_all_user_devices(
     user_id: uuid.UUID,
 ) -> int:
     """Revokes all active device installations for a user (called on logout/session revocation).
-    
+
     Guarantees: after logout, the previous user's device token receives NO notifications.
     """
     devices = (

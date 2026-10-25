@@ -201,3 +201,35 @@ def test_scenario_2_submission_immutable_version_receipt_queue(
     assert len(matching) == 1
     assert matching[0]["status"] == "SUBMITTED"
     assert matching[0]["institution_id"] == str(inst.id)
+
+
+def test_list_instruments_endpoint(db_session, submitter_setup):
+    inst, user, _ = submitter_setup
+    token = create_access_token(user)
+
+    # Initially empty or pre-existing list for this institution
+    res = client.get("/v1/instruments", headers={"Authorization": f"Bearer {token}"})
+    assert res.status_code == status.HTTP_200_OK
+    assert isinstance(res.json(), list)
+
+    # Create draft
+    draft_res = client.post(
+        "/v1/instruments/draft",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "institution_id": str(inst.id),
+            "type": "FDR",
+            "instrument_number": f"LIST-FDR-{uuid.uuid4().hex[:6]}",
+            "amount": "1500000.00",
+        },
+    )
+    assert draft_res.status_code == status.HTTP_201_CREATED
+    inst_id = draft_res.json()["id"]
+
+    # Now list returns the created instrument
+    res2 = client.get("/v1/instruments", headers={"Authorization": f"Bearer {token}"})
+    assert res2.status_code == status.HTTP_200_OK
+    items = res2.json()
+    assert any(i["id"] == inst_id for i in items)
+
+

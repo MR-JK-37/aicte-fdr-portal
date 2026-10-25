@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Switch, Platform, Alert } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Switch, Platform } from 'react-native';
 import { Icon } from '../design-system/Icon';
+import { useAppTheme } from '../design-system/theme';
 import { AppRole, MobileAppSettings } from '../types';
+import { MfaEnrolmentWizard } from '../auth/MfaEnrolmentWizard';
 
 interface MoreScreenProps {
   role: AppRole;
-  setRole: (role: AppRole) => void;
+  onLogout: () => void;
   settings: MobileAppSettings;
   onUpdateSettings: (newSettings: Partial<MobileAppSettings>) => void;
   onOpenQRScanner: () => void;
@@ -16,9 +18,27 @@ interface MoreScreenProps {
   onToggleOnline: () => void;
 }
 
+/**
+ * Mobile Profile & Settings Screen
+ * Mirrors Screen 4 from ui-refrence.png:
+ * - Topbar: fdr@portal, progress 56%, bell, Scrutiny Officer role pill
+ * - Region chip: Region: South
+ * - Avatar circle XL: AK
+ * - Name: Anil Kumar / Scrutiny Officer
+ * - Switch row: Show my name to institutions
+ * - Section "Main" grouped card:
+ *   - Two-step verification -> On ›
+ *   - Passkeys -> 1 ›
+ *   - Devices and sessions -> ›
+ *   - Language -> English ›
+ * - Grouped item: Privacy policy -> ›
+ * - Mobile companion tools & Sign out
+ */
+import { useAuth } from '../auth/AuthContext';
+
 export const MoreScreen: React.FC<MoreScreenProps> = ({
   role,
-  setRole,
+  onLogout,
   settings,
   onUpdateSettings,
   onOpenQRScanner,
@@ -28,300 +48,391 @@ export const MoreScreen: React.FC<MoreScreenProps> = ({
   isOnline,
   onToggleOnline,
 }) => {
+  const { tone, isDark } = useAppTheme();
+  const { user } = useAuth();
+  const [mfaWizardVisible, setMfaWizardVisible] = useState(false);
+  const [showNameToInstitutions, setShowNameToInstitutions] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+
+  const cardBg = isDark ? tone.surface : '#ffffff';
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleDeepLinkTest = () => {
-    showToast('Handled deep link: aicte-fdr://case/inst-1 (M-08)');
-  };
-
-  const handleReportProblem = () => {
-    showToast('Diagnostics bundle generated: PID_9021 (Correlation ID: req_m_99201). Zero PII.');
-  };
+  const roleFormatted = role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  const userName = user?.full_name || 'Official User';
+  const userInitials = userName
+    .split(' ')
+    .filter(Boolean)
+    .map((p) => p[0].toUpperCase())
+    .slice(0, 2)
+    .join('') || 'OU';
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Top Header */}
-      <View style={styles.topHeader}>
-        <Text style={styles.headerSuper}>MOBILE COMPANION CAPABILITIES</Text>
-        <Text style={styles.headerTitle}>Features & Settings (§9A)</Text>
-      </View>
-
-      {toast && (
-        <View style={styles.toastBanner}>
-          <Icon name="verified" size={14} color="#00eeff" />
-          <Text style={styles.toastText}>{toast}</Text>
-        </View>
-      )}
-
-      {/* Role Switcher */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.secTitle}>Active Signatory Role</Text>
-        <View style={styles.roleGrid}>
-          {(['institution', 'scrutiny_officer', 'competent_authority', 'auditor'] as AppRole[]).map((r) => {
-            const active = role === r;
-            return (
-              <TouchableOpacity
-                key={r}
-                style={[styles.roleBtn, active && styles.roleBtnActive]}
-                onPress={() => setRole(r)}
-              >
-                <Text style={[styles.roleText, active && styles.roleTextActive]}>
-                  {r.replace('_', ' ').toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* Mobile-Only Feature Launchers */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.secTitle}>Mobile-Exclusive Tools (§9A)</Text>
-        <TouchableOpacity style={styles.navRow} onPress={onOpenQRScanner}>
-          <View style={styles.rowLeft}>
-            <Icon name="qr" size={18} color="#00eeff" />
-            <View>
-              <Text style={styles.rowTitle}>Receipt QR Scanner (M-09)</Text>
-              <Text style={styles.rowSub}>Offline Ed25519 signature checks</Text>
-            </View>
-          </View>
-          <Text style={styles.rowArrow}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navRow} onPress={onOpenDocCapture}>
-          <View style={styles.rowLeft}>
-            <Icon name="scan" size={18} color="#00eeff" />
-            <View>
-              <Text style={styles.rowTitle}>Document Capture (M-05)</Text>
-              <Text style={styles.rowSub}>Camera scan with perspective crop</Text>
-            </View>
-          </View>
-          <Text style={styles.rowArrow}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navRow} onPress={onLockAppNow}>
-          <View style={styles.rowLeft}>
-            <Icon name="lock" size={18} color="#fbbf24" />
-            <View>
-              <Text style={styles.rowTitle}>Lock App with Biometrics (M-03)</Text>
-              <Text style={styles.rowSub}>Instant Face ID / Fingerprint veil</Text>
-            </View>
-          </View>
-          <Text style={styles.rowArrow}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navRow} onPress={handleDeepLinkTest}>
-          <View style={styles.rowLeft}>
-            <Icon name="link" size={18} color="#c084fc" />
-            <View>
-              <Text style={styles.rowTitle}>Test Deep Link (M-08)</Text>
-              <Text style={styles.rowSub}>Simulate aicte-fdr://case/inst-1</Text>
-            </View>
-          </View>
-          <Text style={styles.rowArrow}>›</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Security & Device Policies */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.secTitle}>Security & Privacy (M-03, M-04, M-19)</Text>
-
-        <View style={styles.switchRow}>
-          <View style={styles.switchLabelBox}>
-            <Text style={styles.rowTitle}>Biometric App Lock (M-03)</Text>
-            <Text style={styles.rowSub}>Auto-lock after 30 seconds idle</Text>
-          </View>
-          <Switch
-            value={settings.biometric_enabled}
-            onValueChange={(val) => onUpdateSettings({ biometric_enabled: val })}
-            trackColor={{ false: '#334155', true: '#00eeff' }}
-            thumbColor="#ffffff"
-          />
-        </View>
-
-        <View style={styles.switchRow}>
-          <View style={styles.switchLabelBox}>
-            <Text style={styles.rowTitle}>Secure Screens (M-04)</Text>
-            <Text style={styles.rowSub}>FLAG_SECURE screen capture block</Text>
-          </View>
-          <Switch
-            value={settings.secure_screens_enabled}
-            onValueChange={(val) => onUpdateSettings({ secure_screens_enabled: val })}
-            trackColor={{ false: '#334155', true: '#00eeff' }}
-            thumbColor="#ffffff"
-          />
-        </View>
-
-        <View style={styles.switchRow}>
-          <View style={styles.switchLabelBox}>
-            <Text style={styles.rowTitle}>Hide Amounts on Lock-Screen (M-19)</Text>
-            <Text style={styles.rowSub}>Masks rupee figures in push banners</Text>
-          </View>
-          <Switch
-            value={settings.hide_amounts_on_lock_screen}
-            onValueChange={(val) => onUpdateSettings({ hide_amounts_on_lock_screen: val })}
-            trackColor={{ false: '#334155', true: '#00eeff' }}
-            thumbColor="#ffffff"
-          />
-        </View>
-      </View>
-
-      {/* Network & Offline Resilience (M-12, M-13) */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.secTitle}>Resilience & Cache (M-12, M-13)</Text>
-        <View style={styles.switchRow}>
-          <View style={styles.switchLabelBox}>
-            <Text style={styles.rowTitle}>Network Connectivity State</Text>
-            <Text style={styles.rowSub}>{isOnline ? 'Online (SSE Active)' : 'Offline (Local Read Cache Only)'}</Text>
-          </View>
-          <Switch
-            value={isOnline}
-            onValueChange={onToggleOnline}
-            trackColor={{ false: '#ef4444', true: '#3ddc97' }}
-            thumbColor="#ffffff"
-          />
-        </View>
-
-        <View style={styles.switchRow}>
-          <View style={styles.switchLabelBox}>
-            <Text style={styles.rowTitle}>Encrypted Read Cache (M-12)</Text>
-            <Text style={styles.rowSub}>Scoped to verified active registers</Text>
-          </View>
-          <Switch
-            value={settings.offline_read_cache_enabled}
-            onValueChange={(val) => onUpdateSettings({ offline_read_cache_enabled: val })}
-            trackColor={{ false: '#334155', true: '#00eeff' }}
-            thumbColor="#ffffff"
-          />
-        </View>
-      </View>
-
-      {/* Push & Device Diagnostics (M-16, M-18, M-20, M-21) */}
-      <View style={styles.sectionCard}>
-        <Text style={styles.secTitle}>Device Diagnostics & Gating (M-16, M-18, M-20)</Text>
-
-        {onTriggerTestPush && (
-          <TouchableOpacity style={styles.actionButton} onPress={onTriggerTestPush}>
-            <Icon name="notifications" size={16} color="#050505" />
-            <Text style={styles.actionButtonText}>Send Test Push Notification (M-16)</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity style={styles.outlineButton} onPress={handleReportProblem}>
-          <Icon name="warning" size={16} color="#cbd5e1" />
-          <Text style={styles.outlineButtonText}>Report a Problem (M-20)</Text>
-        </TouchableOpacity>
-
-        {/* Dictation & Simulation Compliance Notice (M-21) */}
-        <View style={styles.complianceBox}>
-          <Text style={styles.complianceTitle}>Statutory Audio Compliance (M-21)</Text>
-          <Text style={styles.complianceText}>
-            This official application strictly uses native OS keyboard dictation. Zero voice or calling simulations exist in production builds.
+    <View style={[styles.container, { backgroundColor: tone.bg }]}>
+      {/* 1. TopBar Header matching reference */}
+      <View style={styles.topbar}>
+        <View style={styles.topbarLeft}>
+          <Text style={[styles.wordmark, { color: tone.text1 }]}>
+            fdr<Text style={{ color: tone.accent }}>@</Text>portal
           </Text>
         </View>
 
-        <View style={styles.versionBox}>
-          <Text style={styles.versionText}>AICTE FDR Companion v1.0.0 (Build 20261024)</Text>
-          <Text style={styles.versionSub}>Platform: {Platform.OS.toUpperCase()} • Min Supported: 1.0.0 (M-18)</Text>
+        <View style={styles.topbarRight}>
+          <View style={styles.progressMiniWrap}>
+            <View style={[styles.progressTrack, { backgroundColor: isDark ? tone.surfaceMuted : '#e2e8f0' }]}>
+              <View style={[styles.progressFill, { width: '56%', backgroundColor: tone.ink }]} />
+            </View>
+            <Text style={[styles.progressText, { color: tone.text1 }]}>56%</Text>
+          </View>
+
+          <TouchableOpacity style={[styles.bellBtn, { backgroundColor: cardBg }]}>
+            <Icon name="notifications" size={18} color={tone.text1} />
+          </TouchableOpacity>
+
+          <View style={[styles.rolePill, { backgroundColor: tone.accentContainer }]}>
+            <Text style={[styles.rolePillText, { color: tone.accent }]}>{roleFormatted}</Text>
+          </View>
         </View>
       </View>
-    </ScrollView>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        {toast && (
+          <View style={styles.toastBanner}>
+            <Icon name="verified" size={14} color="#059669" />
+            <Text style={styles.toastText}>{toast}</Text>
+          </View>
+        )}
+
+        {/* Profile Card with Avatar XL and Region Chip */}
+        <View style={styles.profileHeader}>
+          {/* Region Chip */}
+          <View style={styles.regionChip}>
+            <Text style={styles.regionChipText}>Region: South</Text>
+          </View>
+
+          {/* Avatar XL */}
+          <View style={[styles.avatarXL, { backgroundColor: tone.accentContainer }]}>
+            <Text style={[styles.avatarXLText, { color: tone.accent }]}>{userInitials}</Text>
+          </View>
+
+          {/* Full Name & Designation */}
+          <Text style={[styles.profileName, { color: tone.text1 }]}>{userName}</Text>
+          <Text style={[styles.profileRole, { color: tone.text3 }]}>{roleFormatted}</Text>
+        </View>
+
+        {/* Switch Row: Show my name to institutions */}
+        <View style={[styles.toggleCard, { backgroundColor: cardBg }]}>
+          <Text style={[styles.toggleLabel, { color: tone.text1 }]}>
+            Show my name to institutions
+          </Text>
+          <Switch
+            value={showNameToInstitutions}
+            onValueChange={setShowNameToInstitutions}
+            trackColor={{ false: '#cbd5e1', true: tone.accent }}
+            thumbColor="#ffffff"
+          />
+        </View>
+
+        {/* Section: Main */}
+        <View style={styles.sectionWrap}>
+          <Text style={[styles.sectionLabel, { color: tone.text3 }]}>Main</Text>
+          <View style={[styles.groupedCard, { backgroundColor: cardBg }]}>
+            {/* Two-step verification */}
+            <TouchableOpacity
+              style={[styles.row, styles.rowBorder]}
+              onPress={() => setMfaWizardVisible(true)}
+            >
+              <View style={styles.rowLeft}>
+                <Icon name="security" size={18} color={tone.accent} />
+                <Text style={[styles.rowTitle, { color: tone.text1 }]}>Two-step verification</Text>
+              </View>
+              <View style={styles.rowRight}>
+                <Text style={[styles.rowValue, { color: tone.text3 }]}>On</Text>
+                <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Passkeys */}
+            <TouchableOpacity
+              style={[styles.row, styles.rowBorder]}
+              onPress={() => showToast('Passkeys registered: 1 on current device.')}
+            >
+              <View style={styles.rowLeft}>
+                <Icon name="biometric" size={18} color={tone.accent} />
+                <Text style={[styles.rowTitle, { color: tone.text1 }]}>Passkeys</Text>
+              </View>
+              <View style={styles.rowRight}>
+                <Text style={[styles.rowValue, { color: tone.text3 }]}>1</Text>
+                <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Devices and sessions */}
+            <TouchableOpacity
+              style={[styles.row, styles.rowBorder]}
+              onPress={() => showToast('Active session authenticated via Keycloak OIDC.')}
+            >
+              <View style={styles.rowLeft}>
+                <Icon name="devices" size={18} color={tone.accent} />
+                <Text style={[styles.rowTitle, { color: tone.text1 }]}>Devices and sessions</Text>
+              </View>
+              <View style={styles.rowRight}>
+                <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Language */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => showToast('Language selection: English (Statutory default).')}
+            >
+              <View style={styles.rowLeft}>
+                <Icon name="language" size={18} color={tone.accent} />
+                <Text style={[styles.rowTitle, { color: tone.text1 }]}>Language</Text>
+              </View>
+              <View style={styles.rowRight}>
+                <Text style={[styles.rowValue, { color: tone.text3 }]}>English</Text>
+                <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Section: Privacy Policy & Tools */}
+        <View style={styles.sectionWrap}>
+          <View style={[styles.groupedCard, { backgroundColor: cardBg }]}>
+            {/* Privacy Policy */}
+            <TouchableOpacity
+              style={[styles.row, styles.rowBorder]}
+              onPress={() => showToast('Privacy Policy: Protected under DPDP Act 2023 Section 11-13.')}
+            >
+              <View style={styles.rowLeft}>
+                <Icon name="policy" size={18} color={tone.accent} />
+                <Text style={[styles.rowTitle, { color: tone.text1 }]}>Privacy policy</Text>
+              </View>
+              <View style={styles.rowRight}>
+                <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Receipt QR Scanner */}
+            <TouchableOpacity
+              style={[styles.row, styles.rowBorder]}
+              onPress={onOpenQRScanner}
+            >
+              <View style={styles.rowLeft}>
+                <Icon name="qr" size={18} color={tone.accent} />
+                <Text style={[styles.rowTitle, { color: tone.text1 }]}>Receipt QR scanner</Text>
+              </View>
+              <View style={styles.rowRight}>
+                <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Document Capture */}
+            <TouchableOpacity
+              style={[styles.row, styles.rowBorder]}
+              onPress={onOpenDocCapture}
+            >
+              <View style={styles.rowLeft}>
+                <Icon name="scan" size={18} color={tone.accent} />
+                <Text style={[styles.rowTitle, { color: tone.text1 }]}>Document capture</Text>
+              </View>
+              <View style={styles.rowRight}>
+                <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Sign out */}
+            <TouchableOpacity style={styles.row} onPress={onLogout}>
+              <View style={styles.rowLeft}>
+                <Icon name="sign_out" size={18} color="#ef4444" />
+                <Text style={[styles.rowTitle, { color: '#ef4444' }]}>Sign out</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+
+      <MfaEnrolmentWizard visible={mfaWizardVisible} onClose={() => setMfaWizardVisible(false)} />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050505',
+  },
+  topbar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 54 : 20,
+    paddingBottom: 14,
+  },
+  topbarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  wordmark: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  topbarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  progressMiniWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  progressTrack: {
+    width: 32,
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  bellBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  rolePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 9999,
+  },
+  rolePillText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   content: {
-    padding: 16,
-    gap: 16,
-    paddingBottom: 32,
-  },
-  topHeader: {
-    marginTop: 6,
-    gap: 2,
-  },
-  headerSuper: {
-    fontSize: 10,
-    color: '#00eeff',
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#ffffff',
-    letterSpacing: -0.5,
+    paddingHorizontal: 20,
+    paddingBottom: 100,
   },
   toastBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(0, 238, 255, 0.15)',
     padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 238, 255, 0.3)',
+    borderRadius: 14,
+    backgroundColor: '#ecfdf5',
+    marginBottom: 16,
   },
   toastText: {
-    color: '#00eeff',
-    fontSize: 11,
+    fontSize: 12,
+    color: '#065f46',
     fontWeight: '600',
   },
-  sectionCard: {
-    backgroundColor: '#151316',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    padding: 16,
-    gap: 12,
-  },
-  secTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  roleGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  roleBtn: {
-    backgroundColor: '#1e293b',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  roleBtnActive: {
-    backgroundColor: 'rgba(0, 238, 255, 0.15)',
-    borderColor: '#00eeff',
-  },
-  roleText: {
-    color: '#94a3b8',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  roleTextActive: {
-    color: '#00eeff',
-  },
-  navRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  profileHeader: {
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
+  regionChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+    marginBottom: 20,
+  },
+  regionChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#334155',
+  },
+  avatarXL: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  avatarXLText: {
+    fontSize: 32,
+    fontWeight: '800',
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  profileRole: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  toggleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+    marginBottom: 24,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  sectionWrap: {
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  groupedCard: {
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+  },
+  rowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
+    borderBottomColor: '#f1f5f9',
   },
   rowLeft: {
     flexDirection: 'row',
@@ -329,89 +440,20 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rowTitle: {
-    color: '#f8fafc',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  rowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rowValue: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '500',
   },
-  rowSub: {
-    color: '#64748b',
-    fontSize: 10,
-    marginTop: 1,
-  },
-  rowArrow: {
-    color: '#94a3b8',
+  chevron: {
     fontSize: 18,
-    fontWeight: '600',
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  switchLabelBox: {
-    flex: 1,
-  },
-  actionButton: {
-    backgroundColor: '#00eeff',
-    borderRadius: 12,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  actionButtonText: {
-    color: '#050505',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  outlineButton: {
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#475569',
-  },
-  outlineButtonText: {
-    color: '#cbd5e1',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  complianceBox: {
-    backgroundColor: '#0c0716',
-    borderWidth: 1,
-    borderColor: '#334155',
-    borderRadius: 12,
-    padding: 12,
-    gap: 4,
-  },
-  complianceTitle: {
-    color: '#cbd5e1',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  complianceText: {
-    color: '#64748b',
-    fontSize: 10,
-    lineHeight: 14,
-  },
-  versionBox: {
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  versionText: {
-    color: '#64748b',
-    fontSize: 11,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  versionSub: {
-    color: '#475569',
-    fontSize: 10,
-    marginTop: 2,
+    fontWeight: '400',
   },
 });

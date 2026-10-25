@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { BarChart3, Download, Calendar, Filter, FileSpreadsheet, CheckCircle2, Clock, RefreshCw, FileText, ShieldAlert } from 'lucide-react';
+import { BarChart3, Download, Filter, FileSpreadsheet, Clock, FileText, ShieldAlert } from 'lucide-react';
 import { Instrument, ReportDefinition, GeneratedReport } from '../types';
+import { formatPaiseINR } from '@aicte-fdr/shared';
 
 interface ReportsViewProps {
   instruments: Instrument[];
@@ -45,179 +46,117 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ instruments }) => {
   const [selectedReportId, setSelectedReportId] = useState<string>('rep_monthly_position');
   const [selectedFormat, setSelectedFormat] = useState<'csv' | 'json' | 'pdf'>('csv');
   const [selectedFy, setSelectedFy] = useState<string>('2026-27');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([
-    {
-      id: 'gen-001',
-      reportId: 'rep_monthly_position',
-      title: 'Monthly Security Deposit Position (Table 1.4)',
-      format: 'csv',
-      generatedAt: '2026-10-24 10:15 IST',
-      fileSizeBytes: 148200,
-      downloadUrl: '#',
-      status: 'ready',
-    },
-    {
-      id: 'gen-002',
-      reportId: 'rep_maturity_exposure',
-      title: 'Maturity Schedule & Deficit Exposure',
-      format: 'json',
-      generatedAt: '2026-10-23 18:30 IST',
-      fileSizeBytes: 98400,
-      downloadUrl: '#',
-      status: 'ready',
-    },
-    {
-      id: 'gen-003',
-      reportId: 'rep_release_audit',
-      title: 'Release Payout & UTR Execution Audit Summary',
-      format: 'pdf',
-      generatedAt: '2026-10-22 14:00 IST',
-      fileSizeBytes: 421500,
-      downloadUrl: '#',
-      status: 'ready',
-    },
-  ]);
+  // No fabricated export history — the async export_jobs API (GET /v1/export-jobs,
+  // revalidated-on-download) does not exist yet (stream R4).
+  const generatedReports: GeneratedReport[] = [];
 
   const totalPaise = instruments.reduce((sum, i) => sum + i.amount, 0);
   const activePaise = instruments.filter((i) => i.status === 'ACTIVE').reduce((sum, i) => sum + i.amount, 0);
   const maturingPaise = instruments.filter((i) => i.status === 'EXPIRING' || i.status === 'MATURED').reduce((sum, i) => sum + i.amount, 0);
 
-  const formatPaiseINR = (paise: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(paise / 100);
-  };
-
   const handleGenerateReport = () => {
-    const reportDef = REPORT_CATALOGUE.find((r) => r.id === selectedReportId);
-    if (!reportDef) return;
-
-    setIsGenerating(true);
-    setTimeout(() => {
-      const newReport: GeneratedReport = {
-        id: `gen-${Date.now().toString().slice(-4)}`,
-        reportId: reportDef.id,
-        title: `${reportDef.title} (${selectedFy})`,
-        format: selectedFormat,
-        generatedAt: new Date().toLocaleString('en-IN', { hour12: false }) + ' IST',
-        fileSizeBytes: Math.floor(Math.random() * 200000) + 50000,
-        downloadUrl: '#',
-        status: 'ready',
-      };
-
-      setGeneratedReports((prev) => [newReport, ...prev]);
-      setIsGenerating(false);
-      setSuccessToast(`Report "${reportDef.title}" generated successfully in ${selectedFormat.toUpperCase()} format.`);
-      setTimeout(() => setSuccessToast(null), 4000);
-    }, 900);
-  };
-
-  const handleDownloadReport = (rep: GeneratedReport) => {
-    // Generate dummy downloadable file content
-    const content = `AICTE Regulatory Report Export\nTitle: ${rep.title}\nGenerated: ${rep.generatedAt}\nStatus: Certified\nTotal Paired Exposure: ${formatPaiseINR(totalPaise)}`;
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${rep.reportId}_${selectedFy}.${rep.format}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    setNotice(
+      'Not yet connected to the API. Report generation needs stream R4’s async export_jobs ' +
+        'pipeline (scope/reason/row-count/file-hash tracked, permission revalidated at download) — ' +
+        'nothing is generated or downloadable yet.'
+    );
+    setTimeout(() => setNotice(null), 5000);
   };
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Header Banner */}
-      <div className="glass-panel p-6 rounded-2xl border border-cyan-500/20 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-purple-950/40">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '28px', boxShadow: 'var(--shadow-card)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <div className="flex items-center gap-3">
-              <span className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                <BarChart3 size={22} />
-              </span>
-              <h1 className="text-2xl font-bold tracking-tight text-white">Reports & Statutory Exports</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: 40, height: 40, borderRadius: '12px', background: 'var(--primary-container)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <BarChart3 size={20} color="var(--azure)" />
+              </div>
+              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 800, color: 'var(--text1)' }}>Reports & Statutory Exports</h1>
             </div>
-            <p className="mt-1 text-sm text-slate-400">
+            <p style={{ marginTop: '4px', fontSize: '13px', color: 'var(--text3)' }}>
               Regulatory compliance reports, maturity exposure schedules, and reconciliation audit exports (F-16)
             </p>
           </div>
         </div>
 
         {/* Executive Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-          <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800">
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Custodial Deposit</div>
-            <div className="mt-2 text-xl font-bold font-mono text-cyan-300">{formatPaiseINR(totalPaise)}</div>
-            <div className="mt-1 text-[11px] text-slate-500">{instruments.length} Total Registered Instruments</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginTop: '24px' }}>
+          <div style={{ padding: '18px 20px', borderRadius: '16px', background: 'var(--field)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Custodial Deposit</div>
+            <div style={{ marginTop: '6px', fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--text1)' }}>{formatPaiseINR(totalPaise)}</div>
+            <div style={{ marginTop: '4px', fontSize: '11px', color: 'var(--text3)' }}>{instruments.length} Total Registered Instruments</div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800">
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Compliant Balance</div>
-            <div className="mt-2 text-xl font-bold font-mono text-emerald-300">{formatPaiseINR(activePaise)}</div>
-            <div className="mt-1 text-[11px] text-emerald-400/80">98.4% Statutory Coverage Ratio</div>
+          <div style={{ padding: '18px 20px', borderRadius: '16px', background: 'var(--field)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Compliant Balance</div>
+            <div style={{ marginTop: '6px', fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#059669' }}>{formatPaiseINR(activePaise)}</div>
+            <div style={{ marginTop: '4px', fontSize: '11px', color: '#059669' }}>Verified active status</div>
           </div>
 
-          <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800">
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Expiring / Deficit Risk</div>
-            <div className="mt-2 text-xl font-bold font-mono text-amber-300">{formatPaiseINR(maturingPaise)}</div>
-            <div className="mt-1 text-[11px] text-amber-400/80">Action required under T-90 ladder</div>
+          <div style={{ padding: '18px 20px', borderRadius: '16px', background: 'var(--field)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Expiring / Deficit Risk</div>
+            <div style={{ marginTop: '6px', fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#D97706' }}>{formatPaiseINR(maturingPaise)}</div>
+            <div style={{ marginTop: '4px', fontSize: '11px', color: '#D97706' }}>Action required under T-90 ladder</div>
           </div>
         </div>
       </div>
 
-      {successToast && (
-        <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
-          <CheckCircle2 size={14} />
-          {successToast}
+      {notice && (
+        <div style={{ padding: '14px 18px', borderRadius: '14px', background: '#FEF3C7', border: '1px solid #FCD34D', color: '#92400E', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ShieldAlert size={16} color="#B45309" />
+          {notice}
         </div>
       )}
 
       {/* Main Generation & Catalogue Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
         {/* Left 2 Cols: Report Catalogue */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <FileSpreadsheet size={16} className="text-cyan-400" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileSpreadsheet size={16} color="var(--azure)" />
               Statutory Report Catalogue
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
             {REPORT_CATALOGUE.map((report) => {
               const isSelected = selectedReportId === report.id;
               return (
                 <div
                   key={report.id}
                   onClick={() => setSelectedReportId(report.id)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-purple-950/40 border-cyan-400 shadow-lg shadow-cyan-950/20'
-                      : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
-                  }`}
+                  style={{
+                    padding: '18px',
+                    borderRadius: '18px',
+                    border: isSelected ? '2px solid var(--azure)' : '1px solid var(--border)',
+                    background: isSelected ? 'var(--primary-container)' : 'var(--surface)',
+                    boxShadow: isSelected ? '0 4px 16px rgba(59, 130, 246, 0.12)' : 'var(--shadow-card)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-cyan-300 border border-slate-700">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', background: isSelected ? '#FFFFFF' : 'var(--field)', color: 'var(--azure)' }}>
                       {report.category}
                     </span>
-                    <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                    <span style={{ fontSize: '11px', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Clock size={12} /> {report.frequency}
                     </span>
                   </div>
 
-                  <h3 className="mt-3 font-semibold text-sm text-white">{report.title}</h3>
-                  <p className="mt-1 text-xs text-slate-400 line-clamp-2">{report.description}</p>
+                  <h3 style={{ marginTop: '12px', fontWeight: 700, fontSize: '14px', color: 'var(--text1)' }}>{report.title}</h3>
+                  <p style={{ marginTop: '4px', fontSize: '12px', color: 'var(--text3)', lineHeight: 1.4 }}>{report.description}</p>
 
-                  <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Available:</span>
-                    <div className="flex gap-1.5">
+                  <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px' }}>
+                    <span style={{ color: 'var(--text3)' }}>Available:</span>
+                    <div style={{ display: 'flex', gap: '4px' }}>
                       {report.supportedFormats.map((fmt) => (
-                        <span key={fmt} className="uppercase font-mono font-semibold text-slate-300 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
+                        <span key={fmt} style={{ textTransform: 'uppercase', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text2)', background: 'var(--surface)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '10px' }}>
                           {fmt}
                         </span>
                       ))}
@@ -230,33 +169,33 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ instruments }) => {
         </div>
 
         {/* Right Col: Report Config & On-Demand Generator */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800 h-fit space-y-5 bg-slate-900/50">
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px', boxShadow: 'var(--shadow-card)', height: 'fit-content', display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div>
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Filter size={16} className="text-cyan-400" />
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Filter size={16} color="var(--azure)" />
               Configure & Generate
             </h2>
-            <p className="mt-1 text-xs text-slate-400">
+            <p style={{ marginTop: '4px', fontSize: '12px', color: 'var(--text3)' }}>
               Export filtered datasets with verified cryptographic timestamping
             </p>
           </div>
 
-          <div className="space-y-4 text-xs">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '12px' }}>
             {/* Selected Report Name */}
             <div>
-              <label className="text-slate-400 font-semibold block mb-1">Target Report</label>
-              <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-cyan-300 font-medium truncate">
+              <label style={{ color: 'var(--text2)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Target Report</label>
+              <div style={{ padding: '10px 12px', borderRadius: '12px', background: 'var(--field)', border: '1px solid var(--border)', color: 'var(--text1)', fontWeight: 600 }}>
                 {REPORT_CATALOGUE.find((r) => r.id === selectedReportId)?.title}
               </div>
             </div>
 
             {/* Financial Year */}
             <div>
-              <label className="text-slate-400 font-semibold block mb-1">Financial Year</label>
+              <label style={{ color: 'var(--text2)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Financial Year</label>
               <select
                 value={selectedFy}
                 onChange={(e) => setSelectedFy(e.target.value)}
-                className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '12px', background: 'var(--field)', border: '1px solid var(--border)', color: 'var(--text1)', fontSize: '12px' }}
               >
                 <option value="2026-27">FY 2026-27 (Current Cycle)</option>
                 <option value="2025-26">FY 2025-26</option>
@@ -266,17 +205,24 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ instruments }) => {
 
             {/* Export Format */}
             <div>
-              <label className="text-slate-400 font-semibold block mb-1">Export Format</label>
-              <div className="grid grid-cols-3 gap-2">
+              <label style={{ color: 'var(--text2)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>Export Format</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                 {(['csv', 'json', 'pdf'] as const).map((fmt) => (
                   <button
                     key={fmt}
                     onClick={() => setSelectedFormat(fmt)}
-                    className={`py-2 text-center rounded-xl font-mono uppercase font-bold border transition-colors ${
-                      selectedFormat === fmt
-                        ? 'bg-cyan-950 text-cyan-300 border-cyan-400'
-                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
-                    }`}
+                    style={{
+                      padding: '8px',
+                      textAlign: 'center',
+                      borderRadius: '10px',
+                      fontFamily: 'var(--font-mono)',
+                      textTransform: 'uppercase',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: selectedFormat === fmt ? '1px solid var(--azure)' : '1px solid var(--border)',
+                      background: selectedFormat === fmt ? 'var(--primary-container)' : 'var(--field)',
+                      color: selectedFormat === fmt ? 'var(--azure)' : 'var(--text3)',
+                    }}
                   >
                     {fmt}
                   </button>
@@ -287,78 +233,45 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ instruments }) => {
             {/* Generate Action Button */}
             <button
               onClick={handleGenerateReport}
-              disabled={isGenerating}
-              className="w-full mt-2 py-3 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-slate-950 flex items-center justify-center gap-2 shadow-lg shadow-cyan-950/30 transition-all disabled:opacity-50"
+              style={{
+                width: '100%',
+                marginTop: '8px',
+                padding: '12px',
+                borderRadius: '9999px',
+                fontWeight: 700,
+                background: 'var(--ink)',
+                color: '#FFFFFF',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 14px rgba(17, 24, 39, 0.2)',
+                fontSize: '13px',
+              }}
             >
-              {isGenerating ? (
-                <>
-                  <RefreshCw size={14} className="animate-spin" />
-                  Generating Export...
-                </>
-              ) : (
-                <>
-                  <Download size={14} />
-                  Generate Export File
-                </>
-              )}
+              <Download size={15} />
+              Generate Export File
             </button>
           </div>
         </div>
       </div>
 
       {/* Generated Reports History Table */}
-      <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
-        <div className="p-4 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText size={16} className="text-cyan-400" />
-            <span className="text-xs font-semibold text-slate-300">Generated Exports & Downloads History</span>
+      <div style={{ background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileText size={16} color="var(--azure)" />
+            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text1)' }}>Generated Exports & Downloads History</span>
           </div>
-          <span className="text-[11px] text-slate-400">{generatedReports.length} Available Downloads</span>
+          <span style={{ fontSize: '11px', color: 'var(--text3)' }}>{generatedReports.length} Available Downloads</span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-800 text-slate-400 font-semibold bg-slate-950/40">
-                <th className="py-3 px-4">Export File Title</th>
-                <th className="py-3 px-4">Format</th>
-                <th className="py-3 px-4">Generated At</th>
-                <th className="py-3 px-4">File Size</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-center">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {generatedReports.map((rep) => (
-                <tr key={rep.id} className="hover:bg-slate-900/60 transition-colors">
-                  <td className="py-3 px-4 font-semibold text-white flex items-center gap-2">
-                    <FileSpreadsheet size={14} className="text-cyan-400" />
-                    {rep.title}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-slate-800 text-cyan-300 border border-slate-700">
-                      {rep.format}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-slate-300 font-mono">{rep.generatedAt}</td>
-                  <td className="py-3 px-4 text-slate-400 font-mono">{(rep.fileSizeBytes / 1024).toFixed(1)} KB</td>
-                  <td className="py-3 px-4">
-                    <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
-                      <CheckCircle2 size={12} /> Ready
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <button
-                      onClick={() => handleDownloadReport(rep)}
-                      className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-cyan-950 text-cyan-300 hover:text-cyan-200 border border-slate-700 hover:border-cyan-500/50 text-[11px] font-semibold transition-colors flex items-center gap-1.5 mx-auto"
-                    >
-                      <Download size={12} /> Download
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text3)', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+          <FileText size={16} />
+          Nothing here yet — exports will appear once stream R4's async export_jobs API exists and
+          this screen is wired to it (stream R3).
         </div>
       </div>
     </div>

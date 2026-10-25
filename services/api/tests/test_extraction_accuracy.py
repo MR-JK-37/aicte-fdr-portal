@@ -14,6 +14,8 @@ per-field breakdown. The real-world number once a real LLM extractor and
 real/representative scans exist may differ in either direction.
 """
 
+import pytest
+
 from app.documents.extraction import RegexFDRExtractor
 from app.documents.ocr import extract_text
 from tests.fixtures import LAYOUTS, random_fdr_fields, render_fdr_pdf
@@ -49,6 +51,7 @@ def _fields_match(expected: dict, got) -> dict[str, bool]:
     return results
 
 
+@pytest.mark.slow
 def test_extraction_benchmark_across_all_layouts():
     """100 synthetic FDRs across the 8 layouts, matching the brief's
     acceptance test shape exactly. See module docstring for the

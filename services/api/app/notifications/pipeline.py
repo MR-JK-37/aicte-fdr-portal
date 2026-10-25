@@ -45,7 +45,11 @@ def determine_category_and_deep_link(
         category = NotificationCategory.DEADLINE.value
     elif "security" in event_type or "session" in event_type:
         category = NotificationCategory.SECURITY_ACCOUNT.value
-    elif "operations" in event_type or "connector" in event_type or "outage" in event_type:
+    elif (
+        "operations" in event_type
+        or "connector" in event_type
+        or "outage" in event_type
+    ):
         category = NotificationCategory.OPERATIONS.value
     else:
         category = NotificationCategory.CRITICAL_WORKFLOW.value
@@ -81,16 +85,22 @@ def process_domain_event(
     5. Records attempt in notification_attempts table.
     6. Automatically cleans invalid tokens and dead-letters exhausted events.
     """
-    category, deep_link = determine_category_and_deep_link(event_type, aggregate_type, aggregate_id)
+    category, deep_link = determine_category_and_deep_link(
+        event_type, aggregate_type, aggregate_id
+    )
     institution_id_val = payload.get("institution_id")
-    target_institution_id = uuid.UUID(str(institution_id_val)) if institution_id_val else None
+    target_institution_id = (
+        uuid.UUID(str(institution_id_val)) if institution_id_val else None
+    )
 
     # Resolve recipients dynamically from database
     recipients = resolve_recipients(
         session,
         event_type=event_type,
         institution_id=target_institution_id,
-        specific_user_id=uuid.UUID(str(payload["recipient_user_id"])) if "recipient_user_id" in payload else None,
+        specific_user_id=uuid.UUID(str(payload["recipient_user_id"]))
+        if "recipient_user_id" in payload
+        else None,
         target_role=payload.get("target_role"),
     )
 
@@ -188,12 +198,19 @@ def process_domain_event(
             any_accepted = False
             for device in devices:
                 if device.platform == "android":
-                    send_res = _fcm_adapter.send_push(device.push_token or "", push_payload)
+                    send_res = _fcm_adapter.send_push(
+                        device.push_token or "", push_payload
+                    )
                 elif device.platform == "ios":
-                    send_res = _apns_adapter.send_push(device.push_token or "", push_payload)
+                    send_res = _apns_adapter.send_push(
+                        device.push_token or "", push_payload
+                    )
                 elif device.platform == "web":
                     send_res = _webpush_adapter.send_push(
-                        device.endpoint or "", device.p256dh_key or "", device.auth_key or "", push_payload
+                        device.endpoint or "",
+                        device.p256dh_key or "",
+                        device.auth_key or "",
+                        push_payload,
                     )
                 else:
                     send_res = SendResult(
@@ -221,7 +238,11 @@ def process_domain_event(
 
                 # If token is invalid or unregistered: revoke immediately
                 if send_res.should_revoke_device:
-                    logger.info("Cleaning invalid device installation %s (reason: %s)", device.id, send_res.result_code)
+                    logger.info(
+                        "Cleaning invalid device installation %s (reason: %s)",
+                        device.id,
+                        send_res.result_code,
+                    )
                     device.is_active = False
                     device.revoked_at = datetime.now(UTC)
 

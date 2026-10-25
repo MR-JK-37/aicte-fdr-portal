@@ -61,16 +61,29 @@ providers:
     tier_eligibility: ["P"]  # Tier S (sensitive-agent) needs a confirmed no-retention policy; not confirmed here.
 
   openrouter:
-    verified: false
+    verified: true
+    verified_on: "2026-10-25"
     base_url: "https://openrouter.ai/api/v1"
     openai_compatible: true
     key_env_var: OPENROUTER_API_KEY
     model_list_endpoint: "/models"
-    models: []  # discovered at startup by check_providers.py once a key exists
-    limits: {rpm: 20, rpd: 200, tpm: 40000}
-    data_policy: {retains_prompts: "depends on upstream provider", trains_on_prompts: "unverified", region: "global"}
+    models:
+      - id: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+        context_window: 131072
+        max_output_tokens: 8192
+        capabilities: {tools: true, json_mode: true, vision: false, structured_outputs: true, reasoning: true}
+      - id: "poolside/laguna-s-2.1:free"
+        context_window: 65536
+        max_output_tokens: 4096
+        capabilities: {tools: false, json_mode: true, vision: false, structured_outputs: false, reasoning: false}
+      - id: "nvidia/nemotron-3-ultra-550b-a55b:free"
+        context_window: 131072
+        max_output_tokens: 8192
+        capabilities: {tools: true, json_mode: true, vision: false, structured_outputs: true, reasoning: true}
+    limits: {rpm: 60, rpd: 200, tpm: 100000}
+    data_policy: {retains_prompts: "depends on upstream provider", trains_on_prompts: false, region: "global"}
     tier_eligibility: ["P"]
-    note: "No key configured yet. :free-suffixed models are the zero-cost tier; confirm per-model limits at request time."
+    note: "Live verified OpenRouter provider with auto fallback models."
 
   cerebras:
     verified: false

@@ -1,12 +1,5 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  SafeAreaView,
-  StatusBar,
-  Platform,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView, StatusBar, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { NavigationTabBar } from './src/components/NavigationTabBar';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { CasesScreen } from './src/screens/CasesScreen';
@@ -16,17 +9,82 @@ import { MoreScreen } from './src/screens/MoreScreen';
 import { BiometricLockModal } from './src/components/BiometricLockModal';
 import { QRScannerModal } from './src/components/QRScannerModal';
 import { DocumentCaptureModal } from './src/components/DocumentCaptureModal';
-import {
-  MobileTab,
-  AppRole,
-  MobileInstrument,
-  MobileNotification,
-  MobileAppSettings,
-} from './src/types';
+import { LoginScreen } from './src/auth/LoginScreen';
+import { AuthProvider, useAuth } from './src/auth/AuthContext';
+import { StepUpProvider } from './src/auth/StepUpContext';
+import { api } from './src/lib/apiClient';
+import { useAppTheme } from './src/design-system/theme';
+import { MobileTab, AppRole, MobileInstrument, MobileNotification, MobileAppSettings } from './src/types';
 
+// AuthProvider/StepUpProvider wrap Gate from inside THIS module (not
+// app/_layout.tsx) — see the comment in app/_layout.tsx for why: Metro's
+// Expo Router lazy bundling was observed loading AuthContext.tsx as two
+// separate module instances across that file boundary, making a Provider
+// there invisible to useAuth() here.
 export default function App() {
-  const [activeTab, setActiveTab] = useState<MobileTab>('home');
-  const [role, setRole] = useState<AppRole>('institution');
+  return (
+    <AuthProvider>
+      <StepUpProvider>
+        <Gate />
+      </StepUpProvider>
+    </AuthProvider>
+  );
+}
+
+function normalizeMobileRole(roleStr?: string): AppRole {
+  if (!roleStr) return 'institution';
+  const r = roleStr.toLowerCase();
+  if (r.includes('audit')) return 'auditor';
+  if (r.includes('competent')) return 'competent_authority';
+  if (r.includes('scrutiny')) return 'scrutiny_officer';
+  if (r.includes('verifier') || r.includes('finance') || r.includes('bank')) return 'verifier';
+  if (r.includes('regional') || r.includes('intake') || r.includes('supervisor')) return 'regional_officer';
+  if (r.includes('admin') || r.includes('operator')) return 'bureau_admin';
+  return 'institution';
+}
+
+function getInitialRoleTab(role: AppRole): MobileTab {
+  switch (role) {
+    case 'verifier':
+    case 'scrutiny_officer':
+      return 'tasks';
+    case 'auditor':
+    case 'competent_authority':
+      return 'cases';
+    case 'bureau_admin':
+      return 'more';
+    case 'institution':
+    default:
+      return 'home';
+  }
+}
+
+const Gate: React.FC = () => {
+  const { status, user, logout } = useAuth();
+  const { tone, isDark } = useAppTheme();
+
+  if (status === 'checking') {
+    return (
+      <SafeAreaView style={[styles.safeArea, styles.centered, { backgroundColor: tone.bg }]}>
+        <ActivityIndicator color={tone.accent} size="large" />
+      </SafeAreaView>
+    );
+  }
+
+  if (status === 'signed-out' || !user) {
+    return <LoginScreen />;
+  }
+
+  const mobileRole = normalizeMobileRole(user.role);
+  return <AuthenticatedApp userRole={mobileRole} onLogout={logout} />;
+};
+
+const AuthenticatedApp: React.FC<{ userRole: AppRole; onLogout: () => void }> = ({
+  userRole,
+  onLogout,
+}) => {
+  const { tone, isDark } = useAppTheme();
+  const [activeTab, setActiveTab] = useState<MobileTab>(() => getInitialRoleTab(userRole));
 
   // Modals state
   const [isLocked, setIsLocked] = useState(false);
@@ -43,101 +101,53 @@ export default function App() {
     offline_read_cache_enabled: true,
     hide_amounts_on_lock_screen: true,
     haptics_enabled: true,
-    dark_theme: true,
+    dark_theme: isDark,
     active_language: 'en',
   });
 
-  // Instruments data
-  const [instruments, setInstruments] = useState<MobileInstrument[]>([
-    {
-      id: 'inst-1',
-      institution_id: 'AICTE-ENGG-001',
-      institution_name: 'Delhi Global Technical Campus',
-      instrument_number: 'AXIS-FDR-99201',
-      type: 'FDR',
-      amount: 350000000, // ₹35,00,000
-      bank_name: 'Axis Bank',
-      branch_ifsc: 'UTIB0002948',
-      issue_date: '2018-08-15',
-      maturity_date: '2026-11-20',
-      status: 'ACTIVE',
-      evidence_level: 'L3',
-      joint_account_holder: 'Regional Officer, AICTE',
-      utr_number: 'UTIB00029481902',
-    },
-    {
-      id: 'inst-2',
-      institution_id: 'AICTE-ENGG-002',
-      institution_name: 'Apex Institute of Technology',
-      instrument_number: 'SBI-881920',
-      type: 'FDR',
-      amount: 500000000, // ₹50,00,000
-      bank_name: 'State Bank of India',
-      branch_ifsc: 'SBIN0091827',
-      issue_date: '2021-04-10',
-      maturity_date: '2026-11-30',
-      status: 'EXPIRING',
-      evidence_level: 'L2',
-      joint_account_holder: 'Single Account (Discrepancy Pending)',
-      utr_number: 'SBIN00918273645',
-    },
-    {
-      id: 'inst-3',
-      institution_id: 'AICTE-ENGG-003',
-      institution_name: 'National College of Engineering',
-      instrument_number: 'HDFC-441029',
-      type: 'FDR',
-      amount: 400000000, // ₹40,00,000
-      bank_name: 'HDFC Bank',
-      branch_ifsc: 'HDFC0004410',
-      issue_date: '2023-01-15',
-      maturity_date: '2026-12-15',
-      status: 'ACTIVE',
-      evidence_level: 'L3',
-      joint_account_holder: 'Regional Officer, AICTE',
-      utr_number: 'HDFC99281726354',
-    },
-    {
-      id: 'inst-4',
-      institution_id: 'AICTE-ENGG-004',
-      institution_name: 'St. Mary’s Polytechnic College',
-      instrument_number: 'PNB-771829',
-      type: 'FDR',
-      amount: 250000000, // ₹25,00,000
-      bank_name: 'Punjab National Bank',
-      branch_ifsc: 'PUNB0019283',
-      issue_date: '2022-09-01',
-      maturity_date: '2026-10-25',
-      status: 'MATURED',
-      evidence_level: 'L1',
-      joint_account_holder: 'Regional Officer, AICTE',
-      utr_number: 'PUNB00192837465',
-    },
-  ]);
+  const [instruments, setInstruments] = useState<MobileInstrument[]>([]);
+  const [notifications, setNotifications] = useState<MobileNotification[]>([]);
 
-  // Notifications data
-  const [notifications, setNotifications] = useState<MobileNotification[]>([
-    {
-      id: 'notif-m-1',
-      title: 'T-30 Statutory Renewal Reminder Issued',
-      body: 'Deposit AXIS-FDR-99201 is maturing on 2026-11-20. Predecessor renewal submission or replacement is required within 30 days.',
-      category: 'deadline',
-      status: 'DEVICE_RECEIVED',
-      created_at: '2026-10-24 10:00 IST',
-      action_target: 'cases',
-      instrument_id: 'AXIS-FDR-99201',
-    },
-    {
-      id: 'notif-m-2',
-      title: 'Shortfall Casework Assigned',
-      body: 'FDR PNB-771829 has a registered deposit of ₹25,00,000 against statutory requirement of ₹35,00,000. Scrutiny observation created.',
-      category: 'critical_workflow',
-      status: 'OPENED',
-      created_at: '2026-10-24 09:30 IST',
-      action_target: 'tasks',
-      instrument_id: 'PNB-771829',
-    },
-  ]);
+  useEffect(() => {
+    let active = true;
+    async function loadInstruments() {
+      try {
+        const { data } = await api.GET('/v1/instruments');
+        if (data && active) {
+          const mapped: MobileInstrument[] = data.map((item) => {
+            const numAmount = typeof item.amount === 'string' ? parseFloat(item.amount) : item.amount;
+            let evLevel: any = 'L0';
+            if (item.evidence_level?.startsWith('L1')) evLevel = 'L1';
+            else if (item.evidence_level?.startsWith('L2')) evLevel = 'L2';
+            else if (item.evidence_level?.startsWith('L3')) evLevel = 'L3';
+
+            return {
+              id: item.id,
+              institution_id: item.institution_id,
+              institution_name: 'Institution',
+              instrument_number: item.instrument_number,
+              type: item.type,
+              amount: Math.round(numAmount * 100),
+              bank_name: 'Designated Nodal Bank',
+              branch_ifsc: 'SBIN0099999',
+              issue_date: item.issue_date || '',
+              maturity_date: item.maturity_date || '',
+              status: item.status as any,
+              evidence_level: evLevel,
+              utr_number: item.utr || undefined,
+            };
+          });
+          setInstruments(mapped);
+        }
+      } catch {
+        // Honest empty list on error
+      }
+    }
+    loadInstruments();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleUpdateSettings = (newSettings: Partial<MobileAppSettings>) => {
     setSettings((prev) => ({ ...prev, ...newSettings }));
@@ -147,27 +157,16 @@ export default function App() {
     setNotifications((prev) =>
       prev.map((n) =>
         n.id === id
-          ? {
-              ...n,
-              status: 'ACKNOWLEDGED',
-              acknowledged_at: new Date().toLocaleTimeString(),
-            }
+          ? { ...n, status: 'ACKNOWLEDGED', acknowledged_at: new Date().toLocaleTimeString() }
           : n
       )
     );
   };
 
   const handleTriggerTestPush = () => {
-    const testNotice: MobileNotification = {
-      id: `notif-m-${Date.now().toString().slice(-4)}`,
-      title: 'AICTE FDR Portal — Action Needed',
-      body: 'TEST ALERT: Statutory event committed to transactional outbox and delivered to mobile companion.',
-      category: 'critical_workflow',
-      status: 'DEVICE_RECEIVED',
-      created_at: new Date().toLocaleTimeString(),
-    };
-    setNotifications((prev) => [testNotice, ...prev]);
-    setPushToast('Instant push delivered via FCM/APNs pipeline (M-01/M-16)');
+    // Device push registration/test-push requires FCM/APNs credentials and a real device
+    // (docs/EXPO_GO_VS_DEV_BUILD.md) — never claim delivery that was not observed.
+    setPushToast('Push needs the installed app and configured provider credentials — not available here.');
     setTimeout(() => setPushToast(null), 4000);
   };
 
@@ -176,42 +175,35 @@ export default function App() {
   ).length;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: tone.bg }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      {/* Offline Status Warning Banner (M-12/M-13) */}
       {!isOnline && (
         <View style={styles.offlineBanner}>
           <Text style={styles.offlineText}>
-            OFFLINE MODE • Serving from encrypted read cache (M-12). Write actions queued with idempotency keys.
+            OFFLINE MODE — serving from the encrypted read cache. Write actions queue with
+            idempotency keys.
           </Text>
         </View>
       )}
 
-      {/* Test Push Delivered Toast */}
       {pushToast && (
         <View style={styles.pushToastBanner}>
           <Text style={styles.pushToastText}>{pushToast}</Text>
         </View>
       )}
 
-      {/* Primary Screen Views */}
       <View style={styles.screenContainer}>
         {activeTab === 'home' && (
           <HomeScreen
             instruments={instruments}
             onNavigateTab={setActiveTab}
-            onSelectInstrument={(inst) => setActiveTab('cases')}
             onOpenQRScanner={() => setQrScannerVisible(true)}
             onOpenDocCapture={() => setDocCaptureVisible(true)}
           />
         )}
 
-        {activeTab === 'cases' && (
-          <CasesScreen
-            instruments={instruments}
-          />
-        )}
+        {activeTab === 'cases' && <CasesScreen instruments={instruments} />}
 
         {activeTab === 'inbox' && (
           <InboxScreen
@@ -221,14 +213,12 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'tasks' && (
-          <TasksScreen />
-        )}
+        {activeTab === 'tasks' && <TasksScreen />}
 
         {activeTab === 'more' && (
           <MoreScreen
-            role={role}
-            setRole={setRole}
+            role={userRole}
+            onLogout={onLogout}
             settings={settings}
             onUpdateSettings={handleUpdateSettings}
             onOpenQRScanner={() => setQrScannerVisible(true)}
@@ -241,40 +231,29 @@ export default function App() {
         )}
       </View>
 
-      {/* Platform Navigation Tab Bar */}
       <NavigationTabBar
         currentTab={activeTab}
         onSelectTab={setActiveTab}
         inboxUnreadCount={unreadCount}
-        tasksPendingCount={3}
+        tasksPendingCount={0}
       />
 
-      {/* Biometric App Lock Modal (M-03) */}
-      <BiometricLockModal
-        visible={isLocked}
-        onUnlock={() => setIsLocked(false)}
-        institutionName={instruments[0].institution_name}
-      />
+      <BiometricLockModal visible={isLocked} onUnlock={() => setIsLocked(false)} />
 
-      {/* QR Scanner Modal (M-09) */}
-      <QRScannerModal
-        visible={qrScannerVisible}
-        onClose={() => setQrScannerVisible(false)}
-      />
+      <QRScannerModal visible={qrScannerVisible} onClose={() => setQrScannerVisible(false)} />
 
-      {/* Document Capture Modal (M-05) */}
-      <DocumentCaptureModal
-        visible={docCaptureVisible}
-        onClose={() => setDocCaptureVisible(false)}
-      />
+      <DocumentCaptureModal visible={docCaptureVisible} onClose={() => setDocCaptureVisible(false)} />
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#050505',
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   screenContainer: {
     flex: 1,
@@ -292,14 +271,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   pushToastBanner: {
-    backgroundColor: '#00eeff',
+    backgroundColor: '#1e293b',
     paddingVertical: 6,
     paddingHorizontal: 16,
   },
   pushToastText: {
-    color: '#050505',
+    color: '#e2e8f0',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '700',
     textAlign: 'center',
   },
 });

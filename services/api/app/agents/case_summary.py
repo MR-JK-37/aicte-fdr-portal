@@ -23,7 +23,9 @@ from app.llm_gateway.gateway import generate, is_gateway_disabled
 from app.models.core import Instrument
 
 DISCLAIMER_LABEL = "AI-generated assistance — verify against the record"
-UNAVAILABLE_NOTICE = "AI case summary is currently unavailable. Review the primary record below."
+UNAVAILABLE_NOTICE = (
+    "AI case summary is currently unavailable. Review the primary record below."
+)
 
 
 class CaseSummaryPayload(BaseModel):
@@ -49,7 +51,11 @@ def _verify_numbers_and_dates(text: str, instrument: Instrument) -> bool:
     record_strings = [
         str(instrument.instrument_number),
         str(instrument.amount),
-        str(instrument.status.value if hasattr(instrument.status, "value") else instrument.status),
+        str(
+            instrument.status.value
+            if hasattr(instrument.status, "value")
+            else instrument.status
+        ),
     ]
     if instrument.maturity_date:
         record_strings.append(str(instrument.maturity_date))

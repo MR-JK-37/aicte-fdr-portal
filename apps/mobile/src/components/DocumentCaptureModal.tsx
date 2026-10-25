@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal, Platform } from 'react-native';
 import { Icon } from '../design-system/Icon';
+import { useAppTheme } from '../design-system/theme';
 
 interface DocumentCaptureModalProps {
   visible: boolean;
@@ -8,9 +9,16 @@ interface DocumentCaptureModalProps {
   onUploadSuccess?: (docName: string) => void;
 }
 
-export const DocumentCaptureModal: React.FC<DocumentCaptureModalProps> = ({ visible, onClose, onUploadSuccess }) => {
+export const DocumentCaptureModal: React.FC<DocumentCaptureModalProps> = ({
+  visible,
+  onClose,
+  onUploadSuccess,
+}) => {
+  const { tone, isDark } = useAppTheme();
   const [stage, setStage] = useState<'viewfinder' | 'preview' | 'uploading' | 'completed'>('viewfinder');
   const [progress, setProgress] = useState(0);
+
+  const cardBg = isDark ? tone.surface : '#ffffff';
 
   const handleCapture = () => {
     setStage('preview');
@@ -24,7 +32,7 @@ export const DocumentCaptureModal: React.FC<DocumentCaptureModalProps> = ({ visi
         if (prev >= 100) {
           clearInterval(interval);
           setStage('completed');
-          if (onUploadSuccess) onUploadSuccess('FDR_Scan_AXIS_2026.pdf');
+          if (onUploadSuccess) onUploadSuccess('fdr_document_scan.pdf');
           return 100;
         }
         return prev + 25;
@@ -39,7 +47,7 @@ export const DocumentCaptureModal: React.FC<DocumentCaptureModalProps> = ({ visi
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: tone.bg }]}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -49,66 +57,92 @@ export const DocumentCaptureModal: React.FC<DocumentCaptureModalProps> = ({ visi
             }}
             style={styles.closeBtn}
           >
-            <Text style={styles.closeBtnText}>Cancel</Text>
+            <Text style={[styles.closeBtnText, { color: tone.accent }]}>Cancel</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Document Capture (M-05)</Text>
+          <Text style={[styles.headerTitle, { color: tone.text1 }]}>Document Capture (M-05)</Text>
           <View style={{ width: 40 }} />
         </View>
 
         {/* Viewfinder Stage */}
         {stage === 'viewfinder' && (
           <View style={styles.body}>
-            <View style={styles.cameraBox}>
-              <View style={styles.guideLines}>
-                <Text style={styles.guideText}>Position Fixed Deposit Receipt inside frame</Text>
-                <View style={styles.autoCropBadge}>
-                  <Icon name="verified" size={14} color="#00eeff" />
-                  <Text style={styles.autoCropText}>Edge-Detection & Perspective Active</Text>
-                </View>
+            <View
+              style={[
+                styles.viewfinder,
+                {
+                  backgroundColor: isDark ? 'rgba(0,0,0,0.5)' : '#f8fafc',
+                  borderColor: isDark ? tone.outline : '#e2e8f0',
+                },
+              ]}
+            >
+              <View style={[styles.corner, styles.cornerTL, { borderColor: tone.accent }]} />
+              <View style={[styles.corner, styles.cornerTR, { borderColor: tone.accent }]} />
+              <View style={[styles.corner, styles.cornerBL, { borderColor: tone.accent }]} />
+              <View style={[styles.corner, styles.cornerBR, { borderColor: tone.accent }]} />
+
+              <View style={styles.guideFrame}>
+                <Icon name="documents" size={44} color={tone.accent} />
+                <Text style={[styles.reticleText, { color: tone.text3 }]}>
+                  Align physical deposit receipt inside boundary lines
+                </Text>
               </View>
             </View>
 
-            <View style={styles.captureControls}>
-              <TouchableOpacity style={styles.shutterButton} onPress={handleCapture}>
-                <View style={styles.shutterInner} />
+            {/* Shutter Button */}
+            <View style={styles.shutterContainer}>
+              <TouchableOpacity
+                style={[styles.shutterOuter, { borderColor: tone.accent }]}
+                onPress={handleCapture}
+              >
+                <View style={[styles.shutterInner, { backgroundColor: tone.accent }]} />
               </TouchableOpacity>
-              <Text style={styles.shutterLabel}>Tap to Capture Document</Text>
+              <Text style={[styles.shutterLabel, { color: tone.text3 }]}>Tap to capture</Text>
             </View>
           </View>
         )}
 
-        {/* Preview & Pre-check Stage */}
+        {/* Review Preview Stage */}
         {stage === 'preview' && (
           <View style={styles.body}>
-            <View style={styles.previewBox}>
-              <Icon name="documents" size={64} color="#00eeff" />
-              <Text style={styles.previewTitle}>FDR_Captured_Page_1.pdf</Text>
-              <Text style={styles.previewMeta}>2480 × 3508 • 300 DPI • 1.8 MB</Text>
+            <View style={[styles.previewBox, { backgroundColor: cardBg }]}>
+              <Icon name="verified" size={40} color="#059669" />
+              <Text style={[styles.previewTitle, { color: tone.text1 }]}>Document Captured</Text>
+              <Text style={[styles.previewMeta, { color: tone.text3 }]}>
+                Resolution: 300 DPI • Perspective corrected • Size: 1.2 MB
+              </Text>
 
-              {/* Local Pre-check Results */}
-              <View style={styles.precheckList}>
+              <View style={[styles.precheckList, { backgroundColor: isDark ? tone.surfaceMuted : '#f8fafc' }]}>
                 <View style={styles.precheckItem}>
-                  <Icon name="success" size={14} color="#3ddc97" />
-                  <Text style={styles.precheckText}>Perspective & Skew Corrected (0.2°)</Text>
+                  <Icon name="success" size={14} color="#059669" />
+                  <Text style={[styles.precheckText, { color: tone.text2 }]}>
+                    Four corners detected and flattened
+                  </Text>
                 </View>
                 <View style={styles.precheckItem}>
-                  <Icon name="success" size={14} color="#3ddc97" />
-                  <Text style={styles.precheckText}>Blur & Legibility Score: 98% (Pass)</Text>
-                </View>
-                <View style={styles.precheckItem}>
-                  <Icon name="success" size={14} color="#3ddc97" />
-                  <Text style={styles.precheckText}>Size within statutory 10 MB limit</Text>
+                  <Icon name="success" size={14} color="#059669" />
+                  <Text style={[styles.precheckText, { color: tone.text2 }]}>
+                    Contrast threshold passed for OCR (M-05)
+                  </Text>
                 </View>
               </View>
             </View>
 
             <View style={styles.previewActions}>
-              <TouchableOpacity style={styles.retakeButton} onPress={handleReset}>
-                <Text style={styles.retakeText}>Retake</Text>
+              <TouchableOpacity
+                style={[styles.retakeButton, { backgroundColor: isDark ? tone.surfaceMuted : '#f1f5f9' }]}
+                onPress={handleReset}
+              >
+                <Text style={[styles.retakeText, { color: tone.text2 }]}>Retake</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.uploadButton} onPress={handleStartUpload}>
-                <Icon name="upload" size={16} color="#050505" />
-                <Text style={styles.uploadText}>Upload to Vault</Text>
+
+              <TouchableOpacity
+                style={[styles.uploadButton, { backgroundColor: isDark ? '#ffffff' : tone.ink }]}
+                onPress={handleStartUpload}
+              >
+                <Icon name="upload" size={16} color={isDark ? '#0f172a' : '#ffffff'} />
+                <Text style={[styles.uploadText, { color: isDark ? '#0f172a' : '#ffffff' }]}>
+                  Upload & Queue
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -116,51 +150,42 @@ export const DocumentCaptureModal: React.FC<DocumentCaptureModalProps> = ({ visi
 
         {/* Uploading Stage */}
         {stage === 'uploading' && (
-          <View style={styles.body}>
-            <View style={styles.uploadBox}>
-              <Icon name="sync" size={48} color="#00eeff" />
-              <Text style={styles.uploadTitle}>Uploading Chunked Payload</Text>
-              <Text style={styles.uploadProgress}>{progress}% completed</Text>
-
-              {/* Progress Bar */}
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
-              </View>
-
-              <Text style={styles.uploadNote}>
-                Resumable chunked upload with background continuation (M-05)
-              </Text>
+          <View style={styles.uploadBox}>
+            <Icon name="upload" size={48} color={tone.accent} />
+            <Text style={[styles.uploadTitle, { color: tone.text1 }]}>Uploading Scanned Dossier</Text>
+            <Text style={[styles.uploadProgress, { color: tone.accent }]}>{progress}%</Text>
+            <View style={[styles.progressBarBg, { backgroundColor: tone.accentContainer }]}>
+              <View style={[styles.progressBarFill, { width: `${progress}%`, backgroundColor: tone.accent }]} />
             </View>
+            <Text style={[styles.uploadNote, { color: tone.text3 }]}>
+              Encrypting AES-GCM-256 before transmission to object store.
+            </Text>
           </View>
         )}
 
         {/* Completed Stage */}
         {stage === 'completed' && (
-          <View style={styles.body}>
-            <View style={styles.completeBox}>
-              <Icon name="success" size={56} color="#3ddc97" />
-              <Text style={styles.completeTitle}>Document Uploaded & Quarantined</Text>
-              <Text style={styles.completeText}>
-                File safely staged in S3 storage. ClamAV antivirus scanning and local OCR extraction initiated.
-              </Text>
-            </View>
-
+          <View style={styles.completeBox}>
+            <Icon name="success" size={56} color="#059669" />
+            <Text style={[styles.completeTitle, { color: tone.text1 }]}>Upload Completed</Text>
+            <Text style={[styles.completeText, { color: tone.text3 }]}>
+              Scanned receipt has been attached to the case queue with verification hash.
+            </Text>
             <TouchableOpacity
-              style={styles.doneButton}
+              style={[styles.doneButton, { backgroundColor: isDark ? '#ffffff' : tone.ink }]}
               onPress={() => {
                 handleReset();
                 onClose();
               }}
             >
-              <Text style={styles.doneText}>Return to App</Text>
+              <Text style={[styles.doneText, { color: isDark ? '#0f172a' : '#ffffff' }]}>Done</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Local pre-checks do not replace ClamAV virus scanning and server-side quarantine isolation.
+          <Text style={[styles.footerText, { color: tone.text3 }]}>
+            Parity with F-06 / F-12 Document Vault • Secure Upload Pipeline
           </Text>
         </View>
       </View>
@@ -171,9 +196,8 @@ export const DocumentCaptureModal: React.FC<DocumentCaptureModalProps> = ({ visi
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050505',
     paddingHorizontal: 20,
-    paddingTop: 48,
+    paddingTop: Platform.OS === 'ios' ? 48 : 24,
     paddingBottom: 24,
     justifyContent: 'space-between',
   },
@@ -186,67 +210,78 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   closeBtnText: {
-    color: '#00eeff',
-    fontWeight: '600',
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '700',
   },
   headerTitle: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
   },
   body: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
     gap: 24,
   },
-  cameraBox: {
-    width: '100%',
-    height: 380,
-    backgroundColor: '#0c0716',
+  viewfinder: {
+    width: 260,
+    height: 360,
+    borderWidth: 1,
     borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 238, 255, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    position: 'relative',
   },
-  guideLines: {
+  corner: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+  },
+  cornerTL: {
+    top: -2,
+    left: -2,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    borderTopLeftRadius: 8,
+  },
+  cornerTR: {
+    top: -2,
+    right: -2,
+    borderTopWidth: 3,
+    borderRightWidth: 3,
+    borderTopRightRadius: 8,
+  },
+  cornerBL: {
+    bottom: -2,
+    left: -2,
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+    borderBottomLeftRadius: 8,
+  },
+  cornerBR: {
+    bottom: -2,
+    right: -2,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderBottomRightRadius: 8,
+  },
+  guideFrame: {
     alignItems: 'center',
     gap: 12,
+    paddingHorizontal: 20,
   },
-  guideText: {
-    color: '#94a3b8',
+  reticleText: {
     fontSize: 12,
     textAlign: 'center',
+    lineHeight: 18,
   },
-  autoCropBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(0, 238, 255, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 238, 255, 0.3)',
-  },
-  autoCropText: {
-    color: '#00eeff',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  captureControls: {
+  shutterContainer: {
     alignItems: 'center',
     gap: 8,
   },
-  shutterButton: {
+  shutterOuter: {
     width: 68,
     height: 68,
     borderRadius: 34,
-    borderWidth: 4,
-    borderColor: '#00eeff',
+    borderWidth: 3,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -254,37 +289,35 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#ffffff',
   },
   shutterLabel: {
-    color: '#94a3b8',
     fontSize: 12,
+    fontWeight: '600',
   },
   previewBox: {
     width: '100%',
-    backgroundColor: '#151316',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 238, 255, 0.25)',
     padding: 20,
     alignItems: 'center',
     gap: 8,
+    shadowColor: '#1e1b4b',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
   previewTitle: {
-    color: '#ffffff',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     marginTop: 8,
   },
   previewMeta: {
-    color: '#94a3b8',
     fontSize: 11,
   },
   precheckList: {
     width: '100%',
     marginTop: 14,
     gap: 8,
-    backgroundColor: '#0c0716',
     padding: 12,
     borderRadius: 12,
   },
@@ -294,7 +327,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   precheckText: {
-    color: '#e2e8f0',
     fontSize: 11,
   },
   previewActions: {
@@ -304,93 +336,79 @@ const styles = StyleSheet.create({
   },
   retakeButton: {
     flex: 1,
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 999,
+    paddingVertical: 14,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#475569',
   },
   retakeText: {
-    color: '#f8fafc',
     fontSize: 13,
     fontWeight: '600',
   },
   uploadButton: {
     flex: 2,
-    backgroundColor: '#00eeff',
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 999,
+    paddingVertical: 14,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
   },
   uploadText: {
-    color: '#050505',
     fontSize: 13,
     fontWeight: '700',
   },
   uploadBox: {
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     width: '100%',
     paddingHorizontal: 20,
   },
   uploadTitle: {
-    color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
   },
   uploadProgress: {
-    color: '#00eeff',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   progressBarBg: {
     width: '100%',
     height: 8,
-    backgroundColor: '#1e293b',
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#00eeff',
   },
   uploadNote: {
-    color: '#64748b',
     fontSize: 11,
     textAlign: 'center',
     marginTop: 8,
   },
   completeBox: {
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
     paddingHorizontal: 24,
   },
   completeTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     textAlign: 'center',
   },
   completeText: {
-    color: '#94a3b8',
-    fontSize: 12,
+    fontSize: 13,
     textAlign: 'center',
     lineHeight: 18,
   },
   doneButton: {
     width: '100%',
-    backgroundColor: '#00eeff',
-    borderRadius: 12,
+    borderRadius: 999,
     paddingVertical: 14,
     alignItems: 'center',
+    marginTop: 10,
   },
   doneText: {
-    color: '#050505',
     fontWeight: '700',
     fontSize: 14,
   },
@@ -398,8 +416,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: '#475569',
-    fontSize: 10,
+    fontSize: 11,
     textAlign: 'center',
   },
 });

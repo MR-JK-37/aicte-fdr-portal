@@ -12,15 +12,25 @@ logger = logging.getLogger(__name__)
 
 
 class APNsAdapter:
-    def __init__(self, key_path: str | None = None, key_id: str | None = None, team_id: str | None = None) -> None:
+    def __init__(
+        self,
+        key_path: str | None = None,
+        key_id: str | None = None,
+        team_id: str | None = None,
+    ) -> None:
         self.key_path = key_path or os.environ.get("APNS_KEY_PATH")
         self.key_id = key_id or os.environ.get("APNS_KEY_ID")
         self.team_id = team_id or os.environ.get("APNS_TEAM_ID")
-        self.is_configured = bool(self.key_path and os.path.exists(self.key_path) and self.key_id and self.team_id)
+        self.is_configured = bool(
+            self.key_path
+            and os.path.exists(self.key_path)
+            and self.key_id
+            and self.team_id
+        )
 
     def send_push(self, device_token: str, payload: PushPayload) -> SendResult:
         """Dispatches push notification via APNs HTTP/2 token auth.
-        
+
         Honest reporting:
         If not configured, reports PROVIDER_FAILED / NOT_CONFIGURED without crashing.
         Never fabricates delivered state.
@@ -57,7 +67,9 @@ class APNsAdapter:
             )
 
         if not self.is_configured:
-            logger.info("APNs .p8 key credentials not configured. Reporting honest NOT_CONFIGURED.")
+            logger.info(
+                "APNs .p8 key credentials not configured. Reporting honest NOT_CONFIGURED."
+            )
             return SendResult(
                 status="PROVIDER_FAILED",
                 result_code="NOT_CONFIGURED",

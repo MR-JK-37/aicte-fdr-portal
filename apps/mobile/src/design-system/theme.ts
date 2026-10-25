@@ -9,12 +9,13 @@ export type ThemeTone = typeof dark;
  * design/DESIGN_SPEC.md §7/§13.3 ("colour scheme from the brand, not the
  * wallpaper"). Both are already brand-derived in @aicte-fdr/design-tokens —
  * nothing is invented here.
+ * Light-first by default for Lavender Ledger v2.1.
  */
 export function useAppTheme() {
-  const scheme = useColorScheme(); // 'dark' | 'light' | null
-  const isDark = scheme !== 'light';
-  const tone = isDark ? dark : light;
-  const m3 = isDark ? m3Dark : m3Light;
+  // Pure crisp white theme strictly matching ui-refrence.png
+  const isDark = false;
+  const tone = light;
+  const m3 = m3Light;
   const isAndroid = Platform.OS === 'android';
   return {
     isDark,

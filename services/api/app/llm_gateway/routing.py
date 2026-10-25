@@ -14,7 +14,7 @@ from app.llm_gateway.registry import load_registry
 
 TASK_CLASSES = (
     "sensitive-agent",  # Tier S
-    "case_summary",     # Tier S
+    "case_summary",  # Tier S
     "extraction",
     "ocr_field_structuring",
     "rag",
@@ -41,50 +41,63 @@ _TIER_P_CHAINS: dict[str, list[ChainStep]] = {
     "extraction": [
         ChainStep("groq", "openai/gpt-oss-120b"),
         ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("openrouter", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"),
+        ChainStep("openrouter", "poolside/laguna-s-2.1:free"),
         ChainStep("cerebras", "llama-3.3-70b"),
         ChainStep("gemini", "gemini-2.0-flash"),
-        ChainStep("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
     ],
     "ocr_field_structuring": [
         ChainStep("groq", "openai/gpt-oss-120b"),
         ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("openrouter", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"),
         ChainStep("cerebras", "llama-3.3-70b"),
     ],
     "rag": [
         ChainStep("groq", "openai/gpt-oss-120b"),
         ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("openrouter", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"),
+        ChainStep("openrouter", "poolside/laguna-s-2.1:free"),
         ChainStep("cerebras", "llama-3.3-70b"),
         ChainStep("gemini", "gemini-2.0-flash"),
-        ChainStep("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
     ],
     "policy_qa": [
         ChainStep("groq", "openai/gpt-oss-120b"),
         ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("openrouter", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"),
+        ChainStep("openrouter", "poolside/laguna-s-2.1:free"),
         ChainStep("cerebras", "llama-3.3-70b"),
         ChainStep("gemini", "gemini-2.0-flash"),
-        ChainStep("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
     ],
     "text2sql": [
         ChainStep("groq", "openai/gpt-oss-120b"),
         ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("openrouter", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"),
         ChainStep("cerebras", "llama-3.3-70b"),
         ChainStep("gemini", "gemini-2.0-flash"),
     ],
-    "voice-intent": [ChainStep("groq", "openai/gpt-oss-20b")],
+    "voice-intent": [
+        ChainStep("groq", "openai/gpt-oss-20b"),
+        ChainStep("openrouter", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"),
+    ],
     "translation": [
         ChainStep("groq", "openai/gpt-oss-120b"),
+        ChainStep("openrouter", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"),
+        ChainStep("openrouter", "poolside/laguna-s-2.1:free"),
         ChainStep("gemini", "gemini-2.0-flash"),
-        ChainStep("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
         ChainStep("mistral", "mistral-small-latest"),
     ],
     "translation_draft": [
         ChainStep("groq", "openai/gpt-oss-120b"),
+        ChainStep("openrouter", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"),
+        ChainStep("openrouter", "poolside/laguna-s-2.1:free"),
         ChainStep("gemini", "gemini-2.0-flash"),
-        ChainStep("openrouter", "meta-llama/llama-3.3-70b-instruct:free"),
         ChainStep("mistral", "mistral-small-latest"),
     ],
     "embeddings": [],  # No embeddings-capable provider has a key yet — a real gap, not hidden.
-    "safety": [ChainStep("groq", "openai/gpt-oss-safeguard-20b")],
+    "safety": [
+        ChainStep("groq", "openai/gpt-oss-safeguard-20b"),
+        ChainStep("openrouter", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"),
+    ],
 }
 
 

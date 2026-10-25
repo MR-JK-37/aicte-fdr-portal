@@ -232,7 +232,7 @@ def render_template(
     locale: str = "en",
 ) -> tuple[str, str, str, str]:
     """Renders versioned template strings into rich in-app (title, body) and generic lock-screen (lock_title, lock_body).
-    
+
     Guarantees that lock-screen outputs never expose confidential business values.
     """
     loc = locale if locale in ("en", "hi", "ta") else "en"
@@ -246,7 +246,9 @@ def render_template(
         lock_body = DEFAULT_FALLBACK["lock_body"]
     else:
         # Safe format for in-app body with context
-        safe_ctx = SafeDict({k: str(v) if v is not None else "" for k, v in context.items()})
+        safe_ctx = SafeDict(
+            {k: str(v) if v is not None else "" for k, v in context.items()}
+        )
         try:
             title = localized_template["title"].format_map(safe_ctx)
         except (KeyError, ValueError, TypeError):

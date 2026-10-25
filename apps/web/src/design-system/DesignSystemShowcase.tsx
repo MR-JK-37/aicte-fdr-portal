@@ -115,8 +115,8 @@ function ShowcaseBody() {
           <h2 className="ds-showcase__heading">Cards / surfaces (solid, never glass)</h2>
           <div className="ds-showcase__row">
             <Card style={{ width: 280 }}>
-              <strong>AXIS-FDR-99201</strong>
-              <p className="ds-showcase__sub">Axis Bank · ₹35,00,000</p>
+              <strong>Card title</strong>
+              <p className="ds-showcase__sub">Solid surface, never glass</p>
             </Card>
             <Card elevated style={{ width: 280 }}>
               <strong>Elevated surface</strong>

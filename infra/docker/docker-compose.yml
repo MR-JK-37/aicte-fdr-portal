@@ -100,6 +100,8 @@ services:
     build:
       context: ../../services/api
     restart: unless-stopped
+    env_file:
+      - ../../.env
     environment:
       ENV: dev
       DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@db:5432/fdr
@@ -110,6 +112,8 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       CLAMAV_HOST: clamav
       CLAMAV_PORT: "3310"
+    volumes:
+      - ../../services/api/app:/app/app:ro
     ports:
       - "8000:8000"
     depends_on:
@@ -133,6 +137,8 @@ services:
       context: ../../services/api
     restart: unless-stopped
     command: ["uv", "run", "python", "-m", "app.outbox.run_worker"]
+    env_file:
+      - ../../.env
     environment:
       DATABASE_URL: postgresql+psycopg://fdr_app:fdr_app_dev_password@db:5432/fdr
       READONLY_DATABASE_URL: postgresql+psycopg://fdr_readonly:fdr_readonly_dev_password@db:5432/fdr
@@ -142,6 +148,8 @@ services:
       CLAMAV_PORT: "3310"
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
+    volumes:
+      - ../../services/api/app:/app/app:ro
     depends_on:
       db:
         condition: service_healthy

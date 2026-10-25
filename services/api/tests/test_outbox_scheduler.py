@@ -10,6 +10,10 @@ from app.outbox.scheduler import (
     try_acquire_scheduler_lease,
 )
 
+# Use a distinct key in tests so running worker containers on the dev database
+# do not cause spurious lock contention failures.
+TEST_LOCK_KEY = 0x46445259
+
 
 def test_second_session_cannot_acquire_while_first_holds_lease(engine):
     from sqlalchemy.orm import sessionmaker
@@ -18,10 +22,10 @@ def test_second_session_cannot_acquire_while_first_holds_lease(engine):
     holder = Session_()
     contender = Session_()
     try:
-        assert try_acquire_scheduler_lease(holder) is True
-        assert try_acquire_scheduler_lease(contender) is False
+        assert try_acquire_scheduler_lease(holder, key=TEST_LOCK_KEY) is True
+        assert try_acquire_scheduler_lease(contender, key=TEST_LOCK_KEY) is False
     finally:
-        release_scheduler_lease(holder)
+        release_scheduler_lease(holder, key=TEST_LOCK_KEY)
         holder.close()
         contender.close()
 
@@ -33,11 +37,11 @@ def test_lease_becomes_available_again_after_release(engine):
     first = Session_()
     second = Session_()
     try:
-        assert try_acquire_scheduler_lease(first) is True
-        release_scheduler_lease(first)
-        assert try_acquire_scheduler_lease(second) is True
+        assert try_acquire_scheduler_lease(first, key=TEST_LOCK_KEY) is True
+        release_scheduler_lease(first, key=TEST_LOCK_KEY)
+        assert try_acquire_scheduler_lease(second, key=TEST_LOCK_KEY) is True
     finally:
-        release_scheduler_lease(second)
+        release_scheduler_lease(second, key=TEST_LOCK_KEY)
         first.close()
         second.close()
 
@@ -63,14 +67,14 @@ def test_lease_releases_automatically_when_connection_closes():
     Session_ = sessionmaker(bind=nullpool_engine, future=True)
 
     crashed = Session_()
-    assert try_acquire_scheduler_lease(crashed) is True
+    assert try_acquire_scheduler_lease(crashed, key=TEST_LOCK_KEY) is True
     crashed.close()  # NullPool: this really closes the physical connection
 
     survivor = Session_()
     try:
-        assert try_acquire_scheduler_lease(survivor) is True
+        assert try_acquire_scheduler_lease(survivor, key=TEST_LOCK_KEY) is True
     finally:
-        release_scheduler_lease(survivor)
+        release_scheduler_lease(survivor, key=TEST_LOCK_KEY)
         survivor.close()
         nullpool_engine.dispose()
 

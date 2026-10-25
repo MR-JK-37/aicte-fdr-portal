@@ -1,117 +1,96 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Platform } from 'react-native';
 import { Icon } from '../design-system/Icon';
+import { useAppTheme } from '../design-system/theme';
+import { Kosh } from '../design-system/Kosh';
 import { MobileTask } from '../types';
 
 interface TasksScreenProps {
   onTaskResolved?: (taskId: string) => void;
 }
 
-export const TasksScreen: React.FC<TasksScreenProps> = ({ onTaskResolved }) => {
-  const [tasks, setTasks] = useState<MobileTask[]>([
-    {
-      id: 'task-301',
-      title: 'Review OCR Candidate Extraction (AXIS-FDR-99201)',
-      type: 'intake_review',
-      instrument_number: 'AXIS-FDR-99201',
-      institution_name: 'Delhi Global Technical Campus',
-      assigned_role: 'scrutiny_officer',
-      due_date: '2026-10-25',
-      urgency: 'high',
-    },
-    {
-      id: 'task-302',
-      title: 'Confirm Table 1.4 Shortfall Casework (PNB-771829)',
-      type: 'discrepancy_casework',
-      instrument_number: 'PNB-771829',
-      institution_name: 'St. Mary’s Polytechnic College',
-      assigned_role: 'scrutiny_officer',
-      due_date: '2026-10-26',
-      urgency: 'statutory_deadline',
-    },
-    {
-      id: 'task-303',
-      title: 'Second-Person UTR Release Execution Review (HDFC-441029)',
-      type: 'execution_proof',
-      instrument_number: 'HDFC-441029',
-      institution_name: 'National College of Engineering',
-      assigned_role: 'competent_authority',
-      due_date: '2026-10-24',
-      urgency: 'high',
-    },
-  ]);
+/**
+ * Mobile Tasks Screen
+ * Lavender Ledger layout: Topbar, page header, grouped list / calm Kosh empty state
+ */
+export const TasksScreen: React.FC<TasksScreenProps> = () => {
+  const { tone, isDark } = useAppTheme();
+  const [tasks] = useState<MobileTask[]>([]);
 
-  const [toast, setToast] = useState<string | null>(null);
-
-  const handleActionTask = (taskId: string, actionName: string) => {
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    setToast(`Task ${taskId} resolved: ${actionName}`);
-    if (onTaskResolved) onTaskResolved(taskId);
-    setTimeout(() => setToast(null), 3000);
-  };
+  const cardBg = isDark ? tone.surface : '#ffffff';
 
   return (
-    <View style={styles.container}>
-      {/* Top Header */}
-      <View style={styles.topHeader}>
-        <View>
-          <Text style={styles.headerSuper}>ROLE WORKLOAD & ACTIONS</Text>
-          <Text style={styles.headerTitle}>Casework Tasks Queue</Text>
+    <View style={[styles.container, { backgroundColor: tone.bg }]}>
+      {/* 1. TopBar Header matching reference */}
+      <View style={styles.topbar}>
+        <View style={styles.topbarLeft}>
+          <Text style={[styles.wordmark, { color: tone.text1 }]}>
+            fdr<Text style={{ color: tone.accent }}>@</Text>portal
+          </Text>
         </View>
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>{tasks.length} Pending</Text>
+
+        <View style={styles.topbarRight}>
+          <View style={styles.progressMiniWrap}>
+            <View style={[styles.progressTrack, { backgroundColor: isDark ? tone.surfaceMuted : '#e2e8f0' }]}>
+              <View style={[styles.progressFill, { width: '56%', backgroundColor: tone.ink }]} />
+            </View>
+            <Text style={[styles.progressText, { color: tone.text1 }]}>56%</Text>
+          </View>
+
+          <View style={[styles.rolePill, { backgroundColor: tone.accentContainer }]}>
+            <Text style={[styles.rolePillText, { color: tone.accent }]}>Tasks</Text>
+          </View>
         </View>
       </View>
 
-      {toast && (
-        <View style={styles.toastBanner}>
-          <Icon name="success" size={14} color="#3ddc97" />
-          <Text style={styles.toastText}>{toast}</Text>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Title */}
+        <View style={styles.headerBlock}>
+          <Text style={[styles.pageTitle, { color: tone.text1 }]}>Action tasks</Text>
+          <Text style={[styles.pageSubtitle, { color: tone.text3 }]}>
+            Casework queues, statutory deadlines & verification actions
+          </Text>
         </View>
-      )}
 
-      {/* Task List */}
-      <ScrollView contentContainerStyle={styles.listContent}>
+        {/* Task List or Calm Empty State */}
         {tasks.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Icon name="success" size={48} color="#3ddc97" />
-            <Text style={styles.emptyTitle}>All Tasks Up to Date</Text>
-            <Text style={styles.emptyDesc}>No regulatory intake reviews or release approvals pending for your assigned role.</Text>
+          <View style={styles.emptyWrap}>
+            <View style={styles.koshEmptyIcon}>
+              <Kosh pose="calm" size={96} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: tone.text1 }]}>All caught up</Text>
+            <Text style={[styles.emptySubtitle, { color: tone.text3 }]}>
+              No pending casework tasks assigned to your queue at this time.
+            </Text>
           </View>
         ) : (
-          tasks.map((task) => (
-            <View key={task.id} style={styles.taskCard}>
-              <View style={styles.cardHeader}>
-                <View style={styles.typeBadge}>
-                  <Text style={styles.typeText}>{task.type.replace('_', ' ').toUpperCase()}</Text>
+          <View style={[styles.groupedCard, { backgroundColor: cardBg }]}>
+            {tasks.map((task) => (
+              <View key={task.id} style={styles.taskCard}>
+                <View style={styles.cardHeader}>
+                  <View style={[styles.typeBadge, { backgroundColor: tone.accentContainer }]}>
+                    <Text style={[styles.typeText, { color: tone.accent }]}>
+                      {task.type.replace('_', ' ').toUpperCase()}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.urgencyBadge,
+                      task.urgency === 'statutory_deadline' ? styles.urgencyStatutory : styles.urgencyHigh,
+                    ]}
+                  >
+                    <Text style={styles.urgencyText}>{task.urgency.replace('_', ' ').toUpperCase()}</Text>
+                  </View>
                 </View>
-                <View style={[styles.urgencyBadge, task.urgency === 'statutory_deadline' ? styles.urgencyStatutory : styles.urgencyHigh]}>
-                  <Text style={styles.urgencyText}>{task.urgency.replace('_', ' ').toUpperCase()}</Text>
-                </View>
+
+                <Text style={[styles.taskTitle, { color: tone.text1 }]}>{task.title}</Text>
+                <Text style={[styles.instText, { color: tone.text2 }]}>{task.institution_name}</Text>
+                <Text style={[styles.instRef, { color: tone.text3 }]}>
+                  Ref: {task.instrument_number} • Due: {task.due_date}
+                </Text>
               </View>
-
-              <Text style={styles.taskTitle}>{task.title}</Text>
-              <Text style={styles.instText}>{task.institution_name}</Text>
-              <Text style={styles.instRef}>Ref: {task.instrument_number} • Due: {task.due_date}</Text>
-
-              <View style={styles.cardActions}>
-                <TouchableOpacity
-                  style={styles.actionBtnPrimary}
-                  onPress={() => handleActionTask(task.id, 'Approved & Signed')}
-                >
-                  <Icon name="verified" size={13} color="#050505" />
-                  <Text style={styles.actionBtnTextPrimary}>Verify & Approve</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.actionBtnSecondary}
-                  onPress={() => handleActionTask(task.id, 'Discrepancy Flagged')}
-                >
-                  <Text style={styles.actionBtnTextSecondary}>Flag Casework</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))
+            ))}
+          </View>
         )}
       </ScrollView>
     </View>
@@ -121,68 +100,112 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ onTaskResolved }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050505',
   },
-  topHeader: {
+  topbar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1e293b',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 54 : 20,
+    paddingBottom: 14,
   },
-  headerSuper: {
-    fontSize: 10,
-    color: '#00eeff',
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#ffffff',
-    letterSpacing: -0.5,
-  },
-  countBadge: {
-    backgroundColor: 'rgba(0, 238, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 238, 255, 0.3)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  countText: {
-    color: '#00eeff',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  toastBanner: {
+  topbarLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(61, 220, 151, 0.15)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(61, 220, 151, 0.3)',
   },
-  toastText: {
-    color: '#3ddc97',
+  wordmark: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  topbarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  progressMiniWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  progressTrack: {
+    width: 32,
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  progressText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  listContent: {
+  rolePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 9999,
+  },
+  rolePillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+  headerBlock: {
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  pageTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  emptyWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+  },
+  koshEmptyIcon: {
+    marginBottom: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginTop: 6,
+    maxWidth: 280,
+  },
+  groupedCard: {
+    borderRadius: 22,
     padding: 16,
     gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
   },
   taskCard: {
-    backgroundColor: '#151316',
+    padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    padding: 16,
+    borderColor: '#f1f5f9',
     gap: 6,
   },
   cardHeader: {
@@ -191,97 +214,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   typeBadge: {
-    backgroundColor: '#1e293b',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   typeText: {
-    color: '#94a3b8',
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
   },
   urgencyBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   urgencyStatutory: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    backgroundColor: '#fef2f2',
   },
   urgencyHigh: {
-    backgroundColor: 'rgba(251, 191, 36, 0.2)',
+    backgroundColor: '#fffbeb',
   },
   urgencyText: {
-    color: '#f8fafc',
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
+    color: '#b91c1c',
   },
   taskTitle: {
-    color: '#ffffff',
     fontSize: 14,
     fontWeight: '700',
-    marginTop: 2,
   },
   instText: {
-    color: '#cbd5e1',
     fontSize: 12,
   },
   instRef: {
-    color: '#64748b',
-    fontSize: 10,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  cardActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#1e293b',
-    paddingTop: 10,
-  },
-  actionBtnPrimary: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#00eeff',
-    borderRadius: 8,
-    paddingVertical: 8,
-  },
-  actionBtnTextPrimary: {
-    color: '#050505',
     fontSize: 11,
-    fontWeight: '700',
-  },
-  actionBtnSecondary: {
-    paddingHorizontal: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1e293b',
-    borderRadius: 8,
-  },
-  actionBtnTextSecondary: {
-    color: '#f87171',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  emptyBox: {
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 48,
-    paddingHorizontal: 24,
-  },
-  emptyTitle: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  emptyDesc: {
-    color: '#94a3b8',
-    fontSize: 12,
-    textAlign: 'center',
-    lineHeight: 16,
   },
 });

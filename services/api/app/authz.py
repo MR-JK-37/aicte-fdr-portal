@@ -74,8 +74,17 @@ STEP_UP_REQUIRED_ACTIONS = frozenset(
 ROLE_PERMISSIONS_MATRIX: dict[AppRole, dict[str, str]] = {
     AppRole.ORG_ADMIN: {
         PermissionVerb.VIEW.value: "own_institution",
-        PermissionVerb.MANAGE_INSTITUTION_USERS.value: "own_institution",
+        PermissionVerb.CREATE_DRAFT.value: "own_institution",
+        PermissionVerb.EDIT_DRAFT.value: "own_institution",
+        PermissionVerb.SUBMIT.value: "own_institution",
+        PermissionVerb.UPLOAD_EVIDENCE.value: "own_institution",
         PermissionVerb.DOWNLOAD_EVIDENCE.value: "own_institution",
+        PermissionVerb.RESPOND_OBSERVATION.value: "own_institution",
+        PermissionVerb.REQUEST_RELEASE.value: "own_institution",
+        PermissionVerb.EXPORT_REPORT.value: "own_institution",
+        PermissionVerb.MANAGE_INSTITUTION_USERS.value: "own_institution",
+        PermissionVerb.VIEW_UNMASKED_IDENTIFIERS.value: "own_institution",
+        PermissionVerb.VIEW_AUDIT.value: "own_institution",
     },
     AppRole.INSTITUTION_SUBMITTER: {
         PermissionVerb.VIEW.value: "own_institution",
@@ -87,6 +96,8 @@ ROLE_PERMISSIONS_MATRIX: dict[AppRole, dict[str, str]] = {
         PermissionVerb.RESPOND_OBSERVATION.value: "own_institution",
         PermissionVerb.REQUEST_RELEASE.value: "own_institution",
         PermissionVerb.EXPORT_REPORT.value: "own_institution",
+        PermissionVerb.VIEW_UNMASKED_IDENTIFIERS.value: "own_institution",
+        PermissionVerb.VIEW_AUDIT.value: "own_institution",
     },
     AppRole.INSTITUTION_VIEWER: {
         PermissionVerb.VIEW.value: "own_institution",
@@ -94,12 +105,13 @@ ROLE_PERMISSIONS_MATRIX: dict[AppRole, dict[str, str]] = {
     },
     AppRole.INTAKE_OFFICER: {
         PermissionVerb.VIEW.value: "assigned",
-        PermissionVerb.MANAGE_INSTITUTION_USERS.value: "all",
         PermissionVerb.UPLOAD_EVIDENCE.value: "assigned",
         PermissionVerb.DOWNLOAD_EVIDENCE.value: "assigned",
         PermissionVerb.RAISE_OBSERVATION.value: "assigned",
         PermissionVerb.ASSIGN_CASE.value: "assigned",
-        PermissionVerb.EXPORT_REPORT.value: "assigned",
+        PermissionVerb.EXPORT_REPORT.value: "all",
+        PermissionVerb.MANAGE_INSTITUTION_USERS.value: "onboarding",
+        PermissionVerb.VIEW_UNMASKED_IDENTIFIERS.value: "assigned",
     },
     AppRole.SCRUTINY_OFFICER: {
         PermissionVerb.VIEW.value: "assigned",
@@ -107,45 +119,63 @@ ROLE_PERMISSIONS_MATRIX: dict[AppRole, dict[str, str]] = {
         PermissionVerb.DOWNLOAD_EVIDENCE.value: "assigned",
         PermissionVerb.RAISE_OBSERVATION.value: "assigned",
         PermissionVerb.RECOMMEND.value: "assigned",
-        PermissionVerb.ASSIGN_CASE.value: "assigned",
-        PermissionVerb.EXPORT_REPORT.value: "assigned",
+        PermissionVerb.EXPORT_REPORT.value: "all",
+        PermissionVerb.VIEW_UNMASKED_IDENTIFIERS.value: "assigned",
     },
     AppRole.FINANCE_VERIFIER: {
         PermissionVerb.VIEW.value: "assigned",
         PermissionVerb.UPLOAD_EVIDENCE.value: "assigned",
         PermissionVerb.DOWNLOAD_EVIDENCE.value: "assigned",
+        PermissionVerb.RAISE_OBSERVATION.value: "assigned",
         PermissionVerb.VERIFY_BANK_EVIDENCE.value: "assigned",
-        PermissionVerb.RECONCILE_STATEMENT.value: "assigned",
-        PermissionVerb.RESOLVE_EXCEPTION.value: "assigned",
-        PermissionVerb.EXPORT_REPORT.value: "assigned",
+        PermissionVerb.RECONCILE_STATEMENT.value: "all",
+        PermissionVerb.RESOLVE_EXCEPTION.value: "all",
+        PermissionVerb.EXECUTE_RELEASE_RECORD.value: "assigned",
+        PermissionVerb.EXPORT_REPORT.value: "all",
+        PermissionVerb.VIEW_UNMASKED_IDENTIFIERS.value: "all",
     },
     AppRole.REGIONAL_SUPERVISOR: {
         PermissionVerb.VIEW.value: "region",
-        PermissionVerb.ASSIGN_CASE.value: "region",
+        PermissionVerb.DOWNLOAD_EVIDENCE.value: "region",
         PermissionVerb.RAISE_OBSERVATION.value: "region",
+        PermissionVerb.ASSIGN_CASE.value: "region",
         PermissionVerb.RECOMMEND.value: "region",
+        PermissionVerb.RECONCILE_STATEMENT.value: "region",
+        PermissionVerb.RESOLVE_EXCEPTION.value: "region",
         PermissionVerb.EXPORT_REPORT.value: "region",
+        PermissionVerb.MANAGE_POLICY.value: "author",
+        PermissionVerb.VIEW_AUDIT.value: "region",
+        PermissionVerb.VIEW_UNMASKED_IDENTIFIERS.value: "region",
     },
     AppRole.COMPETENT_AUTHORITY: {
         PermissionVerb.VIEW.value: "delegation",
         PermissionVerb.DOWNLOAD_EVIDENCE.value: "delegation",
         PermissionVerb.APPROVE_RELEASE.value: "delegation",
         PermissionVerb.EXPORT_REPORT.value: "delegation",
+        PermissionVerb.MANAGE_POLICY.value: "approver",
+        PermissionVerb.VIEW_AUDIT.value: "all",
+        PermissionVerb.VIEW_UNMASKED_IDENTIFIERS.value: "delegation",
     },
     AppRole.AUDIT_REVIEWER: {
         PermissionVerb.VIEW.value: "all",
         PermissionVerb.DOWNLOAD_EVIDENCE.value: "all",
-        PermissionVerb.VIEW_AUDIT.value: "all",
         PermissionVerb.EXPORT_REPORT.value: "all",
+        PermissionVerb.VIEW_AUDIT.value: "all",
+        PermissionVerb.VIEW_UNMASKED_IDENTIFIERS.value: "all",
     },
     AppRole.IDENTITY_ADMIN: {
+        PermissionVerb.VIEW.value: "users",
         PermissionVerb.MANAGE_ROLES.value: "all",
-        PermissionVerb.ADMINISTER_PLATFORM.value: "identity",
+        PermissionVerb.VIEW_AUDIT.value: "access_logs",
+        PermissionVerb.BREAK_GLASS.value: "request",
     },
     AppRole.PLATFORM_OPERATOR: {
+        PermissionVerb.VIEW.value: "system",
         PermissionVerb.CONFIGURE_INTEGRATIONS.value: "all",
         PermissionVerb.ADMINISTER_PLATFORM.value: "all",
         PermissionVerb.MANAGE_TEMPLATES.value: "all",
+        PermissionVerb.VIEW_AUDIT.value: "system",
+        PermissionVerb.BREAK_GLASS.value: "request",
     },
     AppRole.INTEGRATION_SERVICE: {
         PermissionVerb.RECONCILE_STATEMENT.value: "connector",
@@ -153,9 +183,9 @@ ROLE_PERMISSIONS_MATRIX: dict[AppRole, dict[str, str]] = {
     },
     AppRole.BANK_VERIFIER: {
         PermissionVerb.VIEW.value: "assigned_bank",
-        PermissionVerb.VERIFY_BANK_EVIDENCE.value: "assigned_bank",
         PermissionVerb.UPLOAD_EVIDENCE.value: "assigned_bank",
         PermissionVerb.DOWNLOAD_EVIDENCE.value: "assigned_bank",
+        PermissionVerb.VIEW_UNMASKED_IDENTIFIERS.value: "assigned_bank",
     },
 }
 
@@ -194,6 +224,19 @@ class Principal:
     step_up_valid_until: datetime | None = None
     assigned_case_ids: set[uuid.UUID] = field(default_factory=set)
     role_scope: dict[str, Any] = field(default_factory=dict)
+    session_id: uuid.UUID | None = None
+
+    @property
+    def step_up_valid(self) -> bool:
+        if not self.mfa_enrolled or self.step_up_valid_until is None:
+            return False
+        now = datetime.now(UTC)
+        valid_until = (
+            self.step_up_valid_until.replace(tzinfo=UTC)
+            if self.step_up_valid_until.tzinfo is None
+            else self.step_up_valid_until.astimezone(UTC)
+        )
+        return valid_until >= now
 
 
 def get_role_permissions(role: AppRole) -> dict[str, str]:

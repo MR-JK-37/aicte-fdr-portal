@@ -1,9 +1,22 @@
 export type AppRole =
-  | 'institution'
+  // 13 canonical roles (MASTER_PROMPT §1.3 / AUTH_ROLES_MATRIX §1)
+  | 'org_admin'
+  | 'institution_submitter'
+  | 'institution_viewer'
+  | 'intake_officer'
   | 'scrutiny_officer'
+  | 'finance_verifier'
+  | 'regional_supervisor'
+  | 'competent_authority'
+  | 'audit_reviewer'
+  | 'identity_admin'
+  | 'platform_operator'
+  | 'integration_service'
+  | 'bank_verifier'
+  // Phase 0 legacy aliases
+  | 'institution'
   | 'verifier'
   | 'regional_officer'
-  | 'competent_authority'
   | 'bureau_admin'
   | 'auditor'
   | 'bank_user';

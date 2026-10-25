@@ -1,161 +1,362 @@
-/* tokens.css — AICTE FDR Portal design tokens (web). Source of truth is tokens.ts; keep in sync (CI diffs them).
-   Brand: #050505 base · #3b0a6b violet (tint/container ONLY — 1.40:1 on base, never text/icon) · #00eeff cyan accent.
-   All text/icon pairs below were contrast-checked; see DESIGN_SPEC.md §2. */
+/* tokens.css — AICTE FDR Portal "Lavender Ledger" (v2). Source of truth is tokens.ts; keep in sync (CI diffs them).
+   Look: light lavender canvas · white rounded cards with soft shadow · azure/blue accent · black pill primary
+   buttons · soft-red pill for destructive actions · floating pill tab bar with a light-blue active capsule. */
 
 :root {
-  color-scheme: dark light;
-
-  /* ---- Brand ---- */
-  --brand-base: #050505;
-  --brand-violet: #3b0a6b;
-  --brand-cyan: #00eeff;
-
-  /* ---- Dark theme (default / hero) ---- */
-  --bg: #050505;
-  --surface-low: #0f0d11;
-  --surface: #151316;
-  --surface-high: #1d1b1e;
-  --surface-higher: #211f22;
-  --surface-highest: #2c292d;
-  --state-hover: #373438;            /* hover/pressed wash on highest */
-
-  --text-1: #f0f0f0;                 /* 12.6–17.9:1 on all surfaces */
-  --text-2: #b9b9b9;                 /* 7.3–10.4:1 */
-  --text-3: #919191;                 /* 4.56–6.47:1 (min AA) */
-  --text-disabled: #646464;          /* decorative/disabled only */
-  --on-surface: #e7e1e5;
-  --on-surface-variant: #ccc4cf;
-  --outline: #958e98;                /* control borders: ≥4.5:1 */
-  --outline-variant: #4a454e;        /* hairlines/dividers: decorative */
-
-  --accent: #00eeff;                 /* text/icon/focus on any dark surface (≥10:1) */
-  --on-accent: #00363b;              /* text on cyan fills: 9.22:1 */
-  --accent-container: #004f55;
-  --on-accent-container: #84f3ff;    /* 7.22:1 */
-  --violet-container: #3b0a6b;       /* fills/tint/selected wash */
-  --on-violet-container: #eedbff;    /* 11.25:1 */
-  --secondary: #dab9ff;
-  --tertiary: #f2b7c0;
-
-  --ok: #3ddc97;  --warn: #ffb020;  --info: #7aa7ff;  --error: #ff5c7a;  --pending: #b69cff;  --neutral: #9aa0ad;
-  --ok-bg: color-mix(in oklab, #3ddc97 14%, transparent);
-  --warn-bg: color-mix(in oklab, #ffb020 14%, transparent);
-  --info-bg: color-mix(in oklab, #7aa7ff 14%, transparent);
-  --error-bg: color-mix(in oklab, #ff5c7a 14%, transparent);
-  --pending-bg: color-mix(in oklab, #b69cff 14%, transparent);
-
-  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
-
-  /* ---- Glass (navigation/control layer ONLY) ---- */
-  --glass-tint: color-mix(in oklab, #1d1b1e 58%, transparent);
-  --glass-tint-violet: color-mix(in oklab, #3b0a6b 22%, #151316 40%);
-  --glass-border: rgba(255, 255, 255, 0.10);
-  --glass-highlight: rgba(255, 255, 255, 0.14);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-  --glass-blur: 24px;
-  --glass-saturate: 180%;
-  --glass-solid-fallback: #1d1b1e;   /* used when blur is unavailable or transparency is reduced */
-
-  /* ---- Shape (Apple continuous-corner feel on web/iOS) ---- */
-  --r-xs: 8px; --r-sm: 12px; --r-md: 16px; --r-lg: 22px; --r-xl: 28px; --r-full: 999px;
-
-  /* ---- Spacing (4-pt grid) ---- */
-  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
-
-  /* ---- Type ---- */
-  --ff-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", Inter, "Noto Sans", "Noto Sans Devanagari", "Noto Sans Tamil", system-ui, sans-serif;
-  --ff-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  --fs-large-title: 2.125rem; --fs-title-1: 1.75rem; --fs-title-2: 1.375rem; --fs-title-3: 1.25rem;
-  --fs-headline: 1.0625rem; --fs-body: 1.0625rem; --fs-callout: 1rem; --fs-subhead: 0.9375rem; --fs-footnote: 0.8125rem; --fs-caption: 0.75rem;
-  --lh-tight: 1.2; --lh-normal: 1.45;
-
-  /* ---- Motion ---- */
-  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-fast: 160ms; --dur-base: 240ms; --dur-slow: 320ms;
-
-  /* ---- Layers ---- */
-  --z-nav: 40; --z-popover: 60; --z-modal: 80; --z-toast: 100;
-}
-
-/* ---- Light theme ----
-   The app sets <html data-theme="light|dark"> at startup (inline script in index.html: stored preference,
-   else matchMedia('(prefers-color-scheme: light)')). The media block is a no-JS safety net only. */
-:root[data-theme="light"] {
   color-scheme: light;
-  --bg: #fef7fc; --surface-low: #f8f1f6; --surface: #f2ebf0; --surface-high: #ece5ea; --surface-higher: #e9e2e7; --surface-highest: #e7e0e5; --state-hover: #ded8dd;
-  --text-1: #1d1b1e; --text-2: #4a454e; --text-3: #615d61; --text-disabled: #948f94;
-  --on-surface: #1d1b1e; --on-surface-variant: #4a454e; --outline: #7b757f; --outline-variant: #ccc4cf;
-  --accent: #006971; --on-accent: #ffffff; --accent-container: #84f3ff; --on-accent-container: #002023;
-  --violet-container: #eedbff; --on-violet-container: #2a0053; --secondary: #734aa5; --tertiary: #805159;
-  --ok: #0b6b45; --warn: #8a5a00; --info: #1f4fb3; --error: #b3123a; --pending: #5b3fb0; --neutral: #555b66;
-  --ok-bg: color-mix(in oklab, #0b6b45 10%, transparent); --warn-bg: color-mix(in oklab, #8a5a00 10%, transparent);
-  --info-bg: color-mix(in oklab, #1f4fb3 10%, transparent); --error-bg: color-mix(in oklab, #b3123a 10%, transparent);
-  --pending-bg: color-mix(in oklab, #5b3fb0 10%, transparent);
-  --glass-tint: color-mix(in oklab, #fef7fc 62%, transparent);
-  --glass-tint-violet: color-mix(in oklab, #eedbff 40%, #fef7fc 50%);
-  --glass-border: rgba(29, 27, 30, 0.10); --glass-highlight: rgba(255, 255, 255, 0.7);
-  --glass-shadow: 0 8px 32px rgba(29, 27, 30, 0.14); --glass-solid-fallback: #f2ebf0;
+  --canvas-deep: #edf2fa;
+  --canvas: #f8fafd;
+  --surface: #ffffff;
+  --surface-muted: #f6f8fc;
+  --field: #eff2f7;
+  --field-strong: #e2e7f0;
+  --hairline: #e8edf5;
+  --outline: #80859f;
+  --text1: #14141a;
+  --text2: #474b62;
+  --text3: #656981;
+  --text-disabled: #a5a9bf;
+  --primary: #2d63cf;
+  --on-primary: #ffffff;
+  --primary-container: #e6edff;
+  --on-primary-container: #163a8f;
+  --primary-soft: #eff3ff;
+  --ink: #1a1a1e;
+  --on-ink: #ffffff;
+  --danger: #c0183f;
+  --on-danger: #ffffff;
+  --danger-container: #fde4e6;
+  --on-danger-container: #b0303f;
+  --ok: #0b7a4b;
+  --ok-container: #d5f5e5;
+  --on-ok-container: #064a2d;
+  --warn: #8f5a00;
+  --warn-container: #ffebc2;
+  --on-warn-container: #5c3a00;
+  --info: #2d63cf;
+  --info-container: #e6edff;
+  --on-info-container: #163a8f;
+  --error: #c0183f;
+  --error-container: #ffdce2;
+  --on-error-container: #8a0f2d;
+  --pending: #5b3fb0;
+  --pending-container: #e7e0ff;
+  --on-pending-container: #33207a;
+  --neutral: #555b70;
+  --neutral-container: #e8eaf3;
+  --on-neutral-container: #333749;
+  --focus: #2d63cf;
+  --scrim: #0f1230;
+  --azure: #3b78d8;
+  --role-fill: #4570da;
+  --on-role-fill: #ffffff;
+  --hero-from: #dbe5fc;
+  --hero-to: #f9fbfe;
+
+  /* Aliases for backwards compatibility with earlier components */
+  --bg: var(--canvas);
+  --text-1: var(--text1);
+  --text-2: var(--text2);
+  --text-3: var(--text3);
+  --accent: var(--azure);
+  --on-accent: #ffffff;
+  --accent-container: var(--primary-container);
+  --on-accent-container: var(--on-primary-container);
+  --outline-variant: var(--hairline);
+
+  /* Shape (Lavender Ledger: 20px card radius, 999px pills) */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-full: 999px;
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* Spacing (4-pt grid) */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px;
+
+  /* Elevation: soft, low-contrast; cards float, no hard borders */
+  --shadow-card: 0 1px 2px rgba(35, 40, 110, 0.04), 0 6px 20px rgba(35, 40, 110, 0.06);
+  --shadow-floating: 0 2px 4px rgba(35, 40, 110, 0.06), 0 12px 32px rgba(35, 40, 110, 0.12);
+  --shadow-sheet: 0 -8px 40px rgba(35, 40, 110, 0.16);
+
+  /* Sizes */
+  --button-h: 48px;
+  --button-h-compact: 40px;
+  --input-h: 48px;
+  --chip-h: 36px;
+  --tabbar-h: 64px;
+  --tabbar-inset: 12px;
+  --topbar-h: 56px;
+  --sidebar-w: 264px;
+  --sidebar-w-collapsed: 80px;
+  --content-max: 1200px;
+  --read-max: 720px;
+
+  /* Motion */
+  --dur-fast: 160ms;
+  --dur-base: 240ms;
+  --dur-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Type */
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Noto Sans", "Noto Sans Devanagari", "Noto Sans Tamil", system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --ff-sans: var(--font-body);
+  --ff-display: var(--font-display);
+  --ff-mono: var(--font-mono);
+
+  --fs-large-title: 2.125rem;
+  --fs-title-1: 1.75rem;
+  --fs-title-2: 1.375rem;
+  --fs-title-3: 1.25rem;
+  --fs-headline: 1.0625rem;
+  --fs-body: 1rem;
+  --fs-callout: 0.9375rem;
+  --fs-subhead: 0.875rem;
+  --fs-footnote: 0.8125rem;
+  --fs-caption: 0.75rem;
+  --lh-tight: 1.2;
+  --lh-normal: 1.45;
+
+  /* Focus */
+  --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--focus);
+
+  /* Layers */
+  --z-nav: 40;
+  --z-popover: 60;
+  --z-modal: 80;
+  --z-toast: 100;
 }
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme]) {
-    color-scheme: light;
-  --bg: #fef7fc; --surface-low: #f8f1f6; --surface: #f2ebf0; --surface-high: #ece5ea; --surface-higher: #e9e2e7; --surface-highest: #e7e0e5; --state-hover: #ded8dd;
-  --text-1: #1d1b1e; --text-2: #4a454e; --text-3: #615d61; --text-disabled: #948f94;
-  --on-surface: #1d1b1e; --on-surface-variant: #4a454e; --outline: #7b757f; --outline-variant: #ccc4cf;
-  --accent: #006971; --on-accent: #ffffff; --accent-container: #84f3ff; --on-accent-container: #002023;
-  --violet-container: #eedbff; --on-violet-container: #2a0053; --secondary: #734aa5; --tertiary: #805159;
-  --ok: #0b6b45; --warn: #8a5a00; --info: #1f4fb3; --error: #b3123a; --pending: #5b3fb0; --neutral: #555b66;
-  --ok-bg: color-mix(in oklab, #0b6b45 10%, transparent); --warn-bg: color-mix(in oklab, #8a5a00 10%, transparent);
-  --info-bg: color-mix(in oklab, #1f4fb3 10%, transparent); --error-bg: color-mix(in oklab, #b3123a 10%, transparent);
-  --pending-bg: color-mix(in oklab, #5b3fb0 10%, transparent);
-  --glass-tint: color-mix(in oklab, #fef7fc 62%, transparent);
-  --glass-tint-violet: color-mix(in oklab, #eedbff 40%, #fef7fc 50%);
-  --glass-border: rgba(29, 27, 30, 0.10); --glass-highlight: rgba(255, 255, 255, 0.7);
-  --glass-shadow: 0 8px 32px rgba(29, 27, 30, 0.14); --glass-solid-fallback: #f2ebf0;
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas-deep: #080a14;
+  --canvas: #0c0e1b;
+  --surface: #151833;
+  --surface-muted: #1b1f3d;
+  --field: #212649;
+  --field-strong: #2a305a;
+  --hairline: #2b3058;
+  --outline: #7f85a8;
+  --text1: #f3f4fb;
+  --text2: #bdc1d8;
+  --text3: #9a9fba;
+  --text-disabled: #5d6283;
+  --primary: #8fb0ff;
+  --on-primary: #0a1a5e;
+  --primary-container: #1e2d75;
+  --on-primary-container: #dce4ff;
+  --primary-soft: #1a2352;
+  --ink: #f3f4fb;
+  --on-ink: #0c0e1b;
+  --danger: #ff7a93;
+  --on-danger: #4a0617;
+  --danger-container: #5a1428;
+  --on-danger-container: #ffd9e0;
+  --ok: #47d69a;
+  --ok-container: #0f3b2a;
+  --on-ok-container: #bff3db;
+  --warn: #ffb938;
+  --warn-container: #4a3305;
+  --on-warn-container: #ffe2a8;
+  --info: #8fb0ff;
+  --info-container: #1e2d75;
+  --on-info-container: #dce4ff;
+  --error: #ff7a93;
+  --error-container: #5a1428;
+  --on-error-container: #ffd9e0;
+  --pending: #b8a4ff;
+  --pending-container: #33257a;
+  --on-pending-container: #e7e0ff;
+  --neutral: #a4a9c2;
+  --neutral-container: #2a2f4d;
+  --on-neutral-container: #dde0ef;
+  --focus: #8fb0ff;
+  --scrim: #000000;
+  --azure: #7aa5ff;
+  --role-fill: #8fb0ff;
+  --on-role-fill: #0a1a5e;
+  --hero-from: #1f2a5e;
+  --hero-to: #151833;
+
+  /* Aliases */
+  --bg: var(--canvas);
+  --text-1: var(--text1);
+  --text-2: var(--text2);
+  --text-3: var(--text3);
+  --accent: var(--azure);
+  --on-accent: #0c0e1b;
+  --accent-container: var(--primary-container);
+  --on-accent-container: var(--on-primary-container);
+  --outline-variant: var(--hairline);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.25), 0 6px 20px rgba(0, 0, 0, 0.35);
+  --shadow-floating: 0 2px 4px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system-dark"] {
+    color-scheme: dark;
+    --canvas-deep: #080a14;
+    --canvas: #0c0e1b;
+    --surface: #151833;
+    --surface-muted: #1b1f3d;
+    --field: #212649;
+    --field-strong: #2a305a;
+    --hairline: #2b3058;
+    --outline: #7f85a8;
+    --text1: #f3f4fb;
+    --text2: #bdc1d8;
+    --text3: #9a9fba;
+    --text-disabled: #5d6283;
+    --primary: #8fb0ff;
+    --on-primary: #0a1a5e;
+    --primary-container: #1e2d75;
+    --on-primary-container: #dce4ff;
+    --primary-soft: #1a2352;
+    --ink: #f3f4fb;
+    --on-ink: #0c0e1b;
+    --danger: #ff7a93;
+    --on-danger: #4a0617;
+    --danger-container: #5a1428;
+    --on-danger-container: #ffd9e0;
+    --ok: #47d69a;
+    --ok-container: #0f3b2a;
+    --on-ok-container: #bff3db;
+    --warn: #ffb938;
+    --warn-container: #4a3305;
+    --on-warn-container: #ffe2a8;
+    --info: #8fb0ff;
+    --info-container: #1e2d75;
+    --on-info-container: #dce4ff;
+    --error: #ff7a93;
+    --error-container: #5a1428;
+    --on-error-container: #ffd9e0;
+    --pending: #b8a4ff;
+    --pending-container: #33257a;
+    --on-pending-container: #e7e0ff;
+    --neutral: #a4a9c2;
+    --neutral-container: #2a2f4d;
+    --on-neutral-container: #dde0ef;
+    --focus: #8fb0ff;
+    --scrim: #000000;
+    --azure: #7aa5ff;
+    --role-fill: #8fb0ff;
+    --on-role-fill: #0a1a5e;
+    --hero-from: #1f2a5e;
+    --hero-to: #151833;
+
+    --bg: var(--canvas);
+    --text-1: var(--text1);
+    --text-2: var(--text2);
+    --text-3: var(--text3);
+    --accent: var(--azure);
+    --on-accent: #0c0e1b;
+    --accent-container: var(--primary-container);
+    --on-accent-container: var(--on-primary-container);
+    --outline-variant: var(--hairline);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.25), 0 6px 20px rgba(0, 0, 0, 0.35);
+    --shadow-floating: 0 2px 4px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.5);
+    --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.6);
   }
 }
 
-/* ---- Glass primitives: navigation/control layer only ---- */
-.glass {
-  background: var(--glass-tint);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border: 1px solid var(--glass-border);
-  box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow);
+/* Accessibility overrides */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
-.glass--violet { background: var(--glass-tint-violet); }
-.glass--pill   { border-radius: var(--r-full); }
-.glass--panel  { border-radius: var(--r-lg); }
 
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass { background: var(--glass-solid-fallback); }
+@media (prefers-contrast: more) {
+  .card, .card-group, .tabbar { box-shadow: 0 0 0 1.5px var(--outline) !important; }
 }
-/* user/OS preferences -> opaque, clearly bordered surfaces */
-:root[data-reduce-transparency="true"] .glass,
-:root[data-contrast="more"] .glass { background: var(--glass-solid-fallback); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--outline); box-shadow: none; }
-@media (prefers-reduced-transparency: reduce) { .glass { background: var(--glass-solid-fallback); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--outline); box-shadow: none; } }
-@media (prefers-contrast: more) { .glass { background: var(--glass-solid-fallback); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--outline); } }
-@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; } }
 
-/* ---- Base ---- */
-html { background: var(--bg); color: var(--text-1); font-family: var(--ff-sans); -webkit-text-size-adjust: 100%; }
-body { margin: 0; font-size: var(--fs-body); line-height: var(--lh-normal); -webkit-font-smoothing: antialiased; }
+/* Base styles */
+html {
+  background: var(--canvas-deep);
+  color: var(--text1);
+  font-family: var(--font-body);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text1);
+  font: 500 16px/24px var(--font-body);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
 .num, .money, time { font-variant-numeric: tabular-nums; }
-code, .mono, .identifier { font-family: var(--ff-mono); }
-:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--r-xs); }
+code, .mono, .identifier { font-family: var(--font-mono); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
-/* ---- Tailwind v4 mapping (import this file BEFORE @import "tailwindcss" in app CSS) ---- */
+/* Tailwind v4 theme mapping */
 @theme inline {
-  --color-bg: var(--bg);
-  --color-surface-low: var(--surface-low);
+  --color-canvas-deep: var(--canvas-deep);
+  --color-canvas: var(--canvas);
   --color-surface: var(--surface);
-  --color-surface-high: var(--surface-high);
-  --color-surface-highest: var(--surface-highest);
-  --color-text-1: var(--text-1); --color-text-2: var(--text-2); --color-text-3: var(--text-3);
-  --color-accent: var(--accent); --color-on-accent: var(--on-accent);
-  --color-violet-container: var(--violet-container);
-  --color-ok: var(--ok); --color-warn: var(--warn); --color-info: var(--info); --color-error: var(--error); --color-pending: var(--pending);
-  --color-outline: var(--outline); --color-outline-variant: var(--outline-variant);
-  --radius-sm: var(--r-sm); --radius-md: var(--r-md); --radius-lg: var(--r-lg); --radius-xl: var(--r-xl);
-  --font-sans: var(--ff-sans); --font-mono: var(--ff-mono);
+  --color-surface-muted: var(--surface-muted);
+  --color-field: var(--field);
+  --color-field-strong: var(--field-strong);
+  --color-hairline: var(--hairline);
+  --color-outline: var(--outline);
+  --color-text-1: var(--text1);
+  --color-text-2: var(--text2);
+  --color-text-3: var(--text3);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-primary-soft: var(--primary-soft);
+  --color-ink: var(--ink);
+  --color-on-ink: var(--on-ink);
+  --color-danger: var(--danger);
+  --color-on-danger: var(--on-danger);
+  --color-danger-container: var(--danger-container);
+  --color-on-danger-container: var(--on-danger-container);
+  --color-ok: var(--ok);
+  --color-ok-container: var(--ok-container);
+  --color-on-ok-container: var(--on-ok-container);
+  --color-warn: var(--warn);
+  --color-warn-container: var(--warn-container);
+  --color-on-warn-container: var(--on-warn-container);
+  --color-info: var(--info);
+  --color-info-container: var(--info-container);
+  --color-on-info-container: var(--on-info-container);
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+  --color-on-error-container: var(--on-error-container);
+  --color-pending: var(--pending);
+  --color-pending-container: var(--pending-container);
+  --color-on-pending-container: var(--on-pending-container);
+  --color-neutral: var(--neutral);
+  --color-neutral-container: var(--neutral-container);
+  --color-on-neutral-container: var(--on-neutral-container);
+  --color-focus: var(--focus);
+  --color-azure: var(--azure);
+  --color-role-fill: var(--role-fill);
+  --color-on-role-fill: var(--on-role-fill);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-pill: var(--radius-pill);
+
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
 }

@@ -39,7 +39,7 @@ def test_scenario_14_outbox_worker_crash_and_lease_expiry_recovery(db_session):
     db_session.add(inst)
     db_session.flush()
 
-    # Enqueue outbox event
+    # Enqueue outbox event initially claimed by worker-crash-1 (prevents race with live daemon)
     event = enqueue_outbox_event(
         db_session,
         aggregate_type="instrument",
@@ -48,15 +48,10 @@ def test_scenario_14_outbox_worker_crash_and_lease_expiry_recovery(db_session):
         payload={"message": "resilience drill", "institution_id": str(inst.id)},
         dedupe_key=f"chaos-{uuid.uuid4().hex}",
     )
+    event.claimed_by = "worker-crash-1"
+    event.claimed_at = clock.now()
     db_session.commit()
-
-    # Worker 1 claims the batch with high batch_size to include our test event
-    worker_1_claimed = claim_batch(
-        db_session, claimed_by="worker-crash-1", clock=clock, batch_size=200
-    )
-    assert len(worker_1_claimed) >= 1
-    target_event = next((e for e in worker_1_claimed if e.id == event.id), None)
-    assert target_event is not None
+    target_event = event
     assert target_event.claimed_by == "worker-crash-1"
 
     # Simulate Worker 1 crashing: sets claimed_at into future (backoff/active lease).

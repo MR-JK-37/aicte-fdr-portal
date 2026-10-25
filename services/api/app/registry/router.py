@@ -30,8 +30,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db import get_db
-from app.problem_json import ForbiddenError, NotFoundError, UnprocessableEntityError
+from app.auth.deps import get_db, require_permission
+from app.authz import PermissionVerb, Principal
+from app.problem_json import NotFoundError, UnprocessableEntityError
 from app.registry.models import ConnectorHealthCheck, FeatureRegistryEntry
 from app.registry.schemas import (
     ConnectorHealthCheckOut,
@@ -42,21 +43,24 @@ from app.registry.schemas import (
 router = APIRouter(prefix="/v1/admin/registry", tags=["admin-registry"])
 
 
-def _require_configure_integrations() -> None:
-    # TODO: wire to authorise() once available (app.authz, owned by the
-    # parallel role/RLS workstream this phase) and enforce maker-checker
-    # for state=production-enabled transitions per MASTER_PROMPT §3/§19.
-    # Until then this must fail CLOSED, not open: every route in this
-    # router denies every caller rather than silently allowing them.
-    raise ForbiddenError(
-        "registry admin endpoints are not yet authorised (authorise() pending); denying by default"
-    )
+def _require_view_registry(
+    principal: Principal = Depends(require_permission(PermissionVerb.VIEW)),
+) -> Principal:
+    return principal
+
+
+def _require_configure_integrations(
+    principal: Principal = Depends(
+        require_permission(PermissionVerb.ADMINISTER_PLATFORM)
+    ),
+) -> Principal:
+    return principal
 
 
 @router.get("", response_model=list[FeatureRegistryOut])
 def list_features(
     session: Session = Depends(get_db),
-    _: None = Depends(_require_configure_integrations),
+    _: Principal = Depends(_require_view_registry),
 ) -> list[FeatureRegistryEntry]:
     return list(
         session.execute(select(FeatureRegistryEntry).order_by(FeatureRegistryEntry.key))
@@ -69,7 +73,7 @@ def list_features(
 def get_feature(
     key: str,
     session: Session = Depends(get_db),
-    _: None = Depends(_require_configure_integrations),
+    _: Principal = Depends(_require_view_registry),
 ) -> FeatureRegistryEntry:
     entry = session.execute(
         select(FeatureRegistryEntry).where(FeatureRegistryEntry.key == key)
@@ -84,7 +88,7 @@ def patch_feature_state(
     key: str,
     patch: FeatureRegistryPatch,
     session: Session = Depends(get_db),
-    _: None = Depends(_require_configure_integrations),
+    _: Principal = Depends(_require_configure_integrations),
 ) -> FeatureRegistryEntry:
     entry = session.execute(
         select(FeatureRegistryEntry).where(FeatureRegistryEntry.key == key)
@@ -109,7 +113,7 @@ def patch_feature_state(
 def list_health_checks(
     key: str,
     session: Session = Depends(get_db),
-    _: None = Depends(_require_configure_integrations),
+    _: Principal = Depends(_require_view_registry),
 ) -> list[ConnectorHealthCheck]:
     return list(
         session.execute(

@@ -395,7 +395,9 @@ class UserNotification(Base):
     __tablename__ = "user_notifications"
 
     id: Mapped[uuid.UUID] = uuid_pk()
-    event_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    event_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
     recipient_user_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("app_users.id", ondelete="CASCADE"), nullable=True
     )
@@ -414,11 +416,21 @@ class UserNotification(Base):
     lock_screen_title: Mapped[str | None] = mapped_column(String(256), nullable=True)
     lock_screen_body: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
-    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    actioned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    provider_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    device_received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    acknowledged_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    actioned_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    provider_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    device_received_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     metadata_payload: Mapped[dict] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -441,14 +453,18 @@ class NotificationAttempt(Base):
     result_code: Mapped[str] = mapped_column(String(64))
     error_category: Mapped[str | None] = mapped_column(String(64), nullable=True)
     error_details: Mapped[str | None] = mapped_column(Text, nullable=True)
-    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_retry_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class DeviceInstallation(Base):
     __tablename__ = "device_installations"
 
     id: Mapped[uuid.UUID] = uuid_pk()
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_users.id", ondelete="CASCADE"))
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app_users.id", ondelete="CASCADE")
+    )
     platform: Mapped[str] = mapped_column(String(32))
     provider: Mapped[str] = mapped_column(String(32))
     push_token: Mapped[str | None] = mapped_column(String(512), nullable=True)
@@ -463,8 +479,12 @@ class DeviceInstallation(Base):
     last_registered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
-    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class NotificationPreference(Base):
@@ -474,7 +494,9 @@ class NotificationPreference(Base):
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("app_users.id", ondelete="CASCADE"))
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("app_users.id", ondelete="CASCADE")
+    )
     category: Mapped[str] = mapped_column(String(64))
     channel: Mapped[str] = mapped_column(String(32))
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -493,8 +515,12 @@ class SSEEvent(Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     sequence_id: Mapped[int] = mapped_column(BigInteger, Identity(start=1, cycle=False))
     event_type: Mapped[str] = mapped_column(String(64))
-    recipient_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    institution_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    recipient_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+    institution_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
     role: Mapped[str | None] = mapped_column(String(64), nullable=True)
     payload: Mapped[dict] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(
@@ -506,8 +532,12 @@ class NotificationDLQ(Base):
     __tablename__ = "notification_dlq"
 
     id: Mapped[uuid.UUID] = uuid_pk()
-    outbox_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    user_notification_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    outbox_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+    user_notification_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
     event_type: Mapped[str] = mapped_column(String(64))
     error_reason: Mapped[str] = mapped_column(Text)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
@@ -516,5 +546,6 @@ class NotificationDLQ(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
-    replayed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-
+    replayed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )

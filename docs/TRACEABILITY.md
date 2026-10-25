@@ -2,6 +2,14 @@
 
 Claude Code updates the **Tests** and **Status** columns as work lands. A requirement with no automated test is at best PARTIAL. IDs refer to `docs/MASTER_PROMPT.md` (MP) and `docs/spec/SPEC_v3.md` (SPEC).
 
+**2026-10-24 caveat:** several "Complete (PASS)" rows below were written before the v2
+fix-and-complete audit (`docs/MASTER_PROMPT_COMPLETE.md`, `docs/phase-reports/R0.md`–`R2.md`) found
+and fixed real gaps the cited tests didn't catch — e.g. row 9's `test_auth_router.py` used to assert
+`/auth/login` succeeds with the literal password `"any_password_for_dev"` (it had no real check at
+all) and `/auth/step-up` accepted any syntactically-valid 6-digit code; both are now fixed and
+re-tested (see `docs/phase-reports/R2.md`), but rows not yet re-audited this way should not be
+trusted as "Complete" without independently re-checking what their cited tests actually assert.
+
 ## 1. PS 26265 — ten expected capabilities
 | # | Capability | MP modules | Phase | Tests | Status |
 |---|---|---|---|---|---|
@@ -82,3 +90,14 @@ Claude Code updates the **Tests** and **Status** columns as work lands. A requir
 | System icons: Material Symbols only on Android | §13.3, `.claude/hooks/forbidden-patterns.sh`, DESIGN_SPEC §8 | `scripts/verify_mobile_icons.py` | Complete (PASS) |
 | Free multi-provider AI with complete fallback (bounded by SPEC §17 / D-12) | §14, config/LLM_PROVIDERS.yaml, F-05, F-26, F-27 | `test_llm_gateway.py`, `test_llm_resilience.py`, `test_llm_injection.py`, `test_ai_failover.py`, `docs/ai-evals/PROVIDERS_VERIFIED.md` | Complete (PASS) |
 | Brand colours #050505 / #3b0a6b / #00eeff | §13.1, tokens (contrast-verified) | `apps/web/src/design-system/DesignSystemShowcase.test.tsx` | Complete (PASS) |
+| Stream R3 Contract, generated clients & real data | MASTER_PROMPT_V2 §6 | `apps/web/src/App.test.tsx`, `scripts/no-business-literals.mjs`, `packages/i18n/src/loader.test.ts` | Complete (PASS) |
+| Stream R4 Missing backend modules (Dashboard, Reports, Audit, Users, Search, Reminders, Support, Retention) | MASTER_PROMPT_V2 §7 | `services/api/tests/test_stream_r4_modules.py`, `scripts/verify_audit_chain.py` | Complete (PASS) |
+| Stream R5 Design system and web app (Lavender Ledger v2.1, DesignContract tests, Kosh mascot, Web Shell, no-raw-colour) | MASTER_PROMPT_V2 §8 | `apps/web/src/design-system/DesignContract.test.tsx`, `design/check_tokens.py`, `scripts/no-raw-colour.mjs`, `apps/web/src/App.test.tsx` | Complete (PASS) |
+| Stream R6 Mobile app (Lavender Ledger v2.1, Floating pill tab bar, Kosh mascot, Icon hygiene, Parity matrix, Web export) | MASTER_PROMPT_V2 §9 | `scripts/verify_mobile_icons.py`, `scripts/generate_parity_matrix.py`, `node scripts/forbidden-strings.mjs`, `npx expo export -p web` | Complete (PASS) |
+| Stream R7 Realtime, notifications & SSE (SSE Last-Event-ID replay, Inbox-first state ladder, canary sanitization, device lifecycle, DLQ) | MASTER_PROMPT_V2 §10 | `services/api/tests/test_stream_r7_notifications_and_sse.py`, `test_scenario_10_notifications_inbox_and_delivery.py`, `test_notifications_device_logout_and_privacy.py` | Complete (PASS) |
+| Stream R8 Hardening, performance & docs (Security matrix, upload scan, pool isolation, restore drill, benchmark load test, README, FINAL_AUDIT) | MASTER_PROMPT_V2 §11 | `test_security_matrix.py`, `test_security_scan.py`, `test_pool_isolation.py`, `scripts/restore_drill.py`, `scripts/run_load_test.py`, `README.md`, `docs/FINAL_AUDIT.md` | Complete (PASS) |
+| Stream R9 Independent final audit (All 29 exit gates verified, live login & navigation across all 12 human roles, invariant scans) | MASTER_PROMPT_V2 §12 | `docs/phase-reports/R9-independent-audit.md`, `scripts/smoke_test_live_api.sh`, `make verify` | Complete (PASS) |
+
+
+
+
