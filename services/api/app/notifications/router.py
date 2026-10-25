@@ -388,15 +388,13 @@ def get_dead_letter_queue(
     session: Session = Depends(get_session),
     principal: Principal = Depends(get_current_principal),
 ):
-    """Admin viewer for Dead-Letter Queue (SPEC §11.2 step 6)."""
-    # Permit portal operators and admins to inspect DLQ
+    """Admin viewer for Dead-Letter Queue (SPEC §11.2 step 6). Bureau-side
+    operator roles only — this is a system-wide, cross-institution view of
+    notification delivery failures, never an institution-scoped resource, so
+    no tenant role belongs on this list (CLAUDE.md non-negotiable #6)."""
     allowed_roles = (
         AppRole.PLATFORM_OPERATOR,
         AppRole.IDENTITY_ADMIN,
-        AppRole.ORG_ADMIN,
-        AppRole.COMPETENT_AUTHORITY,
-        AppRole.INSTITUTION_SUBMITTER,
-        AppRole.FINANCE_OFFICER,
     )
     if principal.role not in allowed_roles:
         raise HTTPException(
@@ -433,13 +431,11 @@ def replay_dlq_item(
     session: Session = Depends(get_session),
     principal: Principal = Depends(get_current_principal),
 ):
-    """Replays an exhausted dead-letter item."""
+    """Replays an exhausted dead-letter item. Bureau-side operator roles
+    only — same reasoning as get_dead_letter_queue above."""
     allowed_roles = (
         AppRole.PLATFORM_OPERATOR,
         AppRole.IDENTITY_ADMIN,
-        AppRole.ORG_ADMIN,
-        AppRole.COMPETENT_AUTHORITY,
-        AppRole.INSTITUTION_SUBMITTER,
     )
     if principal.role not in allowed_roles:
         raise HTTPException(

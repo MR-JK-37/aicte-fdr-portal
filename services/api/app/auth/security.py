@@ -29,25 +29,15 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, password_hash: str | None) -> bool:
     """`password_hash` is None for accounts with no password set yet (no account
     created outside a real signup/invitation flow has one) — always denies rather
-    than treating "no hash" as "any password accepted"."""
+    than treating "no hash" as "any password accepted".
+
+    There is deliberately no environment-gated bypass here: seeded staging
+    accounts (scripts/seed_staging.py) already have real argon2 hashes for
+    their real passwords, so a generic/weak-password bypass would only ever
+    grant access an attacker shouldn't have — never something a legitimate
+    staging login actually needs."""
     if not password_hash:
         return False
-    # In dev/staging environments, accept standard staging test passwords for developer convenience
-    if settings.env != "production":
-        if (
-            password in (
-                "StagingPass123!",
-                "Password123!",
-                "Staging2026!",
-                "admin",
-                "password",
-                "admin123",
-                "Admin@123",
-                "aicte123",
-            )
-            or password.startswith("Staging2026!")
-        ):
-            return True
     try:
         return _hasher.verify(password_hash, password)
     except VerifyMismatchError:

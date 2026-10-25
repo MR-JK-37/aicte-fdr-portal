@@ -35,7 +35,7 @@ from app.authz import (
     SeparationOfDutiesError,
     mask_identifier,
 )
-from app.models.core import Instrument, Reminder
+from app.models.core import AppUser, Instrument, Reminder
 from app.models.enums import InstrumentStatus
 from app.models.extensions import CalendarFeedToken, ReminderSchedule
 from app.models.workflow import SchedulerRun
@@ -380,6 +380,18 @@ def export_calendar_ics_feed(
             detail="Invalid, expired, or revoked calendar feed token",
         )
 
+    # Bearer-token auth, not principal auth — no RLS app.role context has been
+    # set on this session yet. Scope it to the lookup this handler needs.
+    from app.db import set_app_context
+
+    set_app_context(db, role="platform_operator")
+
+    owner = db.get(AppUser, tok_record.user_id)
+    if not owner or not owner.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token owner"
+        )
+
     now = datetime.now(UTC)
     horizon = now + timedelta(days=180)
     stmt = (
@@ -392,6 +404,12 @@ def export_calendar_ics_feed(
         .order_by(Instrument.maturity_date.asc())
         .limit(100)
     )
+    # A feed token is bearer-authenticated (CalDAV/ICS clients can't do
+    # OAuth), so this is the only place scoping happens — never return
+    # another institution's maturities just because the bearer holds a
+    # validly-issued token for their own account (CLAUDE.md non-negotiable #6).
+    if owner.institution_id:
+        stmt = stmt.where(Instrument.institution_id == owner.institution_id)
 
     instruments = db.execute(stmt).scalars().all()
 
