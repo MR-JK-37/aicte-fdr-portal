@@ -272,10 +272,11 @@ def list_export_jobs(
     db: Session = Depends(get_db),
 ) -> list[ExportJobResponse]:
     """Lists recent export jobs requested within user's scope."""
+    scope = authorise_safe(principal, PermissionVerb.EXPORT_REPORT)
     stmt = select(ExportJob)
     if principal.institution_id:
         stmt = stmt.where(ExportJob.institution_id == principal.institution_id)
-    else:
+    elif scope != "all":
         stmt = stmt.where(ExportJob.requested_by == principal.id)
     stmt = stmt.order_by(desc(ExportJob.created_at)).limit(50)
 

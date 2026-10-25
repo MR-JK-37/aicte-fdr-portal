@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Lock, Mail, KeyRound, AlertTriangle, ArrowLeft, Sparkles } from 'lucide-react';
+import { Lock, Mail, KeyRound, AlertTriangle, ArrowLeft, Sparkles, Zap } from 'lucide-react';
 import { api } from '../lib/apiClient';
 import { apiFetch, ProblemError } from '../lib/apiFetch';
 import { useAuth } from './AuthContext';
@@ -12,6 +12,59 @@ interface DevAccount {
   role: string;
   full_name: string;
 }
+
+interface DemoPreset {
+  role: string;
+  label: string;
+  institution: string;
+  email: string;
+  password: string;
+}
+
+const PRESET_DEMO_ACCOUNTS: DemoPreset[] = [
+  {
+    role: 'org_admin',
+    label: 'Institution Admin',
+    institution: 'Apex Institute of Technology',
+    email: 'admin.inst_a@staging.aicte.gov.in',
+    password: 'Staging2026!Orgadmin',
+  },
+  {
+    role: 'institution_submitter',
+    label: 'Submitter',
+    institution: 'Apex Institute of Technology',
+    email: 'submitter.inst_a@staging.aicte.gov.in',
+    password: 'Staging2026!Institutionsubmitter',
+  },
+  {
+    role: 'intake_officer',
+    label: 'AICTE Intake',
+    institution: 'AICTE Bureau HQ',
+    email: 'intake.officer@staging.aicte.gov.in',
+    password: 'Staging2026!Intakeofficer',
+  },
+  {
+    role: 'scrutiny_officer',
+    label: 'AICTE Scrutiny',
+    institution: 'AICTE Bureau HQ',
+    email: 'scrutiny.officer@staging.aicte.gov.in',
+    password: 'Staging2026!Scrutinyofficer',
+  },
+  {
+    role: 'bank_verifier',
+    label: 'Bank Verifier',
+    institution: 'State Bank of India',
+    email: 'bank.verifier@sbi.staging.aicte.gov.in',
+    password: 'Staging2026!Bankverifier',
+  },
+  {
+    role: 'platform_operator',
+    label: 'Platform Admin',
+    institution: 'AICTE Tech Core',
+    email: 'platform.operator@staging.aicte.gov.in',
+    password: 'Staging2026!Platformoperator',
+  },
+];
 
 function roleLabel(role: string): string {
   return role
@@ -75,7 +128,74 @@ export const LoginScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [devLoginEmail, setDevLoginEmail] = useState<string | null>(null);
+  const [selectedDemoIndex, setSelectedDemoIndex] = useState(0);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
   const devAccounts = useDevAccounts();
+
+  const activeDemo = PRESET_DEMO_ACCOUNTS[selectedDemoIndex] || PRESET_DEMO_ACCOUNTS[0];
+
+  const handleAutoFillAndLogin = async (accOverride?: DemoPreset) => {
+    const target = accOverride || activeDemo;
+    if (accOverride) {
+      const idx = PRESET_DEMO_ACCOUNTS.findIndex((a) => a.email === accOverride.email);
+      if (idx !== -1) setSelectedDemoIndex(idx);
+    }
+
+    setError(null);
+    setIsAutoFilling(true);
+
+    // 1. Visually auto-fill the form credentials
+    setEmail(target.email);
+    setPassword(target.password);
+
+    // 2. Short pause so user clearly observes the credentials filled
+    await new Promise((r) => setTimeout(r, 400));
+
+    setSubmitting(true);
+    try {
+      // 3. First try dev-login (direct staging session issuance)
+      try {
+        await apiFetch('/v1/auth/dev-login', {
+          method: 'POST',
+          body: JSON.stringify({ email: target.email }),
+        });
+        await refresh();
+        return;
+      } catch {
+        // Fallback to standard login with dev bypass TOTP
+        const { data, error: loginErr, response } = await api.POST('/v1/auth/login', {
+          body: {
+            email: target.email,
+            password: target.password,
+            totp_code: '123456',
+          },
+        });
+
+        if (data) {
+          await refresh();
+          return;
+        }
+
+        const msg = extractErrorMessage(loginErr, 'Automatic login failed');
+        if (response?.status === 401 && msg.toLowerCase().includes('totp')) {
+          setStage('totp');
+          setTotpCode('123456');
+          setError(null);
+          return;
+        }
+        setError(msg);
+      }
+    } catch (err) {
+      setError(
+        err instanceof ProblemError
+          ? err.problem.detail || err.problem.title || 'Auto-login failed'
+          : 'Auto-login failed. Please ensure the backend server is running.'
+      );
+    } finally {
+      setIsAutoFilling(false);
+      setSubmitting(false);
+    }
+  };
 
   const attemptLogin = async (withTotp: boolean) => {
     setSubmitting(true);
@@ -352,6 +472,121 @@ export const LoginScreen: React.FC = () => {
               <span>Use a passkey</span>
             </button>
 
+            {/* Quick Demo Access Divider */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                margin: '8px 0 4px',
+                width: '100%',
+              }}
+            >
+              <div style={{ height: '1px', flex: 1, background: 'var(--hairline)' }} />
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: 'var(--text3)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Quick Demo Access
+              </span>
+              <div style={{ height: '1px', flex: 1, background: 'var(--hairline)' }} />
+            </div>
+
+            {/* Main Auto-fill & Instant Login Button */}
+            <button
+              type="button"
+              id="auto-fill-login-btn"
+              onClick={() => handleAutoFillAndLogin()}
+              disabled={submitting || isAutoFilling}
+              style={{
+                width: '100%',
+                height: '48px',
+                borderRadius: '999px',
+                fontSize: '14px',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                color: '#ffffff',
+                border: 'none',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.28)',
+                cursor: submitting || isAutoFilling ? 'wait' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Zap size={16} fill="currentColor" />
+              <span>
+                {isAutoFilling
+                  ? 'Auto-filling credentials…'
+                  : submitting
+                  ? 'Logging in to account…'
+                  : `Auto-fill Credentials & Login (${activeDemo.label})`}
+              </span>
+            </button>
+
+            {/* Quick Role Selection Chips */}
+            <div style={{ width: '100%', marginTop: '2px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '6px',
+                }}
+              >
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text3)' }}>
+                  Switch demo account:
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 600 }}>
+                  {activeDemo.institution}
+                </span>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '6px',
+                }}
+              >
+                {PRESET_DEMO_ACCOUNTS.map((acc, idx) => {
+                  const isSelected = selectedDemoIndex === idx;
+                  return (
+                    <button
+                      key={acc.email}
+                      type="button"
+                      onClick={() => handleAutoFillAndLogin(acc)}
+                      disabled={submitting || isAutoFilling}
+                      style={{
+                        border: isSelected ? '1.5px solid var(--primary)' : '1px solid var(--hairline)',
+                        background: isSelected ? 'var(--primary-container)' : 'var(--field)',
+                        color: isSelected ? 'var(--on-primary-container)' : 'var(--text2)',
+                        padding: '4px 9px',
+                        borderRadius: '8px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: submitting || isAutoFilling ? 'wait' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'all 0.15s ease',
+                      }}
+                      title={`Auto-fill & log in as ${acc.label} (${acc.email})`}
+                    >
+                      {isSelected && <Zap size={10} fill="currentColor" />}
+                      <span>{acc.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* One-click role login — non-production only (see useDevAccounts) */}
             {devAccounts && devAccounts.length > 0 && (
               <div
@@ -525,6 +760,43 @@ export const LoginScreen: React.FC = () => {
               }}
             >
               {submitting ? 'Verifying…' : 'Verify and continue'}
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                setTotpCode('123456');
+                setSubmitting(true);
+                setError(null);
+                const { data, error: loginError } = await api.POST('/v1/auth/login', {
+                  body: {
+                    email: email.trim(),
+                    password,
+                    totp_code: '123456',
+                  },
+                });
+                setSubmitting(false);
+                if (data) {
+                  await refresh();
+                  return;
+                }
+                setError(extractErrorMessage(loginError, 'Verification failed'));
+              }}
+              disabled={submitting}
+              className="btn btn-soft btn-block"
+              style={{
+                height: '44px',
+                borderRadius: '999px',
+                fontSize: '13px',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+              }}
+            >
+              <Zap size={15} fill="currentColor" />
+              <span>Auto-fill Demo Code (123456) & Sign In</span>
             </button>
 
             <button

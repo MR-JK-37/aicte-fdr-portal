@@ -16,6 +16,7 @@ interface MoreScreenProps {
   onTriggerTestPush?: () => void;
   isOnline: boolean;
   onToggleOnline: () => void;
+  onOpenChatbot?: () => void;
 }
 
 /**
@@ -47,6 +48,7 @@ export const MoreScreen: React.FC<MoreScreenProps> = ({
   onTriggerTestPush,
   isOnline,
   onToggleOnline,
+  onOpenChatbot,
 }) => {
   const { tone, isDark } = useAppTheme();
   const { user } = useAuth();
@@ -204,6 +206,20 @@ export const MoreScreen: React.FC<MoreScreenProps> = ({
         {/* Section: Privacy Policy & Tools */}
         <View style={styles.sectionWrap}>
           <View style={[styles.groupedCard, { backgroundColor: cardBg }]}>
+            {/* Ask AI Handbook Chatbot */}
+            <TouchableOpacity
+              style={[styles.row, styles.rowBorder]}
+              onPress={onOpenChatbot}
+            >
+              <View style={styles.rowLeft}>
+                <Icon name="chat" size={18} color={tone.accent} />
+                <Text style={[styles.rowTitle, { color: tone.text1 }]}>Ask Handbook Chatbot (Kosh AI)</Text>
+              </View>
+              <View style={styles.rowRight}>
+                <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
+              </View>
+            </TouchableOpacity>
+
             {/* Privacy Policy */}
             <TouchableOpacity
               style={[styles.row, styles.rowBorder]}

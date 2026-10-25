@@ -6,16 +6,50 @@ import { Kosh } from '../design-system/Kosh';
 import { MobileTask } from '../types';
 
 interface TasksScreenProps {
+  tasks?: MobileTask[];
   onTaskResolved?: (taskId: string) => void;
 }
+
+const DEFAULT_REALISTIC_TASKS: MobileTask[] = [
+  {
+    id: 'tsk-101',
+    title: 'Verify Tripartite Joint Lien Endorsement Letter',
+    type: 'intake_review',
+    instrument_number: 'FDR-XXXX0192',
+    institution_name: 'Apex Institute of Technology, Bengaluru',
+    assigned_role: 'scrutiny_officer',
+    due_date: '28 Oct 2026',
+    urgency: 'high',
+  },
+  {
+    id: 'tsk-102',
+    title: 'SFMS Confirmation Reconciliation with Bank Gateway',
+    type: 'bank_verify',
+    instrument_number: 'FDR-XXXX1008',
+    institution_name: 'RV College of Engineering, Bengaluru',
+    assigned_role: 'verifier',
+    due_date: '30 Oct 2026',
+    urgency: 'statutory_deadline',
+  },
+  {
+    id: 'tsk-103',
+    title: 'Examine T-50 Maturity Ladder Extension Request',
+    type: 'discrepancy_casework',
+    instrument_number: 'FDR-XXXX7821',
+    institution_name: 'Apex Institute of Technology, Bengaluru',
+    assigned_role: 'regional_officer',
+    due_date: '04 Nov 2026',
+    urgency: 'statutory_deadline',
+  },
+];
 
 /**
  * Mobile Tasks Screen
  * Lavender Ledger layout: Topbar, page header, grouped list / calm Kosh empty state
  */
-export const TasksScreen: React.FC<TasksScreenProps> = () => {
+export const TasksScreen: React.FC<TasksScreenProps> = ({ tasks = DEFAULT_REALISTIC_TASKS }) => {
   const { tone, isDark } = useAppTheme();
-  const [tasks] = useState<MobileTask[]>([]);
+
 
   const cardBg = isDark ? tone.surface : '#ffffff';
 

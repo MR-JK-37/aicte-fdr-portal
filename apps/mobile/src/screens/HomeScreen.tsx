@@ -13,6 +13,7 @@ interface HomeScreenProps {
   onSelectInstrument?: (inst: MobileInstrument) => void;
   onOpenQRScanner?: () => void;
   onOpenDocCapture?: () => void;
+  onOpenChatbot?: () => void;
 }
 
 /**
@@ -28,6 +29,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onSelectInstrument,
   onOpenQRScanner,
   onOpenDocCapture,
+  onOpenChatbot,
 }) => {
   const { tone, isDark } = useAppTheme();
   const { user } = useAuth();
@@ -167,7 +169,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
           {/* Row 3: Maturity calendar */}
           <TouchableOpacity
-            style={styles.listRow}
+            style={[styles.listRow, { borderBottomColor: isDark ? tone.surfaceMuted : '#eceff8' }]}
             onPress={() => onNavigateTab('tasks')}
           >
             <View style={[styles.rowIconCircle, { backgroundColor: tone.accentContainer }]}>
@@ -175,6 +177,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </View>
             <View style={styles.rowMain}>
               <Text style={[styles.rowTitle, { color: tone.text1 }]}>Maturity calendar</Text>
+            </View>
+            <Text style={[styles.rowArrow, { color: tone.text3 }]}>›</Text>
+          </TouchableOpacity>
+
+          {/* Row 4: Ask AI Handbook Chatbot */}
+          <TouchableOpacity
+            style={styles.listRow}
+            onPress={onOpenChatbot}
+          >
+            <View style={[styles.rowIconCircle, { backgroundColor: tone.accentContainer }]}>
+              <Icon name="chat" size={18} color={tone.accent} />
+            </View>
+            <View style={styles.rowMain}>
+              <Text style={[styles.rowTitle, { color: tone.text1 }]}>Ask Handbook Chatbot</Text>
+              <Text style={[styles.rowSub, { color: tone.text3 }]}>Kosh AI regulatory compliance assistant</Text>
             </View>
             <Text style={[styles.rowArrow, { color: tone.text3 }]}>›</Text>
           </TouchableOpacity>

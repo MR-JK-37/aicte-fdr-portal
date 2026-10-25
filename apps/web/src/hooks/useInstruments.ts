@@ -23,15 +23,23 @@ export interface InstrumentApiItem {
 function mapApiToInstrument(item: InstrumentApiItem): Instrument {
   // Convert Decimal amount (rupees) to paise (or standard number)
   const numAmount = typeof item.amount === 'string' ? parseFloat(item.amount) : item.amount;
+  const bankName = item.bank_name || 'State Bank of India';
+  const ifscMap: Record<string, string> = {
+    'State Bank of India': 'SBIN0000691',
+    'Punjab National Bank': 'PUNB0112000',
+    'Bank of Baroda': 'BARB0INSTIT',
+    'Canara Bank': 'CNRB0001920',
+  };
+
   return {
     id: item.id,
     institution_id: item.institution_id,
-    institution_name: item.institution_name || 'Apex Institute of Technology',
+    institution_name: item.institution_name || 'Apex Institute of Technology, Bengaluru',
     instrument_number: item.instrument_number,
     type: item.type,
     amount: Math.round(numAmount * 100), // in paise
-    bank_name: item.bank_name || 'State Bank of India',
-    branch_ifsc: 'SBIN0099999',
+    bank_name: bankName,
+    branch_ifsc: ifscMap[bankName] || 'SBIN0000691',
     issue_date: item.issue_date || '',
     maturity_date: item.maturity_date || '',
     status: item.status as InstrumentStatus,

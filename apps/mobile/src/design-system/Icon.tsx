@@ -26,7 +26,7 @@ export const ICON_NAMES = [
   'security', 'history', 'settings', 'profile', 'sign_out', 'warning', 'error',
   'success', 'failed', 'pending', 'sync', 'offline', 'link', 'declared',
   'help', 'blocked', 'receipt', 'report', 'download', 'share', 'add',
-  'language', 'devices', 'policy', 'audit',
+  'language', 'devices', 'policy', 'audit', 'chat', 'send',
 ] as const;
 
 export type IconName = typeof ICON_NAMES[number];
@@ -75,6 +75,8 @@ const MATERIAL: Record<IconName, { icon: typeof outlined400.msDashboard; fill: t
   devices: { icon: outlined400.msDevices, fill: outlined400.msDevices },
   policy: { icon: outlined400.msPolicy, fill: outlined400.msPolicy },
   audit: { icon: outlined400.msManageSearchFill ?? outlined400.msManageSearch, fill: outlined400.msManageSearchFill },
+  chat: { icon: outlined400.msChat, fill: outlined400.msChatFill },
+  send: { icon: outlined400.msSend, fill: outlined400.msSendFill },
 };
 
 /** SF Symbol names, per design/DESIGN_SPEC.md §8's iOS column. */
@@ -122,6 +124,8 @@ const SF_SYMBOL: Record<IconName, string> = {
   devices: 'iphone',
   policy: 'text.book.closed',
   audit: 'list.bullet.rectangle',
+  chat: 'bubble.left.and.bubble.right',
+  send: 'paperplane',
 };
 
 export interface IconProps {
