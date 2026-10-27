@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.agents.router import router as agents_router
 from app.audit.router import router as audit_router
@@ -40,6 +43,8 @@ from app.verification.router import router as verification_router
 # environment is production and any simulation/demo/mock/fake flag is
 # set (CLAUDE.md non-negotiable #10). No-op in non-production envs.
 enforce_production_guard()
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="AICTE FDR Portal API",
@@ -98,16 +103,41 @@ app.include_router(agents_router)
 
 @app.on_event("startup")
 def ensure_aph_clauses_seeded() -> None:
-    try:
-        from app.agents.seed_aph_clauses import seed
-        from app.models.rag import AphClauseChunk
-        with SessionLocal() as session:
+    from app.agents.seed_aph_clauses import seed
+    from app.models.rag import AphClauseChunk
+
+    with SessionLocal() as session:
+        try:
             count = session.query(AphClauseChunk).count()
             if count == 0:
                 seed(session)
                 session.commit()
-    except Exception:
-        pass
+        except IntegrityError as exc:
+            session.rollback()
+            if _is_duplicate_seed_error(exc):
+                logger.info(
+                    "APH clause startup seed skipped after duplicate insert race "
+                    "(existing rows already present)."
+                )
+                return
+            logger.exception("Unexpected integrity error while seeding APH clauses at startup.")
+        except SQLAlchemyError:
+            session.rollback()
+            logger.exception("Failed to seed APH clauses at startup.")
+
+
+def _is_duplicate_seed_error(exc: IntegrityError) -> bool:
+    """True when startup seeding hit the expected unique-constraint race."""
+    orig = getattr(exc, "orig", None)
+    constraint_name = getattr(getattr(orig, "diag", None), "constraint_name", None)
+    if constraint_name == "uq_aph_clause_chunks_clause_id":
+        return True
+
+    message = str(orig).lower()
+    return (
+        "duplicate key value violates unique constraint" in message
+        and "uq_aph_clause_chunks_clause_id" in message
+    )
 
 
 @app.get("/health", tags=["system"])
