@@ -18,3 +18,5 @@ garage_meta/
 backups/
 .local/
 
+.vercel
+.env*
