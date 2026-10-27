@@ -55,7 +55,7 @@ def _make_institution_with_submitted_instrument(db_session, *, suffix: str):
 
 
 def test_intake_queue_scoped_to_own_institution(db_session):
-    inst_a, user_a, instrument_a = _make_institution_with_submitted_instrument(
+    _inst_a, user_a, instrument_a = _make_institution_with_submitted_instrument(
         db_session, suffix="A"
     )
     _inst_b, user_b, instrument_b = _make_institution_with_submitted_instrument(
@@ -78,11 +78,11 @@ def test_intake_queue_scoped_to_own_institution(db_session):
 
 
 def test_scrutiny_queue_scoped_to_own_institution(db_session):
-    inst_a, user_a, instrument_a = _make_institution_with_submitted_instrument(
+    _inst_a, user_a, instrument_a = _make_institution_with_submitted_instrument(
         db_session, suffix="C"
     )
     instrument_a.status = InstrumentStatus.SCRUTINY
-    _inst_b, user_b, instrument_b = _make_institution_with_submitted_instrument(
+    _inst_b, _user_b, instrument_b = _make_institution_with_submitted_instrument(
         db_session, suffix="D"
     )
     instrument_b.status = InstrumentStatus.SCRUTINY
