@@ -127,7 +127,7 @@ function ShowcaseBody() {
 
         <section className="ds-showcase__section">
           <h2 className="ds-showcase__heading">Evidence-attribute chips</h2>
-          <p className="ds-showcase__sub">{t('evidence.declared')} / {t('evidence.bankConfirmed')} — distinct shape + icon, never colour alone.</p>
+          <p className="ds-showcase__sub">{t('evidence.declared')} / {t('evidence.bankConfirmed')}: distinct shape + icon, never colour alone.</p>
           <div className="ds-showcase__row">
             {EVIDENCE_ATTRS.map((a) => <EvidenceChip key={a} attribute={a} source="Demo source, 12 Sep 2026" />)}
           </div>

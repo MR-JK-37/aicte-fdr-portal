@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Icon } from '../design-system/Icon';
 import { useAppTheme } from '../design-system/theme';
 import { Kosh } from '../design-system/Kosh';
 import { MobileNotification } from '../types';
+import { useAuth } from '../auth/AuthContext';
 
 interface InboxScreenProps {
   notifications: MobileNotification[];
@@ -29,9 +30,20 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({
   onTriggerTestPush,
 }) => {
   const { tone, isDark } = useAppTheme();
+  const { user } = useAuth();
+  const roleLabel = user?.role ? user.role.replace(/_/g, ' ') : 'Institution';
   const [localNotifs, setLocalNotifs] = useState<MobileNotification[]>(notifications);
   const [activeChip, setActiveChip] = useState<FilterCategory>('All');
   const [deferNotice, setDeferNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLocalNotifs((prev) =>
+      notifications.map((n) => {
+        const local = prev.find((p) => p.id === n.id);
+        return local?.local_remind_at ? { ...n, local_remind_at: local.local_remind_at } : n;
+      })
+    );
+  }, [notifications]);
 
   const cardBg = isDark ? tone.surface : '#ffffff';
 
@@ -96,7 +108,7 @@ export const InboxScreen: React.FC<InboxScreenProps> = ({
           </View>
 
           <View style={[styles.rolePill, { backgroundColor: tone.accentContainer }]}>
-            <Text style={[styles.rolePillText, { color: tone.accent }]}>Institution</Text>
+            <Text style={[styles.rolePillText, { color: tone.accent }]}>{roleLabel}</Text>
           </View>
         </View>
       </View>
@@ -373,11 +385,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     paddingHorizontal: 16,
     paddingVertical: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
   },
   notifRow: {
     paddingVertical: 14,

@@ -7,9 +7,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
 
-# Matches app.agents.embeddings.EMBEDDING_DIM — see that module's docstring
-# for why this is a local lexical hash embedding, not a real model's.
-EMBEDDING_DIM = 256
+# Matches app.agents.embeddings.EMBEDDING_DIM — a real local sentence
+# embedding model (BAAI/bge-small-en-v1.5, 384 dims), not a lexical hash.
+# See that module's docstring.
+EMBEDDING_DIM = 384
 
 
 class AphClauseChunk(Base):

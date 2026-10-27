@@ -829,7 +829,7 @@ export const AdminConsoleView: React.FC = () => {
                     <td style={{ padding: '14px 20px', fontWeight: 600, color: 'var(--text1)' }}>
                       {item.event_type}
                     </td>
-                    <td style={{ padding: '14px 16px', color: '#DC2626', fontSize: '12px', fontFamily: 'monospace' }}>
+                    <td style={{ padding: '14px 16px', color: '#DC2626', fontSize: '12px' }}>
                       {item.error_reason}
                     </td>
                     <td style={{ padding: '14px 16px', color: 'var(--text2)' }}>

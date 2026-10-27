@@ -28,12 +28,12 @@ export function Button({ variant = 'filled', label, onPress, disabled, accessibi
     tonal: tone.accentContainer,
     outline: 'transparent',
     text: 'transparent',
-    destructive: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
+    destructive: tone.errorContainer,
   }[variant];
 
   const fg = {
     filled: isDark ? '#0f172a' : '#ffffff',
-    tonal: isDark ? tone.accent : '#1d4ed8',
+    tonal: tone.accent,
     outline: tone.text1,
     text: tone.accent,
     destructive: tone.error,

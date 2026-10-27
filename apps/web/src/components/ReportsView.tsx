@@ -276,7 +276,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ instruments }) => {
             <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Total Custodial Deposit
             </div>
-            <div style={{ marginTop: '6px', fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--text1)' }}>
+            <div style={{ marginTop: '6px', fontSize: '20px', fontWeight: 800, color: 'var(--text1)' }}>
               {formatPaiseINR(totalPaise)}
             </div>
             <div style={{ marginTop: '4px', fontSize: '11px', color: 'var(--text3)' }}>
@@ -288,7 +288,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ instruments }) => {
             <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Active Compliant Balance
             </div>
-            <div style={{ marginTop: '6px', fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#059669' }}>
+            <div style={{ marginTop: '6px', fontSize: '20px', fontWeight: 800, color: '#059669' }}>
               {formatPaiseINR(activePaise)}
             </div>
             <div style={{ marginTop: '4px', fontSize: '11px', color: '#059669' }}>
@@ -300,7 +300,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ instruments }) => {
             <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Expiring / Deficit Risk
             </div>
-            <div style={{ marginTop: '6px', fontSize: '20px', fontWeight: 800, fontFamily: 'var(--font-mono)', color: '#D97706' }}>
+            <div style={{ marginTop: '6px', fontSize: '20px', fontWeight: 800, color: '#D97706' }}>
               {formatPaiseINR(maturingPaise)}
             </div>
             <div style={{ marginTop: '4px', fontSize: '11px', color: '#D97706' }}>
@@ -704,7 +704,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({ instruments }) => {
                           {job.status}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 16px', fontFamily: 'var(--font-mono)', color: 'var(--text1)', fontWeight: 600 }}>
+                      <td style={{ padding: '12px 16px', color: 'var(--text1)', fontWeight: 600 }}>
                         {job.row_count ?? instruments.length} items
                       </td>
                       <td style={{ padding: '12px 16px' }}>

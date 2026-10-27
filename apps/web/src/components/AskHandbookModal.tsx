@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Kosh } from '../design-system/Kosh';
 import { apiFetch, ProblemError } from '../lib/apiFetch';
-import { Sparkles, Send, X, BookOpen, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Sparkles, Send, X, BookOpen, CheckCircle2, AlertCircle, MessageCircle } from 'lucide-react';
 
 interface AskHandbookModalProps {
   isOpen: boolean;
@@ -21,6 +21,7 @@ interface PolicyQAResponse {
   unavailable: boolean;
   verified_citations: string[];
   sources: SourceClause[];
+  general?: boolean;
 }
 
 const SAMPLE_QUESTIONS = [
@@ -45,6 +46,7 @@ export const AskHandbookModal: React.FC<AskHandbookModalProps> = ({ isOpen, onCl
     setIsLoading(true);
     setError(null);
     setResponse(null);
+    setQuery('');
 
     try {
       const data = await apiFetch<PolicyQAResponse>('/v1/ai/policy-qa', {
@@ -122,7 +124,7 @@ export const AskHandbookModal: React.FC<AskHandbookModalProps> = ({ isOpen, onCl
         <div style={{ padding: '16px 24px 28px', overflowY: 'auto' }}>
           {/* Header with Kosh Mascot (matching ui-refrence.png screen 6) */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '12px' }}>
-            <div style={{ filter: 'drop-shadow(0 10px 20px rgba(59, 120, 216, 0.22))' }}>
+            <div style={{}}>
               <Kosh pose="wow" size={84} />
             </div>
             <h2
@@ -269,31 +271,43 @@ export const AskHandbookModal: React.FC<AskHandbookModalProps> = ({ isOpen, onCl
                 gap: '12px',
               }}
             >
-              {/* Citations Bar */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              {/* Citations Bar — distinct styling for a grounded clause-cited
+                  answer vs. an ungrounded general-conversation answer, so the
+                  two are never visually indistinguishable (CLAUDE.md
+                  non-negotiable #3). */}
+              {response.general ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <CheckCircle2 size={16} color="var(--ok)" />
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ok)' }}>
-                    Verified against Approval Process Handbook
+                  <MessageCircle size={16} color="var(--text3)" />
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text3)' }}>
+                    General conversation, not a regulatory citation
                   </span>
                 </div>
-                {response.verified_citations.map((c) => (
-                  <span
-                    key={c}
-                    className="pill pill-ok"
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      padding: '4px 10px',
-                      borderRadius: '999px',
-                      background: 'var(--ok-container)',
-                      color: 'var(--on-ok-container)',
-                    }}
-                  >
-                    {c}
-                  </span>
-                ))}
-              </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle2 size={16} color="var(--ok)" />
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ok)' }}>
+                      Verified against Approval Process Handbook
+                    </span>
+                  </div>
+                  {response.verified_citations.map((c) => (
+                    <span
+                      key={c}
+                      className="pill pill-ok"
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        padding: '4px 10px',
+                        borderRadius: '999px',
+                        background: 'var(--ok-container)',
+                        color: 'var(--on-ok-container)',
+                      }}
+                    >
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {/* Answer Content */}
               <div

@@ -46,6 +46,74 @@
         }
       }
     },
+    "/v1/auth/dev-accounts": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "List Dev Accounts",
+        "description": "Lists the seeded staging roster for one-click role login in non-prod\nenvironments only. Returns email/role/name \u2014 never a password or TOTP\nsecret, so there is nothing here for a client bundle or public repo to\nleak (CLAUDE.md non-negotiable #1).",
+        "operationId": "list_dev_accounts_v1_auth_dev_accounts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DevAccountOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Dev Accounts V1 Auth Dev Accounts Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/dev-login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Dev Login",
+        "description": "One-click login as a known seeded account, non-prod only. No password\nor TOTP is accepted or required \u2014 the refusal in `_refuse_outside_dev_staging`\nis the only gate, exactly as `verify_totp_code`'s 000000/123456 bypass\nalready works for this codebase in non-production. Issues a real session\nthrough the same path as a credentialed login, and is audited distinctly\n(`auth.dev_login`) so it is never indistinguishable from a real login in\nthe audit trail.",
+        "operationId": "dev_login_v1_auth_dev_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/auth/logout": {
       "post": {
         "tags": [
@@ -951,17 +1019,61 @@
         ],
         "summary": "List Features",
         "operationId": "list_features_v1_admin_registry_get",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "fdr_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fdr Session"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/FeatureRegistryOut"
                   },
-                  "type": "array",
                   "title": "Response List Features V1 Admin Registry Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -984,6 +1096,38 @@
             "schema": {
               "type": "string",
               "title": "Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "fdr_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fdr Session"
             }
           }
         ],
@@ -1024,6 +1168,38 @@
             "schema": {
               "type": "string",
               "title": "Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "fdr_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fdr Session"
             }
           }
         ],
@@ -1076,6 +1252,38 @@
             "schema": {
               "type": "string",
               "title": "Key"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "fdr_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fdr Session"
             }
           }
         ],
@@ -5632,6 +5840,113 @@
       }
     },
     "/v1/release-requests": {
+      "get": {
+        "tags": [
+          "release"
+        ],
+        "summary": "List Release Requests",
+        "description": "Lists release requests scoped to the caller's institution (or, for\nAICTE-staff roles with no institution_id, all institutions).",
+        "operationId": "list_release_requests_v1_release_requests_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "fdr_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fdr Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReleaseRequestSummary"
+                  },
+                  "title": "Response List Release Requests V1 Release Requests Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "release"
@@ -5688,6 +6003,81 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/release-requests/{release_request_id}": {
+      "get": {
+        "tags": [
+          "release"
+        ],
+        "summary": "Get Release Request",
+        "operationId": "get_release_request_v1_release_requests__release_request_id__get",
+        "parameters": [
+          {
+            "name": "release_request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Release Request Id"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "fdr_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Fdr Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseRequestDetail"
+                }
               }
             }
           },
@@ -11281,7 +11671,7 @@
           "notifications"
         ],
         "summary": "Get Dead Letter Queue",
-        "description": "Admin viewer for Dead-Letter Queue (SPEC \u00a711.2 step 6).",
+        "description": "Admin viewer for Dead-Letter Queue (SPEC \u00a711.2 step 6). Bureau-side\noperator roles only \u2014 this is a system-wide, cross-institution view of\nnotification delivery failures, never an institution-scoped resource, so\nno tenant role belongs on this list (CLAUDE.md non-negotiable #6).",
         "operationId": "get_dead_letter_queue_v1_notifications_dlq_get",
         "parameters": [
           {
@@ -11345,7 +11735,7 @@
           "notifications"
         ],
         "summary": "Replay Dlq Item",
-        "description": "Replays an exhausted dead-letter item.",
+        "description": "Replays an exhausted dead-letter item. Bureau-side operator roles\nonly \u2014 same reasoning as get_dead_letter_queue above.",
         "operationId": "replay_dlq_item_v1_notifications_dlq__dlq_id__replay_post",
         "parameters": [
           {
@@ -12741,6 +13131,47 @@
         ],
         "title": "ChainStatusResponse"
       },
+      "ClearanceOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "cell": {
+            "type": "string",
+            "title": "Cell"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "cell",
+          "source",
+          "status",
+          "outcome"
+        ],
+        "title": "ClearanceOut"
+      },
       "CommentResponse": {
         "properties": {
           "id": {
@@ -13226,6 +13657,56 @@
           "reason"
         ],
         "title": "DecisionPayload"
+      },
+      "DevAccountOut": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email",
+          "role",
+          "full_name"
+        ],
+        "title": "DevAccountOut"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "device_label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Label"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "DevLoginRequest"
       },
       "DeviceRegistrationPayload": {
         "properties": {
@@ -14279,6 +14760,28 @@
             "format": "uuid",
             "title": "Institution Id"
           },
+          "institution_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Institution Name"
+          },
+          "bank_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bank Name"
+          },
           "type": {
             "$ref": "#/components/schemas/InstrumentType"
           },
@@ -15131,6 +15634,11 @@
             },
             "type": "array",
             "title": "Sources"
+          },
+          "general": {
+            "type": "boolean",
+            "title": "General",
+            "default": false
           }
         },
         "type": "object",
@@ -15695,6 +16203,283 @@
         "additionalProperties": false,
         "type": "object",
         "title": "RefreshRequest"
+      },
+      "ReleaseChecklistItemOut": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule_id",
+          "label",
+          "status",
+          "reason"
+        ],
+        "title": "ReleaseChecklistItemOut"
+      },
+      "ReleaseRequestDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "institution_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Institution Id"
+          },
+          "institution_name": {
+            "type": "string",
+            "title": "Institution Name"
+          },
+          "instrument_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Instrument Id"
+          },
+          "instrument_number": {
+            "type": "string",
+            "title": "Instrument Number"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation"
+          },
+          "recommendation_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Reason"
+          },
+          "recommended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended At"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision"
+          },
+          "decision_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Reason"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "checklist": {
+            "items": {
+              "$ref": "#/components/schemas/ReleaseChecklistItemOut"
+            },
+            "type": "array",
+            "title": "Checklist"
+          },
+          "clearances": {
+            "items": {
+              "$ref": "#/components/schemas/ClearanceOut"
+            },
+            "type": "array",
+            "title": "Clearances"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "institution_id",
+          "institution_name",
+          "instrument_id",
+          "instrument_number",
+          "amount",
+          "status",
+          "recommendation",
+          "recommendation_reason",
+          "recommended_at",
+          "decision",
+          "decision_reason",
+          "created_at",
+          "checklist",
+          "clearances"
+        ],
+        "title": "ReleaseRequestDetail"
+      },
+      "ReleaseRequestSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "institution_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Institution Id"
+          },
+          "institution_name": {
+            "type": "string",
+            "title": "Institution Name"
+          },
+          "instrument_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Instrument Id"
+          },
+          "instrument_number": {
+            "type": "string",
+            "title": "Instrument Number"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "recommendation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation"
+          },
+          "recommendation_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendation Reason"
+          },
+          "recommended_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended At"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision"
+          },
+          "decision_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Reason"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "institution_id",
+          "institution_name",
+          "instrument_id",
+          "instrument_number",
+          "amount",
+          "status",
+          "recommendation",
+          "recommendation_reason",
+          "recommended_at",
+          "decision",
+          "decision_reason",
+          "created_at"
+        ],
+        "title": "ReleaseRequestSummary"
       },
       "ReminderScheduleRule": {
         "properties": {
@@ -17338,6 +18123,17 @@
               }
             ],
             "title": "Lock Screen Title"
+          },
+          "lock_screen_body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lock Screen Body"
           },
           "is_read": {
             "type": "boolean",

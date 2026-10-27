@@ -255,10 +255,12 @@ def list_reminders(
         {
             "id": str(r.id),
             "instrument_id": str(r.instrument_id),
-            "target_date": r.target_date.isoformat() if r.target_date else None,
-            "days_before": r.days_before,
+            "target_date": r.scheduled_for.isoformat() if r.scheduled_for else None,
+            "window": r.window,
             "status": r.status,
             "channel": r.channel,
+            "ladder_step": r.ladder_step,
+            "acknowledged_at": r.acknowledged_at.isoformat() if r.acknowledged_at else None,
             "created_at": r.created_at.isoformat() if r.created_at else None,
         }
         for r in reminders

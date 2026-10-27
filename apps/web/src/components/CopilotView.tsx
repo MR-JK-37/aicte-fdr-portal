@@ -16,6 +16,7 @@ interface PolicyQAResponse {
   unavailable: boolean;
   verified_citations: string[];
   sources: SourceClause[];
+  general?: boolean;
 }
 
 const SAMPLE_QUESTIONS = [
@@ -121,7 +122,6 @@ function FormattedAiResponse({ rawText }: { rawText: string }) {
                       border: '1px solid var(--hairline)',
                       padding: '10px 14px',
                       borderRadius: '12px',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
                     }}
                   >
                     <span
@@ -168,6 +168,7 @@ export const CopilotView: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setResponse(null);
+    setRagQuery('');
 
     try {
       const data = await apiFetch<PolicyQAResponse>('/v1/ai/policy-qa', {
@@ -194,7 +195,7 @@ export const CopilotView: React.FC = () => {
         className="card"
         style={{
           padding: '24px 28px',
-          background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to) 70%)',
+          background: 'var(--hero-from)',
           position: 'relative',
           overflow: 'hidden',
           display: 'flex',
@@ -205,25 +206,6 @@ export const CopilotView: React.FC = () => {
         }}
       >
         <div style={{ position: 'relative', zIndex: 2, maxWidth: '640px' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 12px',
-              borderRadius: '999px',
-              background: 'rgba(255, 255, 255, 0.7)',
-              color: 'var(--azure)',
-              fontSize: '12px',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              marginBottom: '10px',
-            }}
-          >
-            <Sparkles size={14} />
-            AICTE Regulatory Intelligence
-          </div>
           <h2
             style={{
               fontFamily: 'var(--font-display)',
@@ -251,7 +233,7 @@ export const CopilotView: React.FC = () => {
         </div>
 
         <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ filter: 'drop-shadow(0 12px 24px rgba(59, 120, 216, 0.25))' }}>
+          <div style={{}}>
             <Kosh pose="document" size={110} />
           </div>
         </div>
@@ -390,9 +372,8 @@ export const CopilotView: React.FC = () => {
               borderRadius: '20px',
               background: response.refused
                 ? 'rgba(217, 119, 6, 0.04)'
-                : 'linear-gradient(180deg, var(--surface) 0%, var(--field) 100%)',
+                : 'var(--field)',
               border: `1px solid ${response.refused ? 'rgba(217, 119, 6, 0.25)' : 'var(--border)'}`,
-              boxShadow: 'var(--shadow-card)',
             }}
           >
             {/* Header Status Bar */}
@@ -400,6 +381,8 @@ export const CopilotView: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {response.refused ? (
                   <ShieldAlert size={20} color="#D97706" />
+                ) : response.general ? (
+                  <Sparkles size={20} color="var(--text3)" />
                 ) : (
                   <CheckCircle2 size={20} color="#059669" />
                 )}
@@ -409,11 +392,13 @@ export const CopilotView: React.FC = () => {
                     fontWeight: 800,
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
-                    color: response.refused ? '#D97706' : '#059669',
+                    color: response.refused ? '#D97706' : response.general ? 'var(--text3)' : '#059669',
                   }}
                 >
                   {response.refused
-                    ? 'Statutory Boundary Notice • Out of Scope'
+                    ? 'Statutory Boundary Notice: Out of Scope'
+                    : response.general
+                    ? 'General Conversation: Not a Regulatory Citation'
                     : 'Statutory APH Citation Verified'}
                 </span>
               </div>

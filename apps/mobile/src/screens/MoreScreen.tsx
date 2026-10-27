@@ -51,7 +51,10 @@ export const MoreScreen: React.FC<MoreScreenProps> = ({
   onOpenChatbot,
 }) => {
   const { tone, isDark } = useAppTheme();
-  const { user } = useAuth();
+  const { user, navigation } = useAuth();
+  const canSubmitDeposit = navigation?.web_sidebar?.some(
+    (item) => item.required_permission === 'create_draft'
+  );
   const [mfaWizardVisible, setMfaWizardVisible] = useState(false);
   const [showNameToInstitutions, setShowNameToInstitutions] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
@@ -63,7 +66,14 @@ export const MoreScreen: React.FC<MoreScreenProps> = ({
     setTimeout(() => setToast(null), 3000);
   };
 
-  const roleFormatted = role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  // The `role` prop is a coarse mobile-navigation bucket (see
+  // normalizeMobileRole in App.tsx — it collapses e.g. institution_viewer
+  // and institution_submitter down to one 'institution' value for tab
+  // routing purposes), so it's too imprecise for display here. Prefer the
+  // real backend role from the authenticated session; the prop is only a
+  // fallback for the brief window before /v1/me resolves.
+  const preciseRole = user?.role ?? role;
+  const roleFormatted = preciseRole.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   const userName = user?.full_name || 'Official User';
   const userInitials = userName
     .split(' ')
@@ -111,9 +121,11 @@ export const MoreScreen: React.FC<MoreScreenProps> = ({
         {/* Profile Card with Avatar XL and Region Chip */}
         <View style={styles.profileHeader}>
           {/* Region Chip */}
-          <View style={styles.regionChip}>
-            <Text style={styles.regionChipText}>Region: South</Text>
-          </View>
+          {user?.region_id && (
+            <View style={styles.regionChip}>
+              <Text style={styles.regionChipText}>Region: {user.region_id}</Text>
+            </View>
+          )}
 
           {/* Avatar XL */}
           <View style={[styles.avatarXL, { backgroundColor: tone.accentContainer }]}>
@@ -152,22 +164,9 @@ export const MoreScreen: React.FC<MoreScreenProps> = ({
                 <Text style={[styles.rowTitle, { color: tone.text1 }]}>Two-step verification</Text>
               </View>
               <View style={styles.rowRight}>
-                <Text style={[styles.rowValue, { color: tone.text3 }]}>On</Text>
-                <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Passkeys */}
-            <TouchableOpacity
-              style={[styles.row, styles.rowBorder]}
-              onPress={() => showToast('Passkeys registered: 1 on current device.')}
-            >
-              <View style={styles.rowLeft}>
-                <Icon name="biometric" size={18} color={tone.accent} />
-                <Text style={[styles.rowTitle, { color: tone.text1 }]}>Passkeys</Text>
-              </View>
-              <View style={styles.rowRight}>
-                <Text style={[styles.rowValue, { color: tone.text3 }]}>1</Text>
+                <Text style={[styles.rowValue, { color: tone.text3 }]}>
+                  {user?.mfa_enrolled ? 'On' : 'Not enrolled'}
+                </Text>
                 <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
               </View>
             </TouchableOpacity>
@@ -175,7 +174,7 @@ export const MoreScreen: React.FC<MoreScreenProps> = ({
             {/* Devices and sessions */}
             <TouchableOpacity
               style={[styles.row, styles.rowBorder]}
-              onPress={() => showToast('Active session authenticated via Keycloak OIDC.')}
+              onPress={() => showToast('Session device management is not available in this build.')}
             >
               <View style={styles.rowLeft}>
                 <Icon name="devices" size={18} color={tone.accent} />
@@ -248,25 +247,27 @@ export const MoreScreen: React.FC<MoreScreenProps> = ({
               </View>
             </TouchableOpacity>
 
-            {/* Document Capture */}
-            <TouchableOpacity
-              style={[styles.row, styles.rowBorder]}
-              onPress={onOpenDocCapture}
-            >
-              <View style={styles.rowLeft}>
-                <Icon name="scan" size={18} color={tone.accent} />
-                <Text style={[styles.rowTitle, { color: tone.text1 }]}>Document capture</Text>
-              </View>
-              <View style={styles.rowRight}>
-                <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
-              </View>
-            </TouchableOpacity>
+            {/* Document Capture — only for roles entitled to create_draft */}
+            {canSubmitDeposit && (
+              <TouchableOpacity
+                style={[styles.row, styles.rowBorder]}
+                onPress={onOpenDocCapture}
+              >
+                <View style={styles.rowLeft}>
+                  <Icon name="scan" size={18} color={tone.accent} />
+                  <Text style={[styles.rowTitle, { color: tone.text1 }]}>Document capture</Text>
+                </View>
+                <View style={styles.rowRight}>
+                  <Text style={[styles.chevron, { color: tone.text3 }]}>›</Text>
+                </View>
+              </TouchableOpacity>
+            )}
 
             {/* Sign out */}
             <TouchableOpacity style={styles.row} onPress={onLogout}>
               <View style={styles.rowLeft}>
-                <Icon name="sign_out" size={18} color="#ef4444" />
-                <Text style={[styles.rowTitle, { color: '#ef4444' }]}>Sign out</Text>
+                <Icon name="sign_out" size={18} color={tone.danger} />
+                <Text style={[styles.rowTitle, { color: tone.danger }]}>Sign out</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -329,11 +330,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
   rolePill: {
     paddingHorizontal: 12,
@@ -372,11 +368,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 9999,
     backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
     marginBottom: 20,
   },
   regionChipText: {
@@ -411,11 +402,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 22,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
     marginBottom: 24,
   },
   toggleLabel: {
@@ -434,11 +420,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     paddingHorizontal: 16,
     paddingVertical: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
   },
   row: {
     flexDirection: 'row',

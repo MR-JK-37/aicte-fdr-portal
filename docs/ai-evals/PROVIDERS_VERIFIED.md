@@ -1,8 +1,8 @@
 # AI / OCR Provider Verification Register (Phase 8 / SPEC §14, §17)
 
 **Document Status**: Official Verification Register  
-**Governing Policies**: `docs/MASTER_PROMPT.md §14`, `config/LLM_PROVIDERS.yaml`, `OPEN_DECISIONS.md D-12`  
-**Last Verified Date**: 2026-10-24  
+**Governing Policies**: `docs/MASTER_PROMPT.md §14`, `services/api/config/llm_providers.yaml` (the file actually loaded by `app/llm_gateway/registry.py` — the repo-root `config/LLM_PROVIDERS.yaml` is a stale, divergent duplicate with a different schema that the code does not read; do not edit it expecting an effect, and prefer deleting or merging it to stop the two drifting further), `OPEN_DECISIONS.md D-12`  
+**Last Verified Date**: 2026-10-24 (table below); see §5 for 2026-10-26 session notes  
 **Audit Standard**: AICTE Regulation Bureau · Smart India Hackathon PS 26265  
 
 ---
@@ -87,3 +87,12 @@ In accordance with `config/LLM_PROVIDERS.yaml`:
   - Per-provider limits: Respects verified RPM/TPM headers dynamically.
 - **Cache TTL**: 24 hours in Valkey/Redis keyed by normalized prompt hash.
 - **Metadata-Only Audit Logging**: Every invocation recorded to `agent_runs` table with `input_hash`, `tokens_in`, `tokens_out`, `latency_ms`, `provider`, `model`, and `status`. Raw prompts for Tier S are NEVER logged.
+
+---
+
+## 5. 2026-10-26 Session Notes
+
+- **Re-verified live** (not re-trusted from this doc): Groq's current model catalog via `console.groq.com/docs/models` still lists `openai/gpt-oss-120b` and `llama-3.3-70b-versatile` as this doc claims. OpenRouter's current free catalog via the public `GET https://openrouter.ai/api/v1/models` endpoint (no auth required, more reliable than scraping the JS-rendered models page) confirms all three model IDs this doc/`llm_providers.yaml` lists for OpenRouter (`nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`, `poolside/laguna-s-2.1:free`, `nvidia/nemotron-3-ultra-550b-a55b:free`) are still live, among 17 currently-free models.
+- **`GROQ_API_KEY` and `OPENROUTER_API_KEY` are now both set** in the local/staging `.env` (values never seen or handled by the assistant — the user generated and placed them directly).
+- **Compliance RAG embeddings replaced**: `app.agents.embeddings` no longer uses a 256-dim lexical feature hash. It now runs `BAAI/bge-small-en-v1.5` (384 dims) locally via `fastembed`/ONNX — a real sentence-embedding model, in-process, zero network egress at inference time (so it's Tier-S-eligible, unlike every cloud provider above). This directly fixes retrieval failures the lexical hash had on paraphrased real questions (e.g. "what's the penalty for being late" failing to match a clause titled "Penalty for delayed submission" — near-zero shared surface tokens, but obviously the same topic to a real embedding model). `app.agents.rag.MAX_DISTANCE_THRESHOLD` was re-tuned from `0.85` to `0.4` against measured cosine distances on this corpus (relevant questions: ~0.17–0.36; clearly unrelated ones: ~0.48–0.58) — see that constant's docstring for the measurement method if the corpus or model changes.
+- Migration `ecc15a58886e` widens `aph_clause_chunks.embedding` from `vector(256)` to `vector(384)` and truncates the table (reference data, reseeded automatically).

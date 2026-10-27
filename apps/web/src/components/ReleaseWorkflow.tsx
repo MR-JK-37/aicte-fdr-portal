@@ -108,7 +108,7 @@ export const ReleaseWorkflow: React.FC<ReleaseWorkflowProps> = ({ userRole }) =>
         className="card"
         style={{
           padding: '24px 28px',
-          background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to) 70%)',
+          background: 'var(--hero-from)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -117,36 +117,20 @@ export const ReleaseWorkflow: React.FC<ReleaseWorkflowProps> = ({ userRole }) =>
         }}
       >
         <div>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 12px',
-              borderRadius: '999px',
-              background: 'rgba(255, 255, 255, 0.7)',
-              color: 'var(--azure)',
-              fontSize: '12px',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              marginBottom: '10px',
-            }}
-          >
-            <KeyRound size={14} />
-            Statutory Authorization
-          </span>
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '28px',
-              fontWeight: 800,
-              color: 'var(--text1)',
-              margin: '0 0 6px',
-            }}
-          >
-            Security Deposit Release Decision
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+            <KeyRound size={22} color="var(--azure)" />
+            <h2
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '28px',
+                fontWeight: 800,
+                color: 'var(--text1)',
+                margin: 0,
+              }}
+            >
+              Security Deposit Release Decision
+            </h2>
+          </div>
           <p style={{ fontSize: '13px', color: 'var(--text2)', margin: 0, fontWeight: 500 }}>
             Maker-checker authorization separation under AICTE APH cl. 6.46. Maturity alone is never permission to release.
           </p>
@@ -198,7 +182,7 @@ export const ReleaseWorkflow: React.FC<ReleaseWorkflowProps> = ({ userRole }) =>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>
             No release requests are pending a decision right now. A request appears here once an
             institution's security deposit has cleared the completeness checklist and scrutiny
-            recommendation — nothing on this screen is simulated or invented.
+            recommendation. Nothing on this screen is simulated or invented.
           </p>
         </div>
       )}
@@ -285,7 +269,7 @@ export const ReleaseWorkflow: React.FC<ReleaseWorkflowProps> = ({ userRole }) =>
                 width: '48px',
                 height: '48px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #c9d7f7, #e6edff)',
+                background: '#dbe5fc',
                 color: 'var(--primary)',
                 display: 'grid',
                 placeItems: 'center',

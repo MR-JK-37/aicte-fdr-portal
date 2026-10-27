@@ -38,7 +38,7 @@ export const MfaEnrolmentWizard: React.FC<{ onClose: () => void }> = ({ onClose 
     });
     setBusy(false);
     if (!data) {
-      setError('That code did not match — check the time on your authenticator app and try again.');
+      setError('That code did not match. Check the time on your authenticator app and try again.');
       return;
     }
     setRecoveryCodes(data.recovery_codes);

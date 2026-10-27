@@ -45,6 +45,14 @@ function roleLabel(role: string): string {
     .join(' ');
 }
 
+function shortName(fullName: string): string {
+  // Mirrors the identical fix in apps/web/src/auth/LoginScreen.tsx — several
+  // seeded accounts share the same role (e.g. two ORG_ADMINs across
+  // institutions), so the quick-login chip must show the person, not just
+  // the role, or every chip in the scroll reads identically.
+  return fullName.split(' (')[0];
+}
+
 function extractErrorMessage(body: unknown, fallback: string): string {
   if (body && typeof body === 'object') {
     const b = body as Record<string, unknown>;
@@ -178,7 +186,7 @@ export const LoginScreen: React.FC = () => {
         {devAccounts && devAccounts.length > 0 && (
           <View style={styles.demoSection}>
             <Text style={[styles.demoHeader, { color: tone.text3 }]}>
-              Staging quick login — signs you in instantly:
+              Staging quick login, signs you in instantly:
             </Text>
             <ScrollView
               horizontal
@@ -213,7 +221,7 @@ export const LoginScreen: React.FC = () => {
                         { color: isActive ? '#ffffff' : tone.text1, fontWeight: isActive ? '700' : '600' },
                       ]}
                     >
-                      {isActive ? 'Signing in…' : roleLabel(acc.role)}
+                      {isActive ? 'Signing in…' : `${roleLabel(acc.role)} · ${shortName(acc.full_name)}`}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -320,13 +328,23 @@ export const LoginScreen: React.FC = () => {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.btnPasskey, { backgroundColor: cardBg, borderColor: isDark ? tone.outline : '#e2e8f0' }]}
-                onPress={() => attemptLogin('000000')}
-              >
-                <Icon name="biometric" size={18} color={tone.text1} />
-                <Text style={[styles.btnPasskeyText, { color: tone.text1 }]}>Use a passkey</Text>
-              </TouchableOpacity>
+              {/* No passkey/WebAuthn system exists in this codebase (see
+                  BiometricLockModal's honest "not implemented" state) — this
+                  is a non-prod-only dev convenience that fills the dev TOTP
+                  bypass, never labelled as a real passkey (CLAUDE.md
+                  non-negotiable #1/#9). */}
+              {devAccounts && devAccounts.length > 0 && (
+                <TouchableOpacity
+                  style={[styles.btnPasskey, { backgroundColor: cardBg, borderColor: isDark ? tone.outline : '#e2e8f0' }]}
+                  onPress={() => attemptLogin('000000')}
+                  disabled={!email || !password}
+                >
+                  <Icon name="security" size={18} color={tone.text1} />
+                  <Text style={[styles.btnPasskeyText, { color: tone.text1 }]}>
+                    Autofill dev OTP (staging only)
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Footer Notice with Lock */}

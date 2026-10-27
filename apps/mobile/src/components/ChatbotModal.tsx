@@ -32,6 +32,7 @@ interface ChatMessage {
     title: string;
     distance?: number;
   }>;
+  general?: boolean;
 }
 
 const QUICK_SUGGESTIONS = [
@@ -41,180 +42,13 @@ const QUICK_SUGGESTIONS = [
   'How does release clearance work?',
 ];
 
-const KNOWLEDGE_BASE: Record<
-  string,
-  { answer: string; citations: string[]; sources: Array<{ clause_id: string; title: string }> }
-> = {
-  greeting: {
-    answer:
-      'Namaste! I am Kosh, your AICTE Regulatory Copilot, an official compliance intelligence assistant grounded in the verified clauses of the AICTE Approval Process Handbook (APH 2024–27).\n\n' +
-      'I provide direct, citation-backed statutory guidance regarding Security Deposit Fixed Deposit Receipts (FDRs). Key normative areas include:\n\n' +
-      '• **Validity & Mandatory Tenure** ([APH 2024-27, cl. 6.15]) — Minimum initial 8 to 10 years tenure requirements.\n' +
-      '• **Joint Account & Lien Marking** ([APH 2024-27, cl. 6.08]) — Joint account establishment with AICTE Regional Officer & statutory bank lien.\n' +
-      '• **Penalties for Delayed Submission** ([APH 2024-27, cl. 7.03]) — Graded shortfall penalties on delayed security deposits.\n' +
-      '• **Leased-Campus Multiplier** ([APH 2024-27, cl. 6.12]) — Multiplier calculation for leasehold campus lands under Table 1.4.\n' +
-      '• **Prohibition of Premature Withdrawal** ([APH 2024-27, cl. 6.22]) — Strict prohibition of encashment, pledging, or hypothecation without AICTE NOC.\n' +
-      '• **Compound Interest Accrual** ([APH 2024-27, cl. 6.38]) — Automatic reinvestment and compounding upon cumulative renewal.\n' +
-      '• **Bank Guarantee in Lieu of FDR** ([APH 2024-27, cl. 6.30]) — Operative claim clauses and commercial bank requirements.\n' +
-      '• **Release on Maturity** ([APH 2024-27, cl. 6.46]) — Conditions precedent and verification for security deposit release.\n\n' +
-      "Please select any suggested question or ask a specific compliance question regarding your institution's security deposit.",
-    citations: ['APH 2024-27, cl. 6.15', 'APH 2024-27, cl. 6.08', 'APH 2024-27, cl. 7.03', 'APH 2024-27, cl. 6.46'],
-    sources: [
-      { clause_id: 'APH 2024-27, cl. 6.15', title: 'Validity & Mandatory Tenure' },
-      { clause_id: 'APH 2024-27, cl. 6.08', title: 'Joint Account & Lien Marking' },
-    ],
-  },
-  name: {
-    answer:
-      'Namaste! I am Kosh, your AICTE Regulatory Copilot. I provide verified statutory guidance regarding institutional security deposit FDRs, tripartite lien rules, maturity ladders, and release clearances under the AICTE Approval Process Handbook (APH 2024–27).',
-    citations: ['AICTE Act Sec. 10(k)', 'APH Clause 1.4'],
-    sources: [
-      { clause_id: 'AICTE Act Sec. 10(k)', title: 'Statutory Authority for Compliance Standards' },
-      { clause_id: 'APH Clause 1.4', title: 'Security Deposit Mandate' },
-    ],
-  },
-  tenure: {
-    answer:
-      'Statutory requirements for FDR tenure and lien under AICTE Approval Process Handbook (APH 2024–27):\n\n' +
-      '• **Mandatory Tenure** ([APH 2024-27, cl. 6.15]) — The security deposit FDR must have an initial tenure of 8 to 10 years (minimum 96 months) with auto-renewal covenants.\n' +
-      '• **Joint Account Structure** ([APH 2024-27, cl. 6.08]) — Must be drawn in the joint names of the Institution/Trust and the Regional Officer, AICTE as designated first holder.\n' +
-      '• **Tripartite Lien Marking** ([APH 2024-27, cl. 6.08]) — The issuing scheduled commercial bank must mark an irrevocable lien in favour of AICTE and issue a physical certificate.',
-    citations: ['APH 2024-27, cl. 6.15', 'APH 2024-27, cl. 6.08'],
-    sources: [
-      { clause_id: 'APH 2024-27, cl. 6.15', title: 'Tenure & Mandatory Term Requirements' },
-      { clause_id: 'APH 2024-27, cl. 6.08', title: 'Joint Account and Lien Marking' },
-    ],
-  },
-  penalty: {
-    answer:
-      'Statutory penalties for delayed deposit or non-renewal under APH 2024–27:\n\n' +
-      '• **Graded Shortfall Penalties** ([APH 2024-27, cl. 7.03]) — Delayed submission incurs statutory notice and progressive monetary penalties calculated on the shortfall duration.\n' +
-      '• **Maturity Ladder Default** ([APH 2024-27, cl. 7.03]) — Failure to renew before the T-90 deadline triggers regulatory escalation to Scrutiny Committee.\n' +
-      '• **Administrative Sanctions** ([APH 2024-27, cl. 7.04]) — Continued default leads to intake reduction or withdrawal of AICTE approval for the upcoming academic session.',
-    citations: ['APH 2024-27, cl. 7.03', 'APH 2024-27, cl. 7.04'],
-    sources: [
-      { clause_id: 'APH 2024-27, cl. 7.03', title: 'Penalties for Delayed Submission' },
-      { clause_id: 'APH 2024-27, cl. 7.04', title: 'Regulatory Sanctions & Reductions' },
-    ],
-  },
-  withdraw: {
-    answer:
-      'Statutory restrictions on premature encashment and hypothecation:\n\n' +
-      '• **Prohibition of Premature Withdrawal** ([APH 2024-27, cl. 6.22]) — No institution or bank may encash, liquidate, or withdraw an FDR before maturity without explicit AICTE approval.\n' +
-      '• **Strict Non-Pledging Clause** ([APH 2024-27, cl. 6.22]) — The security deposit FDR cannot be pledged, assigned, or used as collateral for commercial institutional loans.\n' +
-      '• **Regulatory Forfeiture** ([APH 2024-27, cl. 6.25]) — Unauthorized encashment triggers immediate forfeiture proceedings and legal recovery via AICTE Legal Cell.',
-    citations: ['APH 2024-27, cl. 6.22', 'APH 2024-27, cl. 6.25'],
-    sources: [
-      { clause_id: 'APH 2024-27, cl. 6.22', title: 'Prohibition of Premature Withdrawal' },
-      { clause_id: 'APH 2024-27, cl. 6.25', title: 'Lien Enforcement & Forfeiture' },
-    ],
-  },
-  release: {
-    answer:
-      'Conditions precedent for Security Deposit release on maturity:\n\n' +
-      '• **Maturity Verification** ([APH 2024-27, cl. 6.46]) — Successful completion of the mandatory 8-year or 10-year lock-in period.\n' +
-      '• **Audit Clearance** ([APH 2024-27, cl. 6.46]) — Zero outstanding compliance audit observations, fee disputes, or student grievance liabilities.\n' +
-      '• **Cryptographic Multi-Party Sign-Off** ([APH 2024-27, cl. 7.12]) — Recommendation by Scrutiny Officer followed by final digital clearance by Competent Authority.',
-    citations: ['APH 2024-27, cl. 6.46', 'APH 2024-27, cl. 7.12'],
-    sources: [
-      { clause_id: 'APH 2024-27, cl. 6.46', title: 'Release on Maturity Guidelines' },
-      { clause_id: 'APH 2024-27, cl. 7.12', title: 'Discharge and Cryptographic Sign-Off' },
-    ],
-  },
-  bankGuarantee: {
-    answer:
-      'Provisions for Bank Guarantee in lieu of Fixed Deposit Receipt:\n\n' +
-      '• **Eligible Issuers** ([APH 2024-27, cl. 6.30]) — Bank guarantees are acceptable only from Scheduled Commercial Banks approved by RBI.\n' +
-      '• **Mandatory Claim Period** ([APH 2024-27, cl. 6.30]) — BG must include an operative claim period of at least 12 months beyond the primary validity term.\n' +
-      '• **Unconditional Invocation** ([APH 2024-27, cl. 6.32]) — AICTE must hold the unilateral right to invoke the guarantee on simple demand without court intervention.',
-    citations: ['APH 2024-27, cl. 6.30', 'APH 2024-27, cl. 6.32'],
-    sources: [
-      { clause_id: 'APH 2024-27, cl. 6.30', title: 'Bank Guarantee in Lieu of FDR' },
-      { clause_id: 'APH 2024-27, cl. 6.32', title: 'Unconditional Invocation Rights' },
-    ],
-  },
-  interest: {
-    answer:
-      'Statutory treatment of accrued interest under APH 2024–27:\n\n' +
-      '• **Compounding & Cumulative Renewal** ([APH 2024-27, cl. 6.38]) — Interest accrued on the security deposit FDR must be reinvested cumulatively for the entire lock-in duration.\n' +
-      '• **No Interim Payouts** ([APH 2024-27, cl. 6.38]) — Institutions may not claim periodic interest payouts during the active lien term.\n' +
-      '• **Return of Accrued Interest** ([APH 2024-27, cl. 6.46]) — Upon successful maturity release, the principal along with accumulated interest is discharged back to the institution.',
-    citations: ['APH 2024-27, cl. 6.38', 'APH 2024-27, cl. 6.46'],
-    sources: [
-      { clause_id: 'APH 2024-27, cl. 6.38', title: 'Interest Compounding Mandate' },
-      { clause_id: 'APH 2024-27, cl. 6.46', title: 'Discharge of Accrued Proceeds' },
-    ],
-  },
-  leasedCampus: {
-    answer:
-      'Norms for Leased Campus security deposits under Table 1.4:\n\n' +
-      '• **Security Deposit Multiplier** ([APH 2024-27, cl. 6.12]) — Institutions operating on leased land must deposit an increased security deposit multiplier (1.5x to 2.0x standard rate).\n' +
-      '• **Lease Agreement Term** ([APH 2024-27, cl. 6.12]) — Minimum registered lease term of 30 years is required for approval eligibility.\n' +
-      '• **Continuous Verification** ([APH 2024-27, cl. 6.14]) — Annual verification of lease continuity before granting extension of approval (EoA).',
-    citations: ['APH 2024-27, cl. 6.12', 'APH 2024-27, cl. 6.14'],
-    sources: [
-      { clause_id: 'APH 2024-27, cl. 6.12', title: 'Leased-Campus Multiplier' },
-      { clause_id: 'APH 2024-27, cl. 6.14', title: 'Annual Lease Verification' },
-    ],
-  },
-  generalFdr: {
-    answer:
-      'Overview of AICTE Security Deposit FDR compliance:\n\n' +
-      '• **Statutory Objective** ([APH 2024-27, cl. 1.04]) — Ensures financial stability and guarantees student welfare in technical education institutions.\n' +
-      '• **Mandatory Tenor** ([APH 2024-27, cl. 6.15]) — Minimum 8 to 10 years fixed deposit with automatic reinvestment covenants.\n' +
-      '• **Joint Lien Marking** ([APH 2024-27, cl. 6.08]) — Created jointly with Regional Officer, AICTE with irrevocable bank lien.\n' +
-      '• **Digital Lifecycle Tracking** ([AICTE FDR Portal, SPEC §14]) — All certificates, covenants, and renewal ladders are tracked and verified via cryptographic ledger.',
-    citations: ['APH 2024-27, cl. 1.04', 'APH 2024-27, cl. 6.15', 'APH 2024-27, cl. 6.08'],
-    sources: [
-      { clause_id: 'APH 2024-27, cl. 1.04', title: 'Security Deposit Mandate' },
-      { clause_id: 'APH 2024-27, cl. 6.15', title: 'Mandatory Tenure' },
-    ],
-  },
-};
-
-function getSmartFallbackAnswer(query: string) {
-  const q = query.toLowerCase();
-  if (
-    q.includes('who are you') ||
-    q.includes('your name') ||
-    q.includes('ur name') ||
-    q.includes('hello') ||
-    q.includes('hi') ||
-    q.includes('namaste') ||
-    q.includes('help') ||
-    q.includes('what can you do')
-  ) {
-    return KNOWLEDGE_BASE.greeting;
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object') {
+    const e = error as Record<string, unknown>;
+    if (typeof e.detail === 'string') return e.detail;
+    if (typeof e.title === 'string') return e.title;
   }
-  if (q.includes('bg') || q.includes('guarantee') || q.includes('bank guarantee')) {
-    return KNOWLEDGE_BASE.bankGuarantee;
-  }
-  if (q.includes('penalt') || q.includes('delay') || q.includes('late') || q.includes('shortfall')) {
-    return KNOWLEDGE_BASE.penalty;
-  }
-  if (q.includes('withdraw') || q.includes('encash') || q.includes('premature') || q.includes('pledg')) {
-    return KNOWLEDGE_BASE.withdraw;
-  }
-  if (q.includes('release') || q.includes('clearance') || q.includes('discharge') || q.includes('maturity')) {
-    return KNOWLEDGE_BASE.release;
-  }
-  if (q.includes('interest') || q.includes('accru') || q.includes('compound') || q.includes('reinvest')) {
-    return KNOWLEDGE_BASE.interest;
-  }
-  if (q.includes('lease') || q.includes('campus') || q.includes('land') || q.includes('multiplier')) {
-    return KNOWLEDGE_BASE.leasedCampus;
-  }
-  if (
-    q.includes('tenor') ||
-    q.includes('tenure') ||
-    q.includes('lien') ||
-    q.includes('joint') ||
-    q.includes('year') ||
-    q.includes('month')
-  ) {
-    return KNOWLEDGE_BASE.tenure;
-  }
-  return KNOWLEDGE_BASE.generalFdr;
+  return fallback;
 }
 
 /**
@@ -400,8 +234,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
     }
   }, [visible, messages]);
 
-  const handleCancelAndAnswer = () => {
-    const question = pendingQueryRef.current || 'FDR Compliance';
+  const handleCancel = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
@@ -410,20 +243,17 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
       clearTimeout(watchdogTimerRef.current);
       watchdogTimerRef.current = null;
     }
-
-    const fallback = getSmartFallbackAnswer(question);
-    const instantMsg: ChatMessage = {
-      id: `bot-${Date.now()}`,
-      sender: 'assistant',
-      text: fallback.answer,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      citations: fallback.citations,
-      sources: fallback.sources,
-    };
-    setMessages((prev) => [...prev, instantMsg]);
     setIsLoading(false);
   };
 
+  /**
+   * Sends the question to the real AICTE AI gateway (POST /v1/ai/policy-qa —
+   * the same Groq/OpenRouter-backed, APH-corpus-grounded endpoint the web
+   * AskHandbookModal uses). This never substitutes a locally-invented answer
+   * or citation when the real call is slow, fails, or honestly reports no
+   * match — CLAUDE.md non-negotiables #1/#2: nothing simulated in production,
+   * facts never come from anywhere but the authorised backend.
+   */
   const handleSend = async (customQuery?: string) => {
     const textToSend = (customQuery || inputText).trim();
     if (!textToSend) return;
@@ -450,84 +280,64 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
     setIsLoading(true);
     pendingQueryRef.current = textToSend;
 
-    // Absolute 3.0s watchdog timer to guarantee isLoading never stays stuck true
+    // 30s watchdog so isLoading never stays stuck true if the call hangs.
     watchdogTimerRef.current = setTimeout(() => {
       setIsLoading(false);
-    }, 3000);
+    }, 30000);
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
     try {
-      // 2.2-second network timeout guarantee
-      let timerId: NodeJS.Timeout;
-      const timeoutPromise = new Promise<{ isTimeout: boolean }>((resolve) => {
-        timerId = setTimeout(() => {
-          controller.abort();
-          resolve({ isTimeout: true });
-        }, 2200);
+      const { data, error } = await api.POST('/v1/ai/policy-qa', {
+        body: { question: textToSend },
+        signal: controller.signal,
       });
 
-      const fetchPromise = api
-        .POST('/v1/ai/policy-qa', {
-          body: { question: textToSend },
-          signal: controller.signal,
-        })
-        .catch((err) => ({ data: undefined, error: err }));
+      // If the user fired another message or cancelled in the meantime,
+      // ignore this superseded response.
+      if (abortControllerRef.current !== controller) return;
 
-      const outcome = (await Promise.race([fetchPromise, timeoutPromise])) as any;
-      clearTimeout(timerId);
-
-      // If user fired another message in the meantime, ignore this superseded request
-      if (abortControllerRef.current !== controller) {
-        return;
-      }
-
-      if (
-        outcome &&
-        outcome.data &&
-        outcome.data.answer &&
-        outcome.data.answer !== 'Not found in APH; refer to Regulation Bureau.'
-      ) {
+      if (data && data.answer) {
         const assistantMsg: ChatMessage = {
           id: `bot-${Date.now()}`,
           sender: 'assistant',
-          text: outcome.data.answer,
+          text: data.answer,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          citations: outcome.data.verified_citations || [],
-          sources: (outcome.data.sources || []).map((s: any) => ({
+          citations: data.verified_citations || [],
+          sources: (data.sources || []).map((s: any) => ({
             clause_id: s.clause_id,
             title: s.title,
             distance: s.distance,
           })),
+          general: data.general ?? false,
         };
         setMessages((prev) => [...prev, assistantMsg]);
         return;
       }
 
-      // Fast, verified statutory handbook knowledge fallback
-      const fallback = getSmartFallbackAnswer(textToSend);
-      const fallbackMsg: ChatMessage = {
+      const unavailableMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
         sender: 'assistant',
-        text: fallback.answer,
+        text: extractErrorMessage(
+          error,
+          'AI gateway is temporarily unavailable. Try again shortly.'
+        ),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        citations: fallback.citations,
-        sources: fallback.sources,
       };
-      setMessages((prev) => [...prev, fallbackMsg]);
-    } catch {
+      setMessages((prev) => [...prev, unavailableMsg]);
+    } catch (err) {
       if (abortControllerRef.current !== controller) return;
-      const fallback = getSmartFallbackAnswer(textToSend);
-      const fallbackMsg: ChatMessage = {
+      const cancelledMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
         sender: 'assistant',
-        text: fallback.answer,
+        text:
+          err instanceof Error && err.name === 'AbortError'
+            ? 'Cancelled.'
+            : 'Network error while reaching the AI gateway. Check your connection and try again.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        citations: fallback.citations,
-        sources: fallback.sources,
       };
-      setMessages((prev) => [...prev, fallbackMsg]);
+      setMessages((prev) => [...prev, cancelledMsg]);
     } finally {
       if (abortControllerRef.current === controller) {
         abortControllerRef.current = null;
@@ -627,6 +437,18 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
                         onCitationPress={(cite) => handleSend(`What does ${cite} state?`)}
                       />
 
+                      {/* Distinct from a clause-grounded answer — never let a
+                          general-conversation reply look like a verified
+                          statutory citation (CLAUDE.md non-negotiable #3). */}
+                      {!isUser && m.general && (
+                        <View style={styles.generalBadgeWrap}>
+                          <Icon name="chat" size={12} color={tone.text3} />
+                          <Text style={[styles.generalBadgeText, { color: tone.text3 }]}>
+                            General conversation, not a regulatory citation
+                          </Text>
+                        </View>
+                      )}
+
                       {/* Verified Citations List at Bottom */}
                       {m.citations && m.citations.length > 0 && (
                         <View style={styles.citationsWrap}>
@@ -682,7 +504,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
                       </Text>
                     </View>
                     <TouchableOpacity
-                      onPress={handleCancelAndAnswer}
+                      onPress={handleCancel}
                       activeOpacity={0.7}
                       style={[
                         styles.cancelBtn,
@@ -691,12 +513,10 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
                           borderColor: isDark ? tone.surfaceMuted : '#e1e6f8',
                         },
                       ]}
-                      accessibilityLabel="Cancel loading and display answer immediately"
+                      accessibilityLabel="Cancel the pending request"
                     >
                       <Icon name="error" size={12} color={tone.text3} />
-                      <Text style={[styles.cancelBtnText, { color: tone.accent }]}>
-                        Tap to answer now
-                      </Text>
+                      <Text style={[styles.cancelBtnText, { color: tone.accent }]}>Cancel</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -905,6 +725,16 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: 'rgba(71, 75, 98, 0.1)',
+  },
+  generalBadgeWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 8,
+  },
+  generalBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   citationHeader: {
     fontSize: 10,

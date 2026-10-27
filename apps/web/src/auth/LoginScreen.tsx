@@ -73,6 +73,15 @@ function roleLabel(role: string): string {
     .join(' ');
 }
 
+function shortName(fullName: string): string {
+  // "Dr. A. Sharma (Principal & Director)" -> "Dr. A. Sharma" — several seeded
+  // accounts share the same role (e.g. two ORG_ADMINs across institutions), so
+  // the quick-login button must show the person, not just the role, or every
+  // button in a group reads identically and is only distinguishable by its
+  // hover tooltip.
+  return fullName.split(' (')[0];
+}
+
 function roleGroup(role: string): string {
   if (['org_admin', 'institution_submitter', 'institution_viewer'].includes(role)) {
     return 'Institution';
@@ -281,7 +290,7 @@ export const LoginScreen: React.FC = () => {
         }}
       >
         {/* Mascot Avatar Header */}
-        <div style={{ marginBottom: '16px', filter: 'drop-shadow(0 10px 20px rgba(59, 120, 216, 0.22))' }}>
+        <div style={{ marginBottom: '16px' }}>
           <Kosh size={84} pose={stage === 'credentials' ? 'smile' : 'lock'} />
         </div>
 
@@ -509,16 +518,15 @@ export const LoginScreen: React.FC = () => {
                 borderRadius: '999px',
                 fontSize: '14px',
                 fontWeight: 700,
-                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                color: '#ffffff',
+                background: 'var(--primary)',
+                color: 'var(--on-primary)',
                 border: 'none',
-                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.28)',
                 cursor: submitting || isAutoFilling ? 'wait' : 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                transition: 'all 0.15s ease',
+                transition: 'filter 0.15s ease',
               }}
             >
               <Zap size={16} fill="currentColor" />
@@ -652,7 +660,11 @@ export const LoginScreen: React.FC = () => {
                             }}
                             title={`Log in as ${acc.full_name} (${acc.email})`}
                           >
-                            <span>{devLoginEmail === acc.email ? 'Signing in…' : roleLabel(acc.role)}</span>
+                            <span>
+                              {devLoginEmail === acc.email
+                                ? 'Signing in…'
+                                : `${roleLabel(acc.role)} · ${shortName(acc.full_name)}`}
+                            </span>
                           </button>
                         ))}
                       </div>

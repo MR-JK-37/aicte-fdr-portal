@@ -87,6 +87,7 @@ const AuthenticatedApp: React.FC<{ userRole: AppRole; onLogout: () => void }> = 
   onLogout,
 }) => {
   const { tone, isDark } = useAppTheme();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<MobileTab>(() => getInitialRoleTab(userRole));
 
   // Modals state
@@ -109,162 +110,93 @@ const AuthenticatedApp: React.FC<{ userRole: AppRole; onLogout: () => void }> = 
     active_language: 'en',
   });
 
-  const REALISTIC_FALLBACK_INSTRUMENTS: MobileInstrument[] = [
-    {
-      id: 'd27d41f8-91e2-4bd5-a8ca-124fc123f82d',
-      institution_id: '1-1000000001',
-      institution_name: 'Apex Institute of Technology, Bengaluru',
-      instrument_number: 'XXXX7821',
-      type: 'FDR',
-      amount: 500000000,
-      bank_name: 'State Bank of India',
-      branch_ifsc: 'SBIN0000691',
-      issue_date: '2018-12-14T09:30:00Z',
-      maturity_date: '2026-12-14T09:30:00Z',
-      status: 'EXPIRING',
-      evidence_level: 'L2',
-      utr_number: 'SBIN418349102847',
-      joint_account_holder: 'Regional Officer, AICTE South',
-    },
-    {
-      id: '12d0a84d-2ecc-40dc-b66e-2df446b95f7d',
-      institution_id: '1-1000000001',
-      institution_name: 'Apex Institute of Technology, Bengaluru',
-      instrument_number: 'XXXX0294',
-      type: 'FDR',
-      amount: 350000000,
-      bank_name: 'State Bank of India',
-      branch_ifsc: 'SBIN0000691',
-      issue_date: '2022-08-20T10:00:00Z',
-      maturity_date: '2030-08-20T10:00:00Z',
-      status: 'ACTIVE',
-      evidence_level: 'L2',
-      utr_number: 'SBIN820194821035',
-      joint_account_holder: 'Regional Officer, AICTE South',
-    },
-    {
-      id: '1ff60428-3639-48a8-9c69-188cf049b554',
-      institution_id: '1-2814590214',
-      institution_name: 'RV College of Engineering, Bengaluru',
-      instrument_number: 'XXXX1008',
-      type: 'FDR',
-      amount: 250000000,
-      bank_name: 'Punjab National Bank',
-      branch_ifsc: 'PUNB0112000',
-      issue_date: '2023-03-15T11:30:00Z',
-      maturity_date: '2031-03-15T11:30:00Z',
-      status: 'ACTIVE',
-      evidence_level: 'L2',
-      utr_number: 'PUNB230749102834',
-      joint_account_holder: 'Regional Officer, AICTE South',
-    },
-    {
-      id: '8aa66a6a-a41d-4277-8d1c-c9e6f8d0f213',
-      institution_id: '1-1000000001',
-      institution_name: 'Apex Institute of Technology, Bengaluru',
-      instrument_number: 'XXXX0192',
-      type: 'FDR',
-      amount: 150000000,
-      bank_name: 'Bank of Baroda',
-      branch_ifsc: 'BARB0INSTIT',
-      issue_date: '2024-01-10T14:00:00Z',
-      maturity_date: '2032-01-10T14:00:00Z',
-      status: 'PENDING_VERIFICATION',
-      evidence_level: 'L1',
-      utr_number: 'BARB240109182301',
-      joint_account_holder: 'Regional Officer, AICTE South',
-    },
-    {
-      id: '1e88654d-2d3d-4c6c-8570-6e5a5782389d',
-      institution_id: '1-3324519801',
-      institution_name: 'PSG College of Technology, Coimbatore',
-      instrument_number: 'XXXX9021',
-      type: 'FDR',
-      amount: 350000000,
-      bank_name: 'Canara Bank',
-      branch_ifsc: 'CNRB0001920',
-      issue_date: '2019-03-02T11:00:00Z',
-      maturity_date: '2027-03-02T11:00:00Z',
-      status: 'ACTIVE',
-      evidence_level: 'L2',
-      utr_number: 'CNRB519204817293',
-      joint_account_holder: 'Regional Officer, AICTE South',
-    },
-  ];
+  const [instruments, setInstruments] = useState<MobileInstrument[]>([]);
+  const [instrumentsLoaded, setInstrumentsLoaded] = useState(false);
+  const [notifications, setNotifications] = useState<MobileNotification[]>([]);
+  const [tasksCount, setTasksCount] = useState(0);
 
-  const REALISTIC_NOTIFICATIONS: MobileNotification[] = [
-    {
-      id: 'notif-1',
-      title: 'Maturity Exposure: T-50 Action Window',
-      body: 'Security deposit FDR-XXXX7821 (₹50,00,000, State Bank of India) matures on 14 Dec 2026. Action required under AICTE APH Clause 1.4.',
-      category: 'deadline',
-      status: 'DEVICE_RECEIVED',
-      created_at: 'Today, 10:15 AM',
-      instrument_id: 'd27d41f8-91e2-4bd5-a8ca-124fc123f82d',
-    },
-    {
-      id: 'notif-2',
-      title: 'Scrutiny Observation: Tripartite Lien Confirmation',
-      body: 'Observation OBS-2026-081 raised on FDR-XXXX0192 (₹15,00,000). Joint lien confirmation letter required from Bank of Baroda.',
-      category: 'critical_workflow',
-      status: 'DEVICE_RECEIVED',
-      created_at: 'Today, 09:30 AM',
-      instrument_id: '8aa66a6a-a41d-4277-8d1c-c9e6f8d0f213',
-    },
-    {
-      id: 'notif-3',
-      title: 'Public Verification Receipt Cryptographically Sealed',
-      body: 'Audit certificate issued for FDR-XXXX0294 (₹35,00,000, SBI). Ed25519 signature anchored in audit ledger.',
-      category: 'security_account',
-      status: 'ACKNOWLEDGED',
-      created_at: 'Yesterday, 04:45 PM',
-      instrument_id: '12d0a84d-2ecc-40dc-b66e-2df446b95f7d',
-    },
-  ];
+  const loadTasksCount = React.useCallback(async () => {
+    const [intake, scrutiny] = await Promise.all([
+      api.GET('/v1/queues/intake'),
+      api.GET('/v1/queues/scrutiny'),
+    ]);
+    setTasksCount((intake.data?.length ?? 0) + (scrutiny.data?.length ?? 0));
+  }, []);
 
-  const [instruments, setInstruments] = useState<MobileInstrument[]>(REALISTIC_FALLBACK_INSTRUMENTS);
-  const [notifications, setNotifications] = useState<MobileNotification[]>(REALISTIC_NOTIFICATIONS);
+  const loadInstruments = React.useCallback(async () => {
+    const { data } = await api.GET('/v1/instruments');
+    if (!data) return;
+    const mapped: MobileInstrument[] = data.map((item) => {
+      const numAmount = typeof item.amount === 'string' ? parseFloat(item.amount) : item.amount;
+      let evLevel: any = 'L0';
+      if (item.evidence_level?.startsWith('L1')) evLevel = 'L1';
+      else if (item.evidence_level?.startsWith('L2')) evLevel = 'L2';
+      else if (item.evidence_level?.startsWith('L3')) evLevel = 'L3';
+
+      return {
+        id: item.id,
+        institution_id: item.institution_id,
+        // institution_name/bank_name/branch_ifsc are genuinely optional on
+        // the backend response (app/instruments/router.py InstrumentResponse)
+        // — showing a specific real-sounding institution/bank as a fallback
+        // when they're actually null would misattribute the record, so an
+        // honest "—" placeholder is used instead of ever inventing one.
+        institution_name: (item as any).institution_name || '—',
+        instrument_number: item.instrument_number,
+        type: item.type,
+        amount: Math.round(numAmount * 100),
+        bank_name: (item as any).bank_name || '—',
+        branch_ifsc: (item as any).branch_ifsc || '—',
+        issue_date: item.issue_date || '',
+        maturity_date: item.maturity_date || '',
+        status: item.status as any,
+        evidence_level: evLevel,
+        utr_number: item.utr || undefined,
+      };
+    });
+    setInstruments(mapped);
+    setInstrumentsLoaded(true);
+  }, []);
+
+  const loadNotifications = React.useCallback(async () => {
+    const { data } = await api.GET('/v1/notifications');
+    if (!data) return;
+    const mapped: MobileNotification[] = data.items.map((n) => ({
+      id: n.id,
+      title: n.title,
+      body: n.body,
+      category: n.category as any,
+      status: n.status as any,
+      created_at: new Date(n.created_at).toLocaleString(),
+      instrument_id: undefined,
+    }));
+    setNotifications(mapped);
+  }, []);
 
   useEffect(() => {
     let active = true;
-    async function loadInstruments() {
+    (async () => {
       try {
-        const { data } = await api.GET('/v1/instruments');
-        if (data && data.length > 0 && active) {
-          const mapped: MobileInstrument[] = data.map((item) => {
-            const numAmount = typeof item.amount === 'string' ? parseFloat(item.amount) : item.amount;
-            let evLevel: any = 'L0';
-            if (item.evidence_level?.startsWith('L1')) evLevel = 'L1';
-            else if (item.evidence_level?.startsWith('L2')) evLevel = 'L2';
-            else if (item.evidence_level?.startsWith('L3')) evLevel = 'L3';
-
-            return {
-              id: item.id,
-              institution_id: item.institution_id,
-              institution_name: (item as any).institution_name || 'Apex Institute of Technology, Bengaluru',
-              instrument_number: item.instrument_number,
-              type: item.type,
-              amount: Math.round(numAmount * 100),
-              bank_name: (item as any).bank_name || 'State Bank of India',
-              branch_ifsc: (item as any).branch_ifsc || 'SBIN0000691',
-              issue_date: item.issue_date || '',
-              maturity_date: item.maturity_date || '',
-              status: item.status as any,
-              evidence_level: evLevel,
-              utr_number: item.utr || undefined,
-            };
-          });
-          setInstruments(mapped);
-        }
+        await loadInstruments();
       } catch {
-        // Fallback to authentic realistic datasets
+        // Real failure — instrumentsLoaded stays false, HomeScreen shows the
+        // honest "could not load" state, never a fabricated fallback list.
       }
-    }
-    loadInstruments();
+      try {
+        await loadNotifications();
+      } catch {
+        // Same: notifications stays empty/honest on failure.
+      }
+      try {
+        await loadTasksCount();
+      } catch {
+        // tasksCount stays 0 — honest "nothing pending" rather than a guess.
+      }
+    })();
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadInstruments, loadNotifications, loadTasksCount]);
 
   const handleUpdateSettings = (newSettings: Partial<MobileAppSettings>) => {
     setSettings((prev) => ({ ...prev, ...newSettings }));
@@ -278,6 +210,9 @@ const AuthenticatedApp: React.FC<{ userRole: AppRole; onLogout: () => void }> = 
           : n
       )
     );
+    api.POST('/v1/notifications/{notification_id}/acknowledge', {
+      params: { path: { notification_id: id } },
+    });
   };
 
   const handleTriggerTestPush = () => {
@@ -372,14 +307,19 @@ const AuthenticatedApp: React.FC<{ userRole: AppRole; onLogout: () => void }> = 
         currentTab={activeTab}
         onSelectTab={setActiveTab}
         inboxUnreadCount={unreadCount}
-        tasksPendingCount={3}
+        tasksPendingCount={tasksCount}
       />
 
       <BiometricLockModal visible={isLocked} onUnlock={() => setIsLocked(false)} />
 
       <QRScannerModal visible={qrScannerVisible} onClose={() => setQrScannerVisible(false)} />
 
-      <DocumentCaptureModal visible={docCaptureVisible} onClose={() => setDocCaptureVisible(false)} />
+      <DocumentCaptureModal
+        visible={docCaptureVisible}
+        onClose={() => setDocCaptureVisible(false)}
+        institutionId={user?.institution_id ?? null}
+        onSubmitted={loadInstruments}
+      />
 
       <ChatbotModal visible={chatbotVisible} onClose={() => setChatbotVisible(false)} />
     </SafeAreaView>

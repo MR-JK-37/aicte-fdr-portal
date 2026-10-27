@@ -307,7 +307,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             width: '36px',
             height: '36px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #c9d7f7, #e6edff)',
+            background: '#dbe5fc',
             color: 'var(--primary)',
             display: 'grid',
             placeItems: 'center',

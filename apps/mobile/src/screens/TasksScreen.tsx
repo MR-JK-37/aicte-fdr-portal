@@ -1,55 +1,72 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, View, Text, ScrollView, Platform } from 'react-native';
 import { Icon } from '../design-system/Icon';
 import { useAppTheme } from '../design-system/theme';
 import { Kosh } from '../design-system/Kosh';
-import { MobileTask } from '../types';
+import { api } from '../lib/apiClient';
+import type { paths } from '@aicte-fdr/api-client';
 
-interface TasksScreenProps {
-  tasks?: MobileTask[];
-  onTaskResolved?: (taskId: string) => void;
+type QueueItem = paths['/v1/queues/intake']['get']['responses'][200]['content']['application/json'][number];
+
+interface DisplayTask {
+  id: string;
+  title: string;
+  type: string;
+  instrument_number: string | null;
+  institution_name: string;
+  due_date: string;
+  queue: 'Intake' | 'Scrutiny';
 }
 
-const DEFAULT_REALISTIC_TASKS: MobileTask[] = [
-  {
-    id: 'tsk-101',
-    title: 'Verify Tripartite Joint Lien Endorsement Letter',
-    type: 'intake_review',
-    instrument_number: 'FDR-XXXX0192',
-    institution_name: 'Apex Institute of Technology, Bengaluru',
-    assigned_role: 'scrutiny_officer',
-    due_date: '28 Oct 2026',
-    urgency: 'high',
-  },
-  {
-    id: 'tsk-102',
-    title: 'SFMS Confirmation Reconciliation with Bank Gateway',
-    type: 'bank_verify',
-    instrument_number: 'FDR-XXXX1008',
-    institution_name: 'RV College of Engineering, Bengaluru',
-    assigned_role: 'verifier',
-    due_date: '30 Oct 2026',
-    urgency: 'statutory_deadline',
-  },
-  {
-    id: 'tsk-103',
-    title: 'Examine T-50 Maturity Ladder Extension Request',
-    type: 'discrepancy_casework',
-    instrument_number: 'FDR-XXXX7821',
-    institution_name: 'Apex Institute of Technology, Bengaluru',
-    assigned_role: 'regional_officer',
-    due_date: '04 Nov 2026',
-    urgency: 'statutory_deadline',
-  },
-];
+function toDisplayTask(item: QueueItem, queue: 'Intake' | 'Scrutiny'): DisplayTask {
+  return {
+    id: item.case_id,
+    title: item.title,
+    type: item.entity_type,
+    instrument_number: null,
+    institution_name: item.institution_name,
+    due_date: new Date(item.created_at).toLocaleDateString(),
+    queue,
+  };
+}
 
 /**
  * Mobile Tasks Screen
  * Lavender Ledger layout: Topbar, page header, grouped list / calm Kosh empty state
+ *
+ * Reads the real intake and scrutiny casework queues (GET /v1/queues/intake,
+ * GET /v1/queues/scrutiny) — no hardcoded sample casework (CLAUDE.md
+ * non-negotiable #1).
  */
-export const TasksScreen: React.FC<TasksScreenProps> = ({ tasks = DEFAULT_REALISTIC_TASKS }) => {
+export const TasksScreen: React.FC = () => {
   const { tone, isDark } = useAppTheme();
+  const [tasks, setTasks] = useState<DisplayTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [unavailable, setUnavailable] = useState(false);
 
+  const loadTasks = useCallback(async () => {
+    setLoading(true);
+    const [intake, scrutiny] = await Promise.all([
+      api.GET('/v1/queues/intake'),
+      api.GET('/v1/queues/scrutiny'),
+    ]);
+    if (!intake.data && !scrutiny.data) {
+      setUnavailable(true);
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+    setUnavailable(false);
+    setTasks([
+      ...(intake.data ?? []).map((i) => toDisplayTask(i, 'Intake')),
+      ...(scrutiny.data ?? []).map((i) => toDisplayTask(i, 'Scrutiny')),
+    ]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   const cardBg = isDark ? tone.surface : '#ffffff';
 
@@ -87,7 +104,22 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ tasks = DEFAULT_REALIS
         </View>
 
         {/* Task List or Calm Empty State */}
-        {tasks.length === 0 ? (
+        {loading ? (
+          <Text style={{ fontSize: 12, color: tone.text3, textAlign: 'center', marginTop: 24 }}>
+            Loading casework queues…
+          </Text>
+        ) : unavailable ? (
+          <View style={styles.emptyWrap}>
+            <View style={styles.koshEmptyIcon}>
+              <Kosh pose="calm" size={96} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: tone.text1 }]}>Queues unavailable</Text>
+            <Text style={[styles.emptySubtitle, { color: tone.text3 }]}>
+              Casework queues could not be reached. Your role may not be entitled to view them, or
+              the server is temporarily unavailable.
+            </Text>
+          </View>
+        ) : tasks.length === 0 ? (
           <View style={styles.emptyWrap}>
             <View style={styles.koshEmptyIcon}>
               <Kosh pose="calm" size={96} />
@@ -107,20 +139,15 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ tasks = DEFAULT_REALIS
                       {task.type.replace('_', ' ').toUpperCase()}
                     </Text>
                   </View>
-                  <View
-                    style={[
-                      styles.urgencyBadge,
-                      task.urgency === 'statutory_deadline' ? styles.urgencyStatutory : styles.urgencyHigh,
-                    ]}
-                  >
-                    <Text style={styles.urgencyText}>{task.urgency.replace('_', ' ').toUpperCase()}</Text>
+                  <View style={[styles.urgencyBadge, styles.urgencyHigh]}>
+                    <Text style={styles.urgencyText}>{task.queue.toUpperCase()} QUEUE</Text>
                   </View>
                 </View>
 
                 <Text style={[styles.taskTitle, { color: tone.text1 }]}>{task.title}</Text>
                 <Text style={[styles.instText, { color: tone.text2 }]}>{task.institution_name}</Text>
                 <Text style={[styles.instRef, { color: tone.text3 }]}>
-                  Ref: {task.instrument_number} • Due: {task.due_date}
+                  Entered queue: {task.due_date}
                 </Text>
               </View>
             ))}
@@ -229,11 +256,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     padding: 16,
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
   },
   taskCard: {
     padding: 14,

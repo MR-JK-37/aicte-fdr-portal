@@ -62,7 +62,7 @@ export const SecurityView: React.FC = () => {
         .join('')
         .slice(0, 2)
         .toUpperCase()
-    : 'AK';
+    : '—';
 
   const region = (user as any)?.region || 'South';
 
@@ -95,14 +95,13 @@ export const SecurityView: React.FC = () => {
             width: '88px',
             height: '88px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #c9d7f7, #e6edff)',
+            background: '#dbe5fc',
             color: 'var(--primary)',
             display: 'grid',
             placeItems: 'center',
             fontSize: '28px',
             fontWeight: 800,
             fontFamily: 'var(--font-display)',
-            boxShadow: '0 8px 24px rgba(35, 40, 110, 0.12)',
             marginBottom: '12px',
           }}
         >
@@ -110,13 +109,13 @@ export const SecurityView: React.FC = () => {
         </div>
 
         <h2 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: 800, color: 'var(--text1)', fontFamily: 'var(--font-display)' }}>
-          {user?.full_name || 'Anil Kumar'}
+          {user?.full_name || '—'}
         </h2>
         <p style={{ margin: '0 0 4px', fontSize: '13px', color: 'var(--text2)', fontWeight: 600 }}>
-          {user?.email || 'officer@example.com'}
+          {user?.email || '—'}
         </p>
         <p style={{ margin: '0 0 16px', fontSize: '12px', color: 'var(--text3)', fontWeight: 600 }}>
-          {user?.role ? user.role.replace(/_/g, ' ') : 'Scrutiny Officer'}
+          {user?.role ? user.role.replace(/_/g, ' ') : '—'}
         </p>
 
         {/* Show my name to institutions toggle */}
@@ -149,7 +148,7 @@ export const SecurityView: React.FC = () => {
         <div className="card" style={{ padding: '20px 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text1)' }}>
-              Complete your profile to unlock all statutory alerts
+              Complete your profile to receive all statutory alerts
             </span>
             <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--azure)' }}>{completion.percent}%</span>
           </div>

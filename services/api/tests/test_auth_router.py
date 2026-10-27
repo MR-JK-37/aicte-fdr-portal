@@ -88,6 +88,45 @@ def test_login_success_with_correct_password(auth_client, test_user):
     assert "fdr_session" in resp.cookies
 
 
+def test_login_matches_email_case_insensitively(auth_client, db_session, test_institution):
+    """Real bug found live: an AppUser row with any uppercase character in its
+    stored email (e.g. a client-generated address, or a legacy import) could
+    never log in — /v1/auth/login and /v1/auth/dev-login both
+    `.lower()`-normalised the submitted address but compared it against the
+    stored value with a case-sensitive `==`, so the row was permanently
+    unreachable via either endpoint even though GET /v1/auth/dev-accounts
+    listed it. Regression guard for the fix (case-insensitive comparison on
+    both endpoints)."""
+    set_app_context(db_session, role="platform_operator")
+    mixed_case_email = f"Mixed-Case-{uuid.uuid4().hex[:6]}@Example.com"
+    user = AppUser(
+        keycloak_sub=f"sub-{uuid.uuid4()}",
+        email=mixed_case_email,
+        full_name="Mixed Case Submitter",
+        role=AppRole.INSTITUTION_SUBMITTER,
+        institution_id=test_institution.id,
+        is_active=True,
+        mfa_enrolled=False,
+        password_hash=hash_password(REAL_PASSWORD),
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    resp = auth_client.post(
+        "/v1/auth/login",
+        json={"email": mixed_case_email.lower(), "password": REAL_PASSWORD},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["user"]["email"] == mixed_case_email
+
+    dev_resp = auth_client.post(
+        "/v1/auth/dev-login",
+        json={"email": mixed_case_email.lower(), "device_label": "test"},
+    )
+    assert dev_resp.status_code == 200
+    assert dev_resp.json()["user"]["email"] == mixed_case_email
+
+
 def test_login_rejects_wrong_password(auth_client, test_user):
     resp = auth_client.post(
         "/v1/auth/login",

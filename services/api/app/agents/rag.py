@@ -23,10 +23,15 @@ from app.llm_gateway.gateway import generate, is_gateway_disabled
 from app.models.rag import AphClauseChunk
 
 # Cosine distance from pgvector's <=> operator: 0 = identical, 2 =
-# opposite. This threshold is deliberately conservative given the weak
-# (lexical, not semantic) embedding — tune down once a real embeddings
-# model is wired in and the distribution of real scores is known.
-MAX_DISTANCE_THRESHOLD = 0.85
+# opposite. Measured empirically against this corpus with the real
+# embedding model (app.agents.embeddings, BAAI/bge-small-en-v1.5):
+# genuinely relevant questions land ~0.17-0.36, clearly unrelated ones
+# (e.g. "what is the capital of France") land ~0.48-0.58. 0.4 sits in
+# the gap between those two clusters with margin on both sides. Re-check
+# this split (e.g. via a quick embed()-distance script against
+# SYNTHETIC_CLAUSES + SOURCE_INDEXED_CLAUSES) if the embedding model or
+# corpus changes materially.
+MAX_DISTANCE_THRESHOLD = 0.4
 
 REFUSAL_TEXT = "Not found in APH; refer to Regulation Bureau."
 UNAVAILABLE_TEXT = "AI policy assistance is currently unavailable. Please refer directly to the Approval Process Handbook or contact the Regulation Bureau."
@@ -48,6 +53,12 @@ class RagAnswer:
     sources: list[RetrievedChunk]
     unavailable: bool = False
     verified_citations: list[str] = field(default_factory=list)
+    # True when this answer did NOT come from the grounded APH clause corpus
+    # (general conversation / out-of-handbook questions — see
+    # _answer_general_question). Clients must show this distinctly from a
+    # clause-grounded answer (CLAUDE.md non-negotiable #3: never collapse
+    # different evidence/provenance into one indistinguishable signal).
+    general: bool = False
 
 
 def resolve_citations(session: Session, answer_text: str) -> tuple[bool, list[str]]:
@@ -107,6 +118,20 @@ def ingest_clause(
     text: str,
     synthetic_placeholder: bool = True,
 ) -> AphClauseChunk:
+    """Insert-or-update by `clause_id` (unique since migration
+    c2ff66d31709) — reseeding never creates duplicate rows that would
+    otherwise silently dominate top-k retrieval with copies of one
+    clause."""
+    existing = session.execute(
+        select(AphClauseChunk).where(AphClauseChunk.clause_id == clause_id)
+    ).scalar_one_or_none()
+    if existing is not None:
+        existing.title = title
+        existing.text = text
+        existing.synthetic_placeholder = synthetic_placeholder
+        existing.embedding = embed(text)
+        session.flush()
+        return existing
     chunk = AphClauseChunk(
         clause_id=clause_id,
         title=title,
@@ -126,7 +151,7 @@ def retrieve(session: Session, query: str, *, top_k: int = 3) -> list[RetrievedC
         seed(session)
         session.flush()
 
-    query_vector = embed(query)
+    query_vector = embed(query, is_query=True)
     distance_expr = AphClauseChunk.embedding.cosine_distance(query_vector)
     rows = session.execute(
         select(AphClauseChunk, distance_expr.label("distance"))
@@ -145,17 +170,93 @@ def retrieve(session: Session, query: str, *, top_k: int = 3) -> list[RetrievedC
     ]
 
 
-_GREETING_PATTERN = re.compile(
-    r"(?:^\s*(?:he+l+o+|hi+|hey+|namaste|greetings|good\s+(?:morning|afternoon|evening)|who\s+are\s+(?:you|u)|what\s+is\s+this|what\s+can\s+you\s+do|how\s+can\s+you\s+help|help(?:\s+me)?|introduce\s+yourself|tell\s+me\s+about\s+yourself)\b)|"
-    r"(?:what(?:'s|\s+is)\s+(?:your|ur)\s+name)|"
-    r"(?:who\s+(?:are\s+you|are\s+u|made\s+you|created\s+you))|"
-    r"(?:(?:your|ur)\s+name\??$)",
-    re.IGNORECASE,
+_GENERAL_SYSTEM_PROMPT = (
+    "You are Kosh, the conversational assistant built into the AICTE FDR Security Deposit "
+    "Compliance Portal. The question you were just asked did not match any clause in the "
+    "Approval Process Handbook (APH) corpus this assistant is grounded in, so you are now "
+    "answering as a general-purpose assistant, NOT as a regulatory source. This path also "
+    "handles greetings and 'who/what are you' questions — there is no separate canned "
+    "identity reply, so answer those naturally and in your own words each time rather than "
+    "reciting a fixed script.\n\n"
+    "If asked who you are or what you do, say in your own words that you are Kosh, the "
+    "assistant built into the AICTE FDR Security Deposit Compliance Portal, and that your "
+    "main job is answering security-deposit / FDR questions with a real citation from the "
+    "Approval Process Handbook (APH) when one is found, covering areas like FDR tenure, "
+    "joint-account and lien rules, penalties for delayed submission, bank guarantees in lieu "
+    "of an FDR, and release on maturity — and that you can also just chat normally about "
+    "anything else. Vary the wording naturally; never repeat a fixed paragraph verbatim.\n\n"
+    "Rules, no exceptions:\n"
+    "1. You may answer any general question conversationally and helpfully: who you are, "
+    "small talk, general knowledge, how to use the app, anything at all.\n"
+    "2. You must NEVER state a specific AICTE/APH/FDR statutory fact (an amount, a date, a "
+    "deadline, a clause number, a penalty, a tenure) as if it is confirmed. If the question "
+    "is actually about AICTE security-deposit rules and you don't have a grounded citation "
+    "for it, say plainly that you don't have a verified citation for that and suggest "
+    "rephrasing the question so the handbook search can find the matching clause, or "
+    "contacting the Regulation Bureau. Do not guess or improvise a plausible-sounding rule.\n"
+    "3. Never write a bracketed citation like [APH ...] or a clause reference like 'cl. 6.46' "
+    "in this reply — those only belong in grounded, clause-cited answers, and this reply is not one.\n"
+    "4. Keep answers concise and plain."
 )
 
 
-def _is_greeting(query: str) -> bool:
-    return bool(_GREETING_PATTERN.search(query.strip()))
+def _answer_general_question(
+    session: Session,
+    question: str,
+    relevant_sources: list[RetrievedChunk],
+    *,
+    agent_name: str = "general-chat",
+) -> RagAnswer:
+    """Ungrounded conversational fallback for questions that don't match the
+    APH clause corpus (small talk, 'what is your purpose', general
+    knowledge, app-usage questions). Deliberately NOT subject to the
+    REFUSAL_TEXT gate above — that gate exists to stop invented *statutory*
+    facts (CLAUDE.md non-negotiable #2), not to stop the assistant from
+    holding an ordinary conversation. The system prompt forbids statutory
+    claims and clause-citation syntax here; resolve_citations() below is a
+    second, code-level check that rejects the reply outright if a citation-
+    shaped string slipped through anyway, same enforcement as the grounded
+    path uses."""
+    messages = [
+        {"role": "system", "content": _GENERAL_SYSTEM_PROMPT},
+        {"role": "user", "content": question},
+    ]
+    # Caching off deliberately: this is conversational, not a factual lookup
+    # (unlike the grounded clause path below, where the same question really
+    # should get the same cached, verified answer). A cached reply here
+    # would mean repeated greetings/small talk return byte-identical text,
+    # which is the exact "feels stuck" complaint this path was built to fix.
+    result = generate("rag", messages, agent_name=agent_name, session=session, use_cache=False)
+    if result.status == "unavailable":
+        return RagAnswer(
+            UNAVAILABLE_TEXT, refused=True, sources=relevant_sources, unavailable=True
+        )
+    if result.status != "ok" or not result.content:
+        return RagAnswer(REFUSAL_TEXT, refused=True, sources=relevant_sources)
+
+    answer_text = result.content.strip()
+
+    if REFUSAL_TEXT in answer_text:
+        return RagAnswer(REFUSAL_TEXT, refused=True, sources=relevant_sources)
+
+    # Code-level backstop: if the model wrote a clause-citation-shaped string
+    # despite the system prompt forbidding it, treat that as an attempted
+    # unverified statutory claim and refuse rather than let it through.
+    has_citation_syntax = bool(
+        re.search(r"(?:cl\.|clause)\s*[0-9]+\.[0-9]+", answer_text, re.IGNORECASE)
+        or re.search(r"\[APH[^\]]+\]", answer_text, re.IGNORECASE)
+    )
+    if has_citation_syntax:
+        return RagAnswer(REFUSAL_TEXT, refused=True, sources=relevant_sources)
+
+    return RagAnswer(
+        answer_text,
+        refused=False,
+        sources=relevant_sources,
+        unavailable=False,
+        verified_citations=[],
+        general=True,
+    )
 
 
 def answer_compliance_question(
@@ -164,35 +265,10 @@ def answer_compliance_question(
     if is_gateway_disabled():
         return RagAnswer(UNAVAILABLE_TEXT, refused=True, sources=[], unavailable=True)
 
-    if _is_greeting(question):
-        greeting_text = (
-            "Namaste! I am the AICTE Regulatory Copilot, an official compliance intelligence assistant "
-            "grounded in the verified clauses of the AICTE Approval Process Handbook (APH 2024–27).\n\n"
-            "I provide direct, citation-backed statutory guidance regarding Security Deposit Fixed Deposit Receipts (FDRs). "
-            "Key normative areas I can substantiate include:\n\n"
-            "• **Validity & Mandatory Tenure** ([APH 2024-27, cl. 6.15]) — Minimum initial 8 to 10 years tenure requirements.\n"
-            "• **Joint Account & Lien Marking** ([APH 2024-27, cl. 6.08]) — Joint account establishment with AICTE Regional Officer & statutory bank lien.\n"
-            "• **Penalties for Delayed Submission** ([APH 2024-27, cl. 7.03]) — Graded shortfall penalties on delayed security deposits.\n"
-            "• **Leased-Campus Multiplier** ([APH 2024-27, cl. 6.12]) — Multiplier calculation for leasehold campus lands under Table 1.4.\n"
-            "• **Prohibition of Premature Withdrawal** ([APH 2024-27, cl. 6.22]) — Strict prohibition of encashment, pledging, or hypothecation without AICTE NOC.\n"
-            "• **Compound Interest Accrual** ([APH 2024-27, cl. 6.38]) — Automatic reinvestment and compounding upon cumulative renewal.\n"
-            "• **Bank Guarantee in Lieu of FDR** ([APH 2024-27, cl. 6.30]) — Operative claim clauses and commercial bank requirements.\n"
-            "• **Release on Maturity** ([APH 2024-27, cl. 6.46]) — Conditions precedent and verification for security deposit release.\n\n"
-            "Please select any suggested question or ask a specific compliance question regarding your institution's security deposit."
-        )
-        _, valid_ids = resolve_citations(session, greeting_text)
-        return RagAnswer(
-            greeting_text,
-            refused=False,
-            sources=[],
-            unavailable=False,
-            verified_citations=valid_ids,
-        )
-
     retrieved = retrieve(session, question, top_k=3)
     relevant_sources = [c for c in retrieved if c.distance <= MAX_DISTANCE_THRESHOLD]
     if not retrieved or retrieved[0].distance > MAX_DISTANCE_THRESHOLD:
-        return RagAnswer(REFUSAL_TEXT, refused=True, sources=relevant_sources)
+        return _answer_general_question(session, question, relevant_sources)
 
     context_blocks = "\n\n".join(
         f"[{c.clause_id}] {c.title}{' [SYNTHETIC PLACEHOLDER]' if c.synthetic_placeholder else ''}\n{c.text}"

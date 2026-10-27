@@ -64,14 +64,22 @@ def get_intake_queue(
     items: list[QueueItem] = []
 
     # 1. Onboarding requests
-    onboarding_reqs = db.execute(
+    onboarding_stmt = (
         select(InstitutionOnboardingRequest, Institution)
         .join(
             Institution, Institution.id == InstitutionOnboardingRequest.institution_id
         )
         .where(InstitutionOnboardingRequest.status == "PENDING")
         .order_by(InstitutionOnboardingRequest.created_at.asc())
-    ).all()
+    )
+    # Scope to the caller's own institution unless they hold an AICTE-staff
+    # role with no institution_id (CLAUDE.md non-negotiable #6: default
+    # deny / tenant isolation; cross-tenant rows are never returned).
+    if principal.institution_id:
+        onboarding_stmt = onboarding_stmt.where(
+            InstitutionOnboardingRequest.institution_id == principal.institution_id
+        )
+    onboarding_reqs = db.execute(onboarding_stmt).all()
 
     for req, inst in onboarding_reqs:
         items.append(
@@ -87,7 +95,7 @@ def get_intake_queue(
         )
 
     # 2. Submitted instruments awaiting intake review
-    instruments = db.execute(
+    instrument_stmt = (
         select(Instrument, Institution)
         .join(Institution, Institution.id == Instrument.institution_id)
         .where(
@@ -96,7 +104,12 @@ def get_intake_queue(
             )
         )
         .order_by(Instrument.created_at.asc())
-    ).all()
+    )
+    if principal.institution_id:
+        instrument_stmt = instrument_stmt.where(
+            Instrument.institution_id == principal.institution_id
+        )
+    instruments = db.execute(instrument_stmt).all()
 
     for inst_record, inst in instruments:
         # Check active assignment
@@ -132,7 +145,7 @@ def get_scrutiny_queue(
     db: Session = Depends(get_db),
 ) -> list[QueueItem]:
     """Scrutiny Queue: Instruments currently under scrutiny."""
-    instruments = db.execute(
+    instrument_stmt = (
         select(Instrument, Institution)
         .join(Institution, Institution.id == Instrument.institution_id)
         .where(
@@ -141,7 +154,14 @@ def get_scrutiny_queue(
             )
         )
         .order_by(Instrument.created_at.asc())
-    ).all()
+    )
+    # Scope to the caller's own institution unless they hold an AICTE-staff
+    # role with no institution_id (CLAUDE.md non-negotiable #6).
+    if principal.institution_id:
+        instrument_stmt = instrument_stmt.where(
+            Instrument.institution_id == principal.institution_id
+        )
+    instruments = db.execute(instrument_stmt).all()
 
     items: list[QueueItem] = []
     for inst_record, inst in instruments:

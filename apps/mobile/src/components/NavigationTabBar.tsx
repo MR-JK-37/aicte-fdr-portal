@@ -81,7 +81,7 @@ export const NavigationTabBar: React.FC<NavigationTabBarProps> = ({
                   filled={active}
                 />
                 {showBadge && (
-                  <View style={styles.badge}>
+                  <View style={[styles.badge, { backgroundColor: tone.danger }]}>
                     <Text style={styles.badgeText}>{badgeCount}</Text>
                   </View>
                 )}
@@ -90,7 +90,7 @@ export const NavigationTabBar: React.FC<NavigationTabBarProps> = ({
                 style={[
                   styles.tabLabel,
                   active
-                    ? [styles.tabLabelActive, { color: isDark ? tone.accent : '#1d4ed8' }]
+                    ? [styles.tabLabelActive, { color: tone.accent }]
                     : { color: '#64748b' },
                 ]}
               >
@@ -149,7 +149,6 @@ const styles = StyleSheet.create({
     minWidth: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#ef4444',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 2,

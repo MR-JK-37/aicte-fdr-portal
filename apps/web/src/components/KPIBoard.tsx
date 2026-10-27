@@ -365,7 +365,7 @@ export const KPIBoard: React.FC<KPIBoardProps> = ({
                 >
                   {instruments.map((inst) => (
                     <option key={inst.id} value={inst.id}>
-                      {inst.instrument_number} — {inst.institution_name} ({formatPaiseINR(inst.amount)})
+                      {inst.instrument_number}, {inst.institution_name} ({formatPaiseINR(inst.amount)})
                     </option>
                   ))}
                 </select>

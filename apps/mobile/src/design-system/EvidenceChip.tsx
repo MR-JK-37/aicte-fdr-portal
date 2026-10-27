@@ -50,7 +50,7 @@ export function EvidenceChip({ attribute, source }: EvidenceChipProps) {
   }[def.shape];
 
   return (
-    <View style={[styles.chip, style]} accessibilityLabel={source ? `${def.label} — ${source}` : def.label}>
+    <View style={[styles.chip, style]} accessibilityLabel={source ? `${def.label}: ${source}` : def.label}>
       <Icon name={iconName} size={14} color={textColor} />
       <Text style={[styles.label, { color: textColor }]}>{def.label}</Text>
     </View>

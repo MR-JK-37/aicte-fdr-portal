@@ -32,8 +32,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenChatbot,
 }) => {
   const { tone, isDark } = useAppTheme();
-  const { user } = useAuth();
+  const { user, navigation } = useAuth();
   const cardBg = isDark ? tone.surface : '#ffffff';
+  const cardBorder = tone.outlineVariant;
+  const canSubmitDeposit = navigation?.web_sidebar?.some(
+    (item) => item.required_permission === 'create_draft'
+  );
 
   const displayName = user?.full_name?.split(' ')[0] || 'Officer';
   const displayRole = user?.role ? user.role.replace(/_/g, ' ') : 'Registrar';
@@ -67,19 +71,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
           {/* Notification Bell */}
           <TouchableOpacity
-            style={[styles.bellBtn, { backgroundColor: cardBg }]}
+            style={[styles.bellBtn, { backgroundColor: cardBg, borderColor: cardBorder }]}
             onPress={() => onNavigateTab('inbox')}
             accessibilityLabel="Notifications"
             accessibilityRole="button"
           >
             <Icon name="notifications" size={18} color={tone.text1} />
-            <View style={styles.bellDot} />
+            <View style={[styles.bellDot, { backgroundColor: tone.danger }]} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* 2. Hero Card with Peeking Mascot and Region Chip */}
-      <View style={[styles.heroCard, { backgroundColor: isDark ? tone.surface : '#dbe7fb' }]}>
+      <View style={[styles.heroCard, { backgroundColor: isDark ? tone.surface : '#dbe7fb', borderColor: cardBorder }]}>
         <View style={styles.heroContent}>
           <View style={styles.regionChip}>
             <Text style={styles.regionChipText}>Region: South</Text>
@@ -102,7 +106,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* 3. Section: Needs Attention */}
       <View style={styles.sectionWrap}>
         <Text style={[styles.sectionLabel, { color: tone.text3 }]}>Needs attention</Text>
-        <View style={[styles.groupedCard, { backgroundColor: cardBg }]}>
+        <View style={[styles.groupedCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
           {/* Row 1: Reply to an observation */}
           <TouchableOpacity
             style={[styles.listRow, { borderBottomColor: isDark ? tone.surfaceMuted : '#f1f5f9' }]}
@@ -138,20 +142,27 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* 4. Section: Main Actions */}
       <View style={styles.sectionWrap}>
         <Text style={[styles.sectionLabel, { color: tone.text3 }]}>Main</Text>
-        <View style={[styles.groupedCard, { backgroundColor: cardBg }]}>
-          {/* Row 1: Submit a new deposit */}
-          <TouchableOpacity
-            style={[styles.listRow, { borderBottomColor: isDark ? tone.surfaceMuted : '#f1f5f9' }]}
-            onPress={onOpenDocCapture || (() => onNavigateTab('cases'))}
-          >
-            <View style={[styles.rowIconCircle, { backgroundColor: tone.accentContainer }]}>
-              <Icon name="add" size={18} color={tone.accent} />
-            </View>
-            <View style={styles.rowMain}>
-              <Text style={[styles.rowTitle, { color: tone.text1 }]}>Submit a new deposit</Text>
-            </View>
-            <Text style={[styles.rowArrow, { color: tone.text3 }]}>›</Text>
-          </TouchableOpacity>
+        <View style={[styles.groupedCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+          {/* Row 1: Submit a new deposit — only for roles entitled to
+              create_draft (CLAUDE.md non-negotiable #6: field-level
+              visibility; AUTH_ROLES_MATRIX.md §2.3: ask the server, never
+              hard-code role names). The backend already 403s this for an
+              unentitled role, but the UI should not dangle an action no
+              one can actually complete. */}
+          {canSubmitDeposit && (
+            <TouchableOpacity
+              style={[styles.listRow, { borderBottomColor: isDark ? tone.surfaceMuted : '#f1f5f9' }]}
+              onPress={onOpenDocCapture || (() => onNavigateTab('cases'))}
+            >
+              <View style={[styles.rowIconCircle, { backgroundColor: tone.accentContainer }]}>
+                <Icon name="add" size={18} color={tone.accent} />
+              </View>
+              <View style={styles.rowMain}>
+                <Text style={[styles.rowTitle, { color: tone.text1 }]}>Submit a new deposit</Text>
+              </View>
+              <Text style={[styles.rowArrow, { color: tone.text3 }]}>›</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Row 2: My documents */}
           <TouchableOpacity
@@ -202,7 +213,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {instruments.length > 0 && (
         <View style={styles.sectionWrap}>
           <Text style={[styles.sectionLabel, { color: tone.text3 }]}>Active registers</Text>
-          <View style={[styles.groupedCard, { backgroundColor: cardBg }]}>
+          <View style={[styles.groupedCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {instruments.slice(0, 3).map((inst, index) => (
               <TouchableOpacity
                 key={inst.id}
@@ -307,7 +318,6 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#ef4444',
   },
   heroCard: {
     borderRadius: 24,
@@ -316,11 +326,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     justifyContent: 'space-between',
-    shadowColor: '#1e1b4b',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 4,
+    borderWidth: 1,
   },
   heroContent: {
     zIndex: 2,
@@ -374,11 +380,7 @@ const styles = StyleSheet.create({
   groupedCard: {
     borderRadius: 20,
     overflow: 'hidden',
-    shadowColor: '#1e1b4b',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    borderWidth: 1,
   },
   listRow: {
     flexDirection: 'row',

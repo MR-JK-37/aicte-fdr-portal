@@ -155,7 +155,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
             <span>↵ Select</span>
             <span>ESC Close</span>
           </div>
-          <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--azure)', fontWeight: 600 }}>⌘K Command Palette</span>
+          <span style={{ color: 'var(--azure)', fontWeight: 600 }}>⌘K Command Palette</span>
         </div>
       </div>
     </div>

@@ -61,6 +61,50 @@ export async function clearRefreshToken() {
   await deleteSecureItem(REFRESH_TOKEN_KEY);
 }
 
+/** Exchanges the stored refresh token for a new access+refresh pair via a raw
+ * fetch (never through `api`/`mobileFetch` — that would recurse back into
+ * the 401-retry logic below if the refresh call itself ever 401s, e.g. a
+ * reused/expired refresh token). Returns false (and clears the stored token)
+ * if the refresh token is invalid, expired, or was flagged as reused
+ * (app/auth/router.py's theft detection) — callers should treat that as
+ * "sign in again", never retry silently. */
+async function refreshAccessToken(): Promise<boolean> {
+  const refreshToken = await loadRefreshToken();
+  if (!refreshToken) return false;
+
+  const res = await globalThis.fetch(`${API_BASE_URL}/v1/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+  if (!res.ok) {
+    await clearRefreshToken();
+    setAccessToken(null);
+    return false;
+  }
+  const data = await res.json();
+  setAccessToken(data.access_token);
+  await persistRefreshToken(data.refresh_token);
+  return true;
+}
+
+export async function tryRefreshSession(): Promise<boolean> {
+  return refreshAccessToken();
+}
+
+// Shares one in-flight refresh across concurrent 401s instead of firing a
+// refresh call per failed request.
+let inFlightRefresh: Promise<boolean> | null = null;
+
+function refreshOnce(): Promise<boolean> {
+  if (!inFlightRefresh) {
+    inFlightRefresh = refreshAccessToken().finally(() => {
+      inFlightRefresh = null;
+    });
+  }
+  return inFlightRefresh;
+}
+
 // Dynamic wrapper (not a bare `fetch` reference) for the same reason
 // documented in packages/api-client/src/index.ts: avoids binding to whatever
 // `globalThis.fetch` happened to be at module-import time, which breaks
@@ -74,32 +118,41 @@ export async function clearRefreshToken() {
 // the second arg to fetch(request, init) then overrides the Request's real
 // headers per the Fetch spec, so the server receives the JSON body with no
 // Content-Type and fails to parse it. Start from the Request's own headers.
-const mobileFetch: typeof fetch = (...args) => {
+//
+// Also retries once on a 401: the access token is short-lived (15 min) and
+// nothing else in the app refreshes it proactively, so without this every
+// screen silently stops loading data ~15 minutes into a session until the
+// user manually signs out and back in. The refresh endpoint itself is never
+// retried this way (see refreshAccessToken) to avoid recursing.
+//
+// `input` is cloned before every actual fetch, never issued directly: a
+// Request's body stream can only be read once, so retrying the *same*
+// Request object on a POST/PUT/PATCH would send an empty body the second
+// time. Cloning `input` itself (rather than the already-used clone) keeps it
+// pristine so it can be cloned again if a retry is needed.
+const mobileFetch: typeof fetch = async (...args) => {
   const [input, init] = args;
-  const headers = new Headers(input instanceof Request ? input.headers : init?.headers);
-  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-  return globalThis.fetch(input, { ...init, headers });
+  const isRequest = input instanceof Request;
+  const url = isRequest ? input.url : String(input);
+  const isRefreshCall = url.includes('/v1/auth/refresh');
+
+  const doFetch = () => {
+    const source = isRequest ? (input as Request).clone() : input;
+    const headers = new Headers(isRequest ? (source as Request).headers : init?.headers);
+    if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+    return globalThis.fetch(source, { ...init, headers });
+  };
+
+  let response = await doFetch();
+
+  if (response.status === 401 && !isRefreshCall && accessToken) {
+    const refreshed = await refreshOnce();
+    if (refreshed) {
+      response = await doFetch();
+    }
+  }
+
+  return response;
 };
 
 export const api = createClient<paths>({ baseUrl: API_BASE_URL, fetch: mobileFetch });
-
-/** Exchanges the stored refresh token for a new access+refresh pair. Returns
- * false (and clears the stored token) if the refresh token is invalid,
- * expired, or was flagged as reused (app/auth/router.py's theft detection) —
- * callers should treat that as "sign in again", never retry silently. */
-export async function tryRefreshSession(): Promise<boolean> {
-  const refreshToken = await loadRefreshToken();
-  if (!refreshToken) return false;
-
-  const { data } = await api.POST('/v1/auth/refresh', {
-    body: { refresh_token: refreshToken },
-  });
-  if (!data) {
-    await clearRefreshToken();
-    setAccessToken(null);
-    return false;
-  }
-  setAccessToken(data.access_token);
-  await persistRefreshToken(data.refresh_token);
-  return true;
-}

@@ -63,6 +63,13 @@ _NAVIGATION: dict[AppRole, RoleNavigation] = {
                 PermissionVerb.VIEW.value,
             ),
             NavItem(
+                "submit_deposit",
+                "nav.submit_deposit",
+                "add",
+                "/deposits/new",
+                PermissionVerb.CREATE_DRAFT.value,
+            ),
+            NavItem(
                 "documents",
                 "nav.documents",
                 "document",
@@ -117,6 +124,13 @@ _NAVIGATION: dict[AppRole, RoleNavigation] = {
                 "instrument",
                 "/deposits",
                 PermissionVerb.VIEW.value,
+            ),
+            NavItem(
+                "submit_deposit",
+                "nav.submit_deposit",
+                "add",
+                "/deposits/new",
+                PermissionVerb.CREATE_DRAFT.value,
             ),
             NavItem(
                 "documents",

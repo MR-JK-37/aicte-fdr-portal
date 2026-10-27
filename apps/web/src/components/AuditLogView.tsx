@@ -77,7 +77,7 @@ export const AuditLogView: React.FC = () => {
       return apiFetch<VerifyResult>('/v1/audit/chain/verify', { method: 'POST' });
     },
     onSuccess: (data) => {
-      setVerifyNotice(`Verified ${data.entries_verified} chained block(s) in ${data.duration_ms}ms — 100% cryptographic integrity confirmed.`);
+      setVerifyNotice(`Verified ${data.entries_verified} chained block(s) in ${data.duration_ms}ms. 100% cryptographic integrity confirmed.`);
       queryClient.invalidateQueries({ queryKey: ['audit-chain-status'] });
       setTimeout(() => setVerifyNotice(null), 6000);
     },
@@ -110,45 +110,28 @@ export const AuditLogView: React.FC = () => {
         className="card"
         style={{
           padding: '28px',
-          background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to) 70%)',
+          background: 'var(--hero-from)',
           borderRadius: '24px',
-          boxShadow: 'var(--shadow-card)',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
           <div>
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '4px 12px',
-                borderRadius: '999px',
-                background: 'rgba(255, 255, 255, 0.75)',
-                color: 'var(--azure)',
-                fontSize: '12px',
-                fontWeight: 800,
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em',
-                marginBottom: '10px',
-              }}
-            >
-              <Lock size={14} />
-              Cryptographic Immutability Engine
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+              <Lock size={22} color="var(--azure)" />
+              <h1
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '28px',
+                  fontWeight: 800,
+                  color: 'var(--text1)',
+                  margin: 0,
+                }}
+              >
+                Cryptographic Audit Ledger
+              </h1>
             </div>
-            <h1
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '28px',
-                fontWeight: 800,
-                color: 'var(--text1)',
-                margin: '0 0 6px',
-              }}
-            >
-              Cryptographic Audit Ledger
-            </h1>
             <p style={{ margin: 0, fontSize: '14px', color: 'var(--text2)', maxWidth: '680px', lineHeight: 1.5 }}>
               Immutable SHA-256 hash-chained event store. Every intake, verification, and release action
               is cryptographically chained back to genesis and independently verifiable under AICTE Act Sec. 10(k).

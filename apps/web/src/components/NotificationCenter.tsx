@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bell, CheckCheck, Clock, X, ShieldAlert, Sparkles, Smartphone, CheckCircle2, Moon, AlertTriangle } from 'lucide-react';
 import { InAppNotification } from '../types';
 import { Kosh } from '../design-system/Kosh';
+import { api } from '../lib/apiClient';
 
 interface NotificationCenterProps {
   isOpen: boolean;
@@ -11,19 +12,71 @@ interface NotificationCenterProps {
 
 type FilterChip = 'All' | 'Reminders' | 'Observations' | 'Decisions';
 
+const UNSUPPRESSIBLE_NOTICE =
+  'Statutory/critical alerts cannot be disabled per AICTE policy.';
+
 export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose, onNavigateToTab }) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterChip>('All');
   const [activeTab, setActiveTab] = useState<'inbox' | 'preferences'>('inbox');
   const [webPushEnabled, setWebPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
+  const [prefError, setPrefError] = useState<string | null>(null);
 
-  // No fabricated inbox items — honest empty state
-  const [notifications, setNotifications] = useState<InAppNotification[]>([]);
+  const [notifications, setNotifications] = useState<InAppNotification[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      const [inboxRes, prefsRes] = await Promise.all([
+        api.GET('/v1/notifications'),
+        api.GET('/v1/notifications/preferences'),
+      ]);
+      if (cancelled) return;
+      if (inboxRes.error) {
+        setLoadError('Could not load notifications from the API.');
+      } else {
+        const body = inboxRes.data as unknown as { items: InAppNotification[] };
+        setNotifications(body.items ?? []);
+      }
+      if (!prefsRes.error) {
+        const prefs = (prefsRes.data as unknown as Array<{ category: string; channel: string; enabled: boolean; quiet_hours_enabled: boolean }>) ?? [];
+        const webPush = prefs.find((p) => p.channel === 'web_push');
+        const email = prefs.find((p) => p.channel === 'email');
+        if (webPush) setWebPushEnabled(webPush.enabled);
+        if (email) setEmailEnabled(email.enabled);
+        if (prefs.length > 0) setQuietHoursEnabled(prefs[0].quiet_hours_enabled);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  const markRead = async (id: string) => {
+    setNotifications((prev) =>
+      prev ? prev.map((n) => (n.id === id ? { ...n, status: 'OPENED', read_at: new Date().toISOString() } : n)) : prev
+    );
+    await api.POST('/v1/notifications/{notification_id}/read', { params: { path: { notification_id: id } } });
+  };
+
+  const updatePreference = async (category: string, channel: string, enabled: boolean, setLocal: (v: boolean) => void) => {
+    setPrefError(null);
+    setLocal(enabled); // optimistic
+    const { error } = await api.PUT('/v1/notifications/preferences', {
+      body: { category, channel, enabled, locale: 'en', quiet_hours_enabled: quietHoursEnabled },
+    });
+    if (error) {
+      setLocal(!enabled); // revert
+      setPrefError(extractErrorMessage(error, UNSUPPRESSIBLE_NOTICE));
+    }
+  };
 
   if (!isOpen) return null;
 
-  const filtered = notifications.filter((n) => {
+  const filtered = (notifications ?? []).filter((n) => {
     if (selectedFilter === 'All') return true;
     if (selectedFilter === 'Reminders') return n.category === 'deadline';
     if (selectedFilter === 'Observations') return n.category === 'critical_workflow';
@@ -96,7 +149,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
                 Notifications
               </h3>
               <p style={{ margin: 0, fontSize: '11px', color: 'var(--text3)', fontWeight: 600 }}>
-                In-App Inbox ({notifications.length}) & Realtime Feed
+                In-App Inbox ({notifications === null ? '…' : notifications.length}) & Realtime Feed
               </p>
             </div>
           </div>
@@ -163,8 +216,15 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
               })}
             </div>
 
-            {/* Empty State matching Screen 7 in ui-refrence.png */}
-            {filtered.length === 0 ? (
+            {loadError && (
+              <div style={{ margin: '0 20px', padding: '10px 12px', borderRadius: '10px', background: '#FEF2F2', color: '#991B1B', fontSize: '12px' }}>
+                {loadError}
+              </div>
+            )}
+
+            {notifications === null ? (
+              <p style={{ padding: '20px', fontSize: '13px', color: 'var(--text3)' }}>Loading…</p>
+            ) : filtered.length === 0 ? (
               <div
                 style={{
                   display: 'flex',
@@ -176,7 +236,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
                   gap: '12px',
                 }}
               >
-                <div style={{ filter: 'drop-shadow(0 10px 20px rgba(59, 120, 216, 0.22))' }}>
+                <div style={{}}>
                   <Kosh pose="calm" size={92} />
                 </div>
                 <h4 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text1)', fontFamily: 'var(--font-display)' }}>
@@ -192,20 +252,23 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
                   <div
                     key={n.id}
                     className="card"
+                    onClick={() => !n.read_at && markRead(n.id)}
                     style={{
                       padding: '12px 14px',
-                      background: 'var(--surface-muted)',
+                      background: n.read_at ? 'var(--surface-muted)' : 'var(--primary-container)',
                       borderRadius: '16px',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '4px',
+                      cursor: n.read_at ? 'default' : 'pointer',
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text1)' }}>{n.title}</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text3)' }}>{n.created_at}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text3)' }}>{new Date(n.created_at).toLocaleString()}</span>
                     </div>
                     <p style={{ margin: 0, fontSize: '12px', color: 'var(--text2)' }}>{n.body}</p>
+                    <span style={{ fontSize: '10px', color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase' }}>{n.status}</span>
                   </div>
                 ))}
               </div>
@@ -214,6 +277,11 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
         ) : (
           /* Preferences Panel */
           <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
+            {prefError && (
+              <div style={{ padding: '10px 12px', borderRadius: '10px', background: '#FEF2F2', color: '#991B1B', fontSize: '12px' }}>
+                {prefError}
+              </div>
+            )}
             <div className="card" style={{ padding: '14px', background: 'var(--surface-muted)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <b style={{ display: 'block', fontSize: '13px', color: 'var(--text1)' }}>Web Push Notifications</b>
@@ -222,7 +290,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
               <input
                 type="checkbox"
                 checked={webPushEnabled}
-                onChange={(e) => setWebPushEnabled(e.target.checked)}
+                onChange={(e) => updatePreference('deadline', 'web_push', e.target.checked, setWebPushEnabled)}
                 style={{ width: 18, height: 18, accentColor: 'var(--azure)' }}
               />
             </div>
@@ -235,7 +303,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
               <input
                 type="checkbox"
                 checked={emailEnabled}
-                onChange={(e) => setEmailEnabled(e.target.checked)}
+                onChange={(e) => updatePreference('deadline', 'email', e.target.checked, setEmailEnabled)}
                 style={{ width: 18, height: 18, accentColor: 'var(--azure)' }}
               />
             </div>
@@ -252,9 +320,19 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, 
                 style={{ width: 18, height: 18, accentColor: 'var(--azure)' }}
               />
             </div>
+            <p style={{ fontSize: '11px', color: 'var(--text3)', margin: 0 }}>{UNSUPPRESSIBLE_NOTICE}</p>
           </div>
         )}
       </div>
     </div>
   );
 };
+
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object') {
+    const e = error as Record<string, unknown>;
+    if (typeof e.detail === 'string') return e.detail;
+    if (typeof e.title === 'string') return e.title;
+  }
+  return fallback;
+}

@@ -61,6 +61,25 @@ function mockFetch(input: RequestInfo | URL): Promise<Response> {
   if (path === '/v1/auth/sessions') return Promise.resolve(jsonResponse([]));
   if (path === '/v1/me') return Promise.resolve(jsonResponse(MOCK_USER));
   if (path === '/v1/instruments') return Promise.resolve(jsonResponse([]));
+  if (path === '/v1/reminders') return Promise.resolve(jsonResponse([]));
+  if (path === '/v1/statements/batches') return Promise.resolve(jsonResponse([]));
+  if (path === '/v1/verification/bank-requests') return Promise.resolve(jsonResponse([]));
+  if (path === '/v1/scheduler/status') {
+    return Promise.resolve(
+      jsonResponse({
+        scheduler_active: true,
+        active_schedule_version: null,
+        has_approved_schedule: false,
+        status_alert: 'No approved reminder schedule configured — reminder generation suspended until authorized',
+        last_run_at: null,
+        last_run_status: 'IDLE',
+      })
+    );
+  }
+  if (path === '/v1/notifications') {
+    return Promise.resolve(jsonResponse({ items: [], unread_count: 0, total_count: 0 }));
+  }
+  if (path === '/v1/notifications/preferences') return Promise.resolve(jsonResponse([]));
   return Promise.resolve(jsonResponse({ detail: 'not mocked in this test' }, 404));
 }
 
@@ -152,12 +171,17 @@ describe('AICTE Security Deposit Portal — honest-state web shell', () => {
     expect(screen.getByText(/Choose file/i)).toBeDefined();
   });
 
-  it('navigates to Bank Verification and shows pending-source-response states', async () => {
+  it('navigates to Bank Verification and shows real (empty) API-backed states', async () => {
     renderAuthed();
     await screen.findByText(/AICTE FDR Portal/i);
     fireEvent.click(screen.getByRole('button', { name: /^Bank Verification$/i }));
     expect(screen.getByText(/Verification & Statement Reconciliation/i)).toBeDefined();
-    expect(screen.getAllByText(/Not yet connected to the API/i).length).toBeGreaterThan(0);
+    // Statement batches and bank-requests are fetched async (GET /v1/statements/batches,
+    // GET /v1/verification/bank-requests) — both mocked empty, so the honest empty
+    // states render, not a hardcoded "not connected" stub.
+    expect(await screen.findByText(/No statement has been imported yet/i)).toBeDefined();
+    fireEvent.click(screen.getByRole('button', { name: /^Bank Confirmation$/i }));
+    expect(await screen.findByText(/No bank confirmation request has been issued yet/i)).toBeDefined();
   });
 
   it('navigates to Reminder Ladder and shows the no-approved-schedule banner', async () => {
@@ -165,7 +189,9 @@ describe('AICTE Security Deposit Portal — honest-state web shell', () => {
     await screen.findByText(/AICTE FDR Portal/i);
     fireEvent.click(screen.getByRole('button', { name: /Reminder Ladder/i }));
     expect(screen.getByText(/Maturity Ladder & Reminders Inbox/i)).toBeDefined();
-    expect(screen.getByText(/No approved reminder schedule/i)).toBeDefined();
+    // Scheduler status is fetched async (GET /v1/scheduler/status), so wait for it
+    // rather than asserting synchronously like the static screens above.
+    expect(await screen.findByText(/No approved reminder schedule/i)).toBeDefined();
   });
 
   it('navigates to Release Authorization with no automatic eligibility claim', async () => {
@@ -227,7 +253,10 @@ describe('AICTE Security Deposit Portal — honest-state web shell', () => {
     renderAuthed();
     await screen.findByText(/AICTE FDR Portal/i);
     fireEvent.click(screen.getByTitle(/Notifications/i));
-    expect(screen.getByText(/In-App Inbox \(0\)/i)).toBeDefined();
+    // Inbox is fetched async (GET /v1/notifications), so wait for it rather
+    // than asserting synchronously.
+    expect(await screen.findByText(/In-App Inbox \(0\)/i)).toBeDefined();
+    expect(await screen.findByText(/Nothing here yet/i)).toBeDefined();
   });
 
   it('opens the public receipt verification page with no fabricated seal', async () => {

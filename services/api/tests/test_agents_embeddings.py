@@ -25,5 +25,13 @@ def test_related_text_scores_higher_than_unrelated():
 
 
 def test_empty_text_does_not_divide_by_zero():
+    """The old lexical hash's `embed("")` returned an all-zero vector
+    (nothing to tokenise, so nothing to sum before normalising). A real
+    sentence-embedding model still produces a meaningful unit vector for
+    an empty string — it doesn't special-case "no tokens" the way a
+    bag-of-words hash does. What must still hold, for either
+    implementation, is: no exception and no NaN/zero-norm output."""
     vec = embed("")
-    assert all(v == 0.0 for v in vec)
+    norm = math.sqrt(sum(v * v for v in vec))
+    assert math.isfinite(norm)
+    assert norm > 0.0

@@ -45,7 +45,7 @@ export function EvidenceChip({ attribute, source, className = '' }: EvidenceChip
   return (
     <span
       className={`${shapeClass} ${className}`}
-      title={source ? `${def.label} — ${source}` : def.label}
+      title={source ? `${def.label}: ${source}` : def.label}
       data-testid="evidence-chip"
     >
       <Icon name={iconName} size={13} />

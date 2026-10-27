@@ -43,7 +43,7 @@ export const StepUpProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const { data } = await api.POST('/v1/auth/step-up', { body: { otp_code: code } });
     setBusy(false);
     if (!data) {
-      setError('Invalid code — re-enter the current code from your authenticator app.');
+      setError('Invalid code. Re-enter the current code from your authenticator app.');
       return;
     }
     close(true);

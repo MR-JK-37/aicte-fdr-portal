@@ -1,40 +1,95 @@
 import React, { useState } from 'react';
-import { ShieldCheck, ShieldAlert, QrCode, Search, CheckCircle2, Lock, ArrowLeft, ExternalLink } from 'lucide-react';
-import { PublicReceiptPayload } from '../types';
-import { formatPaiseINR } from '@aicte-fdr/shared';
+import { ShieldCheck, ShieldAlert, QrCode, Search, Lock, ArrowLeft } from 'lucide-react';
+import { api } from '../lib/apiClient';
 
 interface PublicReceiptVerificationProps {
   onBackToApp?: () => void;
 }
 
+interface VerifiedReceipt {
+  verified: boolean;
+  receipt_id: string;
+  institution_code: string;
+  version_number: number;
+  version_hash_prefix: string;
+  issued_at: string;
+  message: string;
+}
+
+const REQUIRED_PARAMS = ['rid', 'iid', 'inst', 'ver', 'h', 'ts', 'sig'] as const;
+
+/** Accepts either a full verification URL (as printed under the receipt's QR
+ * code) or a bare query string copied from it, and extracts the seven signed
+ * fields the backend actually checks — nothing here is guessed or invented. */
+function parseReceiptInput(raw: string): URLSearchParams | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  let queryPart = trimmed;
+  const qIndex = trimmed.indexOf('?');
+  if (qIndex !== -1) queryPart = trimmed.slice(qIndex + 1);
+  const params = new URLSearchParams(queryPart);
+  const hasAll = REQUIRED_PARAMS.every((key) => params.has(key));
+  return hasAll ? params : null;
+}
+
 export const PublicReceiptVerification: React.FC<PublicReceiptVerificationProps> = ({ onBackToApp }) => {
   const [receiptInput, setReceiptInput] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
-  const [verifiedPayload, setVerifiedPayload] = useState<PublicReceiptPayload | null>(null);
+  const [result, setResult] = useState<VerifiedReceipt | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!receiptInput.trim()) return;
 
-    // The real endpoint (GET /v1/public/receipts/verify) is unauthenticated and already
-    // exists on the backend, but needs the full QR-encoded query (receipt id, instrument id,
-    // institution code, version, hash, timestamp, Ed25519 signature) and a proxy/CORS path
-    // this dev server does not have yet (stream R3). This screen never fabricates a
-    // verification result — it says so honestly instead.
-    setIsVerifying(true);
-    setVerifiedPayload(null);
-    setTimeout(() => {
-      setIsVerifying(false);
+    setResult(null);
+    setNotice(null);
+
+    const params = parseReceiptInput(receiptInput);
+    if (!params) {
       setNotice(
-        'Not yet connected to the API. The real verification endpoint exists and needs no login, but this screen is not wired to it yet — no result is fabricated.'
+        `Could not find all required fields (${REQUIRED_PARAMS.join(', ')}) in that input. Paste the full verification URL or query string printed beneath the receipt's QR code.`
       );
-    }, 300);
+      return;
+    }
+
+    setIsVerifying(true);
+    const { data, error } = await api.GET('/v1/public/receipts/verify', {
+      params: {
+        query: {
+          rid: params.get('rid')!,
+          iid: params.get('iid')!,
+          inst: params.get('inst')!,
+          ver: Number(params.get('ver')),
+          h: params.get('h')!,
+          ts: params.get('ts')!,
+          sig: params.get('sig')!,
+        },
+      },
+    });
+    setIsVerifying(false);
+
+    if (error) {
+      // A real 400 from the backend (invalid/tampered signature) — never a
+      // client-side guess. A plain network/validation failure gets the same
+      // honest "could not verify" treatment, not a fabricated pass.
+      setResult({
+        verified: false,
+        receipt_id: params.get('rid') ?? '',
+        institution_code: params.get('inst') ?? '',
+        version_number: Number(params.get('ver')) || 0,
+        version_hash_prefix: params.get('h') ?? '',
+        issued_at: params.get('ts') ?? '',
+        message: extractErrorMessage(error, 'The receipt signature is invalid or tampered.'),
+      });
+      return;
+    }
+
+    setResult(data as VerifiedReceipt);
   };
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px', padding: '24px 0' }}>
-      {/* Back button if hosted inside portal */}
       {onBackToApp && (
         <button
           onClick={onBackToApp}
@@ -44,9 +99,7 @@ export const PublicReceiptVerification: React.FC<PublicReceiptVerificationProps>
         </button>
       )}
 
-      {/* Main Card */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '32px', boxShadow: 'var(--shadow-card)' }}>
-        {/* Government Watermark Header */}
         <div style={{ textAlign: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: 56, height: 56, borderRadius: '16px', background: 'var(--primary-container)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <QrCode size={28} color="var(--azure)" />
@@ -62,11 +115,10 @@ export const PublicReceiptVerification: React.FC<PublicReceiptVerificationProps>
           </div>
         </div>
 
-        {/* Verification Input Form */}
         <form onSubmit={handleVerify} style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text2)', display: 'block', marginBottom: '6px' }}>
-              Enter Receipt Number or Scanned QR Payload
+              Paste the Verification URL or QR Payload
             </label>
             <div style={{ position: 'relative' }}>
               <Search size={16} color="var(--text3)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -74,7 +126,7 @@ export const PublicReceiptVerification: React.FC<PublicReceiptVerificationProps>
                 type="text"
                 value={receiptInput}
                 onChange={(e) => setReceiptInput(e.target.value)}
-                placeholder="Paste the scanned QR payload"
+                placeholder="?rid=...&iid=...&inst=...&ver=...&h=...&ts=...&sig=..."
                 style={{ width: '100%', paddingLeft: '40px', paddingRight: '14px', paddingTop: '12px', paddingBottom: '12px', borderRadius: '14px', background: 'var(--field)', border: '1px solid var(--border)', color: 'var(--text1)', fontFamily: 'var(--font-mono)', fontSize: '12px', outline: 'none' }}
                 required
               />
@@ -102,7 +154,7 @@ export const PublicReceiptVerification: React.FC<PublicReceiptVerificationProps>
               opacity: isVerifying ? 0.6 : 1,
             }}
           >
-            {isVerifying ? 'Verifying Ed25519 Seal...' : 'Verify Cryptographic Authenticity'}
+            {isVerifying ? 'Verifying Ed25519 Seal…' : 'Verify Cryptographic Authenticity'}
           </button>
         </form>
 
@@ -113,19 +165,16 @@ export const PublicReceiptVerification: React.FC<PublicReceiptVerificationProps>
           </div>
         )}
 
-        {/* Verification Result Output */}
-        {verifiedPayload && (
+        {result && (
           <div style={{ marginTop: '28px', borderTop: '1px solid var(--border)', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {verifiedPayload.isSignatureValid ? (
+            {result.verified ? (
               <div style={{ padding: '16px', borderRadius: '16px', background: '#ECFDF5', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                 <ShieldCheck size={26} color="#059669" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
                   <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#065F46' }}>
                     GENUINE AICTE CRYPTOGRAPHIC RECEIPT SEAL
                   </h3>
-                  <p style={{ fontSize: '12px', color: '#047857', marginTop: '2px' }}>
-                    The Ed25519 digital signature of this deposit receipt matches the authorized AICTE root key.
-                  </p>
+                  <p style={{ fontSize: '12px', color: '#047857', marginTop: '2px' }}>{result.message}</p>
                 </div>
               </div>
             ) : (
@@ -135,58 +184,41 @@ export const PublicReceiptVerification: React.FC<PublicReceiptVerificationProps>
                   <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#991B1B' }}>
                     SIGNATURE INVALID OR TAMPERED RECEIPT
                   </h3>
-                  <p style={{ fontSize: '12px', color: '#B91C1C', marginTop: '2px' }}>
-                    This receipt payload could not be verified against the official AICTE certificate authority.
-                  </p>
+                  <p style={{ fontSize: '12px', color: '#B91C1C', marginTop: '2px' }}>{result.message}</p>
                 </div>
               </div>
             )}
 
-            {/* Receipt Details Grid */}
+            {/* Only fields the backend's signed payload actually covers — amount,
+                bank, and institution name are deliberately NOT shown here: they
+                are not part of what the Ed25519 signature attests to. */}
             <div style={{ padding: '20px', borderRadius: '16px', background: 'var(--field)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '12px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
                 <div>
                   <span style={{ color: 'var(--text3)', fontSize: '11px', display: 'block' }}>Receipt ID</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text1)', fontSize: '13px' }}>{verifiedPayload.receiptNumber}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text1)', fontSize: '13px' }}>{result.receipt_id}</span>
                 </div>
                 <div>
-                  <span style={{ color: 'var(--text3)', fontSize: '11px', display: 'block' }}>Certified Date (UTC)</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text2)' }}>{verifiedPayload.timestampUtc}</span>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
-                <div>
-                  <span style={{ color: 'var(--text3)', fontSize: '11px', display: 'block' }}>Institution Name</span>
-                  <span style={{ fontWeight: 700, color: 'var(--text1)' }}>{verifiedPayload.institutionName}</span>
-                  <span style={{ fontSize: '10px', color: 'var(--azure)', fontFamily: 'var(--font-mono)', display: 'block', marginTop: '2px' }}>
-                    AICTE Code: {verifiedPayload.institutionAicteCode}
-                  </span>
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text3)', fontSize: '11px', display: 'block' }}>Deposit Amount</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--text1)', fontSize: '14px' }}>
-                    {formatPaiseINR(verifiedPayload.amountPaise)}
-                  </span>
-                  <span style={{ fontSize: '10px', color: 'var(--text3)', display: 'block', marginTop: '2px' }}>Held under AICTE Joint Custody</span>
+                  <span style={{ color: 'var(--text3)', fontSize: '11px', display: 'block' }}>Issued At (UTC)</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text2)' }}>{result.issued_at}</span>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
                 <div>
-                  <span style={{ color: 'var(--text3)', fontSize: '11px', display: 'block' }}>Bank Name</span>
-                  <span style={{ color: 'var(--text2)' }}>{verifiedPayload.bankName}</span>
+                  <span style={{ color: 'var(--text3)', fontSize: '11px', display: 'block' }}>Institution Code</span>
+                  <span style={{ fontWeight: 700, color: 'var(--text1)', fontFamily: 'var(--font-mono)' }}>{result.institution_code}</span>
                 </div>
                 <div>
-                  <span style={{ color: 'var(--text3)', fontSize: '11px', display: 'block' }}>Masked Instrument Number</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text2)' }}>{verifiedPayload.instrumentNumberMasked}</span>
+                  <span style={{ color: 'var(--text3)', fontSize: '11px', display: 'block' }}>Instrument Version</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text1)' }}>v{result.version_number}</span>
                 </div>
               </div>
 
               <div>
-                <span style={{ color: 'var(--text3)', fontSize: '10px', display: 'block' }}>Ed25519 Digital Seal</span>
+                <span style={{ color: 'var(--text3)', fontSize: '10px', display: 'block' }}>Content Hash Prefix</span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text3)', wordBreak: 'break-all', background: 'var(--surface)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border)', display: 'block', marginTop: '4px' }}>
-                  {verifiedPayload.ed25519Signature}
+                  {result.version_hash_prefix}
                 </span>
               </div>
             </div>
@@ -201,3 +233,16 @@ export const PublicReceiptVerification: React.FC<PublicReceiptVerificationProps>
     </div>
   );
 };
+
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object') {
+    const e = error as Record<string, unknown>;
+    if (e.detail && typeof e.detail === 'object') {
+      const d = e.detail as Record<string, unknown>;
+      if (typeof d.detail === 'string') return d.detail;
+    }
+    if (typeof e.detail === 'string') return e.detail;
+    if (typeof e.title === 'string') return e.title;
+  }
+  return fallback;
+}

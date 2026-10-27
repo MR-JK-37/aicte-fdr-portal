@@ -91,7 +91,7 @@ export const HelpAndRightsView: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Header Banner */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '28px', boxShadow: 'var(--shadow-card)' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', padding: '28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ width: 40, height: 40, borderRadius: '12px', background: 'var(--primary-container)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <HelpCircle size={20} color="var(--azure)" />
@@ -117,8 +117,7 @@ export const HelpAndRightsView: React.FC = () => {
               border: 'none',
               background: activeTab === 'faq' ? 'var(--surface)' : 'transparent',
               color: activeTab === 'faq' ? 'var(--text1)' : 'var(--text3)',
-              boxShadow: activeTab === 'faq' ? 'var(--shadow-card)' : 'none',
-              transition: 'all 0.15s ease',
+              transition: 'background 0.15s ease, color 0.15s ease',
             }}
           >
             APH Handbook &amp; FAQs
@@ -134,8 +133,7 @@ export const HelpAndRightsView: React.FC = () => {
               border: 'none',
               background: activeTab === 'tickets' ? 'var(--surface)' : 'transparent',
               color: activeTab === 'tickets' ? 'var(--text1)' : 'var(--text3)',
-              boxShadow: activeTab === 'tickets' ? 'var(--shadow-card)' : 'none',
-              transition: 'all 0.15s ease',
+              transition: 'background 0.15s ease, color 0.15s ease',
             }}
           >
             Grievances &amp; Tickets ({tickets.length})
@@ -151,8 +149,7 @@ export const HelpAndRightsView: React.FC = () => {
               border: 'none',
               background: activeTab === 'dpdp' ? 'var(--surface)' : 'transparent',
               color: activeTab === 'dpdp' ? 'var(--text1)' : 'var(--text3)',
-              boxShadow: activeTab === 'dpdp' ? 'var(--shadow-card)' : 'none',
-              transition: 'all 0.15s ease',
+              transition: 'background 0.15s ease, color 0.15s ease',
             }}
           >
             DPDP Data Rights &amp; Retention
@@ -171,7 +168,7 @@ export const HelpAndRightsView: React.FC = () => {
       {activeTab === 'faq' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
           {faqs.map((faq, idx) => (
-            <div key={idx} style={{ padding: '22px', borderRadius: '20px', background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div key={idx} style={{ padding: '22px', borderRadius: '20px', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                 <FileText size={18} color="var(--azure)" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <h3 style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text1)' }}>{faq.q}</h3>
@@ -186,7 +183,7 @@ export const HelpAndRightsView: React.FC = () => {
       {activeTab === 'tickets' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
           {/* Create Ticket Form */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px', boxShadow: 'var(--shadow-card)', height: 'fit-content', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px', padding: '24px', height: 'fit-content', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Submit Formal Grievance</h2>
             <form onSubmit={handleCreateTicket} style={{ display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '12px' }}>
               <div>
@@ -242,7 +239,6 @@ export const HelpAndRightsView: React.FC = () => {
                   fontSize: '13px',
                   border: 'none',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(17, 24, 39, 0.2)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -258,7 +254,7 @@ export const HelpAndRightsView: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Casework &amp; Tickets</h2>
             {tickets.map((t) => (
-              <div key={t.id} style={{ padding: '18px 20px', borderRadius: '18px', background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div key={t.id} style={{ padding: '18px 20px', borderRadius: '18px', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, color: 'var(--azure)' }}>{t.id}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -285,7 +281,7 @@ export const HelpAndRightsView: React.FC = () => {
       {activeTab === 'dpdp' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Statutory Retention Schedule Table */}
-          <div style={{ background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)', overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--field)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Lock size={16} color="var(--azure)" />
               <h2 style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -296,22 +292,22 @@ export const HelpAndRightsView: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--field)', border: '1px solid var(--border)' }}>
                   <div style={{ fontWeight: 700, color: 'var(--text1)', fontSize: '13px' }}>Active Deposits</div>
-                  <div style={{ color: 'var(--azure)', fontFamily: 'var(--font-mono)', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>7 Years post-discharge</div>
+                  <div style={{ color: 'var(--azure)', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>7 Years post-discharge</div>
                   <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>Regulatory financial compliance</div>
                 </div>
                 <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--field)', border: '1px solid var(--border)' }}>
                   <div style={{ fontWeight: 700, color: 'var(--text1)', fontSize: '13px' }}>Cryptographic Audit Logs</div>
-                  <div style={{ color: '#059669', fontFamily: 'var(--font-mono)', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>Indefinite (WORM)</div>
+                  <div style={{ color: '#059669', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>Indefinite (WORM)</div>
                   <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>Ed25519 tamper-evident ledger</div>
                 </div>
                 <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--field)', border: '1px solid var(--border)' }}>
                   <div style={{ fontWeight: 700, color: 'var(--text1)', fontSize: '13px' }}>Bank Statements</div>
-                  <div style={{ color: '#7C3AED', fontFamily: 'var(--font-mono)', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>10 Years</div>
+                  <div style={{ color: 'var(--azure)', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>10 Years</div>
                   <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>Banking reconciliation audits</div>
                 </div>
                 <div style={{ padding: '16px', borderRadius: '14px', background: 'var(--field)', border: '1px solid var(--border)' }}>
                   <div style={{ fontWeight: 700, color: 'var(--text1)', fontSize: '13px' }}>Malicious Quarantine</div>
-                  <div style={{ color: '#DC2626', fontFamily: 'var(--font-mono)', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>30 Days</div>
+                  <div style={{ color: '#DC2626', marginTop: '4px', fontWeight: 800, fontSize: '14px' }}>30 Days</div>
                   <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px' }}>Automatic purge post-forensics</div>
                 </div>
               </div>
@@ -319,7 +315,7 @@ export const HelpAndRightsView: React.FC = () => {
           </div>
 
           {/* Data Principal Rights Request Tracker */}
-          <div style={{ background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: '20px', border: '1px solid var(--border)', overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--field)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Shield size={16} color="var(--azure)" />
@@ -327,7 +323,7 @@ export const HelpAndRightsView: React.FC = () => {
                   Data Principal Rights Tracker (Section 11, 12, 13)
                 </h2>
               </div>
-              <span style={{ fontSize: '11px', color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>Statutory Response Window: 30 Days</span>
+              <span style={{ fontSize: '11px', color: 'var(--text3)', }}>Statutory Response Window: 30 Days</span>
             </div>
 
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>

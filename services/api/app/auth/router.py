@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, Cookie, Depends, Header, Response
 
 logger = logging.getLogger(__name__)
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.audit import append_audit_entry
@@ -137,7 +137,7 @@ def login(
     set_app_context(db, role="platform_operator")
 
     user = db.execute(
-        select(AppUser).where(AppUser.email == req.email.strip().lower())
+        select(AppUser).where(func.lower(AppUser.email) == req.email.strip().lower())
     ).scalar_one_or_none()
 
     # Same generic error for "no such user" and "wrong password" — AUTH_ROLES_MATRIX.md
@@ -257,7 +257,7 @@ def dev_login(
     set_app_context(db, role="platform_operator")
 
     user = db.execute(
-        select(AppUser).where(AppUser.email == req.email.strip().lower())
+        select(AppUser).where(func.lower(AppUser.email) == req.email.strip().lower())
     ).scalar_one_or_none()
     if not user or not user.is_active:
         raise NotFoundError("Dev account", req.email)

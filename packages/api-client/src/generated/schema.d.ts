@@ -21,6 +21,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/dev-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Dev Accounts
+         * @description Lists the seeded staging roster for one-click role login in non-prod
+         *     environments only. Returns email/role/name — never a password or TOTP
+         *     secret, so there is nothing here for a client bundle or public repo to
+         *     leak (CLAUDE.md non-negotiable #1).
+         */
+        get: operations["list_dev_accounts_v1_auth_dev_accounts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/dev-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login
+         * @description One-click login as a known seeded account, non-prod only. No password
+         *     or TOTP is accepted or required — the refusal in `_refuse_outside_dev_staging`
+         *     is the only gate, exactly as `verify_totp_code`'s 000000/123456 bypass
+         *     already works for this codebase in non-production. Issues a real session
+         *     through the same path as a credentialed login, and is audited distinctly
+         *     (`auth.dev_login`) so it is never indistinguishable from a real login in
+         *     the audit trail.
+         */
+        post: operations["dev_login_v1_auth_dev_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/logout": {
         parameters: {
             query?: never;
@@ -1329,10 +1378,32 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Release Requests
+         * @description Lists release requests scoped to the caller's institution (or, for
+         *     AICTE-staff roles with no institution_id, all institutions).
+         */
+        get: operations["list_release_requests_v1_release_requests_get"];
         put?: never;
         /** Create Request */
         post: operations["create_request_v1_release_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/release-requests/{release_request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Release Request */
+        get: operations["get_release_request_v1_release_requests__release_request_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2528,7 +2599,10 @@ export interface paths {
         };
         /**
          * Get Dead Letter Queue
-         * @description Admin viewer for Dead-Letter Queue (SPEC §11.2 step 6).
+         * @description Admin viewer for Dead-Letter Queue (SPEC §11.2 step 6). Bureau-side
+         *     operator roles only — this is a system-wide, cross-institution view of
+         *     notification delivery failures, never an institution-scoped resource, so
+         *     no tenant role belongs on this list (CLAUDE.md non-negotiable #6).
          */
         get: operations["get_dead_letter_queue_v1_notifications_dlq_get"];
         put?: never;
@@ -2550,7 +2624,8 @@ export interface paths {
         put?: never;
         /**
          * Replay Dlq Item
-         * @description Replays an exhausted dead-letter item.
+         * @description Replays an exhausted dead-letter item. Bureau-side operator roles
+         *     only — same reasoning as get_dead_letter_queue above.
          */
         post: operations["replay_dlq_item_v1_notifications_dlq__dlq_id__replay_post"];
         delete?: never;
@@ -3056,6 +3131,22 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** ClearanceOut */
+        ClearanceOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Cell */
+            cell: string;
+            /** Source */
+            source: string;
+            /** Status */
+            status: string;
+            /** Outcome */
+            outcome: string | null;
+        };
         /** CommentResponse */
         CommentResponse: {
             /**
@@ -3240,6 +3331,22 @@ export interface components {
             reason: string;
             /** Step Up Token */
             step_up_token?: string | null;
+        };
+        /** DevAccountOut */
+        DevAccountOut: {
+            /** Email */
+            email: string;
+            /** Role */
+            role: string;
+            /** Full Name */
+            full_name: string;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /** Email */
+            email: string;
+            /** Device Label */
+            device_label?: string | null;
         };
         /** DeviceRegistrationPayload */
         DeviceRegistrationPayload: {
@@ -3661,6 +3768,10 @@ export interface components {
              * Format: uuid
              */
             institution_id: string;
+            /** Institution Name */
+            institution_name?: string | null;
+            /** Bank Name */
+            bank_name?: string | null;
             type: components["schemas"]["InstrumentType"];
             status: components["schemas"]["InstrumentStatus"];
             evidence_level: components["schemas"]["EvidenceLevel"];
@@ -4006,6 +4117,11 @@ export interface components {
             sources: {
                 [key: string]: unknown;
             }[];
+            /**
+             * General
+             * @default false
+             */
+            general: boolean;
         };
         /** PolicyVersionResponse */
         PolicyVersionResponse: {
@@ -4209,6 +4325,103 @@ export interface components {
         RefreshRequest: {
             /** Refresh Token */
             refresh_token?: string | null;
+        };
+        /** ReleaseChecklistItemOut */
+        ReleaseChecklistItemOut: {
+            /** Rule Id */
+            rule_id: string;
+            /** Label */
+            label: string;
+            /** Status */
+            status: string;
+            /** Reason */
+            reason: string | null;
+        };
+        /** ReleaseRequestDetail */
+        ReleaseRequestDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Institution Id
+             * Format: uuid
+             */
+            institution_id: string;
+            /** Institution Name */
+            institution_name: string;
+            /**
+             * Instrument Id
+             * Format: uuid
+             */
+            instrument_id: string;
+            /** Instrument Number */
+            instrument_number: string;
+            /** Amount */
+            amount: string;
+            /** Status */
+            status: string;
+            /** Recommendation */
+            recommendation: string | null;
+            /** Recommendation Reason */
+            recommendation_reason: string | null;
+            /** Recommended At */
+            recommended_at: string | null;
+            /** Decision */
+            decision: string | null;
+            /** Decision Reason */
+            decision_reason: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Checklist */
+            checklist: components["schemas"]["ReleaseChecklistItemOut"][];
+            /** Clearances */
+            clearances: components["schemas"]["ClearanceOut"][];
+        };
+        /** ReleaseRequestSummary */
+        ReleaseRequestSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Institution Id
+             * Format: uuid
+             */
+            institution_id: string;
+            /** Institution Name */
+            institution_name: string;
+            /**
+             * Instrument Id
+             * Format: uuid
+             */
+            instrument_id: string;
+            /** Instrument Number */
+            instrument_number: string;
+            /** Amount */
+            amount: string;
+            /** Status */
+            status: string;
+            /** Recommendation */
+            recommendation: string | null;
+            /** Recommendation Reason */
+            recommendation_reason: string | null;
+            /** Recommended At */
+            recommended_at: string | null;
+            /** Decision */
+            decision: string | null;
+            /** Decision Reason */
+            decision_reason: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** ReminderScheduleRule */
         ReminderScheduleRule: {
@@ -4901,6 +5114,8 @@ export interface components {
             deep_link: string | null;
             /** Lock Screen Title */
             lock_screen_title: string | null;
+            /** Lock Screen Body */
+            lock_screen_body?: string | null;
             /** Is Read */
             is_read: boolean;
             /**
@@ -5058,6 +5273,59 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_dev_accounts_v1_auth_dev_accounts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevAccountOut"][];
+                };
+            };
+        };
+    };
+    dev_login_v1_auth_dev_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
             };
         };
         responses: {
@@ -5535,9 +5803,13 @@ export interface operations {
     list_features_v1_admin_registry_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                Authorization?: string | null;
+            };
             path?: never;
-            cookie?: never;
+            cookie?: {
+                fdr_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -5550,16 +5822,29 @@ export interface operations {
                     "application/json": components["schemas"]["FeatureRegistryOut"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     get_feature_v1_admin_registry__key__get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                Authorization?: string | null;
+            };
             path: {
                 key: string;
             };
-            cookie?: never;
+            cookie?: {
+                fdr_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -5586,11 +5871,15 @@ export interface operations {
     patch_feature_state_v1_admin_registry__key__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                Authorization?: string | null;
+            };
             path: {
                 key: string;
             };
-            cookie?: never;
+            cookie?: {
+                fdr_session?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -5621,11 +5910,15 @@ export interface operations {
     list_health_checks_v1_admin_registry__key__health_checks_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                Authorization?: string | null;
+            };
             path: {
                 key: string;
             };
-            cookie?: never;
+            cookie?: {
+                fdr_session?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -7641,6 +7934,43 @@ export interface operations {
             };
         };
     };
+    list_release_requests_v1_release_requests_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                Authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                fdr_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseRequestSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_request_v1_release_requests_post: {
         parameters: {
             query?: never;
@@ -7665,6 +7995,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_release_request_v1_release_requests__release_request_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                Authorization?: string | null;
+            };
+            path: {
+                release_request_id: string;
+            };
+            cookie?: {
+                fdr_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseRequestDetail"];
                 };
             };
             /** @description Validation Error */

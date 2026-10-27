@@ -40,6 +40,7 @@ class PolicyQAResponse(BaseModel):
     unavailable: bool
     verified_citations: list[str]
     sources: list[dict[str, Any]]
+    general: bool = False
 
 
 class TranslationDraftRequest(BaseModel):
@@ -116,6 +117,7 @@ def policy_qa(
         refused=rag_answer.refused,
         unavailable=rag_answer.unavailable,
         verified_citations=rag_answer.verified_citations,
+        general=rag_answer.general,
         sources=[
             {
                 "clause_id": s.clause_id,

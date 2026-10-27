@@ -186,7 +186,7 @@ export const SearchWorkspace: React.FC<SearchWorkspaceProps> = ({ instruments, o
         className="card"
         style={{
           padding: '24px 28px',
-          background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to) 70%)',
+          background: 'var(--hero-from)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -195,36 +195,20 @@ export const SearchWorkspace: React.FC<SearchWorkspaceProps> = ({ instruments, o
         }}
       >
         <div>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 12px',
-              borderRadius: '999px',
-              background: 'rgba(255, 255, 255, 0.7)',
-              color: 'var(--azure)',
-              fontSize: '12px',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em',
-              marginBottom: '10px',
-            }}
-          >
-            <Search size={14} />
-            Institutional Registers
-          </span>
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '28px',
-              fontWeight: 800,
-              color: 'var(--text1)',
-              margin: '0 0 6px',
-            }}
-          >
-            Universal Search & Saved Views
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+            <Search size={22} color="var(--azure)" />
+            <h2
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '28px',
+                fontWeight: 800,
+                color: 'var(--text1)',
+                margin: 0,
+              }}
+            >
+              Universal Search & Saved Views
+            </h2>
+          </div>
           <p style={{ fontSize: '13px', color: 'var(--text2)', margin: 0, fontWeight: 500 }}>
             Query across all regulatory security deposits, UTR execution hashes, and institutional records.
           </p>
@@ -543,7 +527,7 @@ export const SearchWorkspace: React.FC<SearchWorkspaceProps> = ({ instruments, o
             </span>
           </div>
 
-          <div style={{ fontSize: '12px', color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text3)' }}>
             Total Value: <strong>{formatPaiseINR(filteredInstruments.reduce((acc, curr) => acc + curr.amount, 0))}</strong>
           </div>
         </div>
