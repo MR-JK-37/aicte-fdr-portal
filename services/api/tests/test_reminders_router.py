@@ -70,7 +70,7 @@ def reminder_setup(db_session):
 
 def test_list_reminders_returns_200_not_500(reminder_setup):
     """The actual bug found live: this endpoint 500'd on every call."""
-    inst, user, instrument, reminder = reminder_setup
+    _inst, user, instrument, reminder = reminder_setup
     token = create_access_token(user)
 
     res = client.get("/v1/reminders", headers={"Authorization": f"Bearer {token}"})
@@ -89,7 +89,7 @@ def test_list_reminders_returns_200_not_500(reminder_setup):
 
 def test_list_reminders_scoped_to_own_institution(db_session, reminder_setup):
     """A viewer from a different institution must not see this reminder."""
-    inst, user, instrument, reminder = reminder_setup
+    _inst, _user, _instrument, _reminder = reminder_setup
 
     other_inst = Institution(
         id=uuid.uuid4(), aicte_code=f"OTH-{uuid.uuid4().hex[:6]}", name="Other Institute"
@@ -116,7 +116,7 @@ def test_list_reminders_scoped_to_own_institution(db_session, reminder_setup):
 
 
 def test_scheduler_status_reports_no_approved_schedule_by_default(reminder_setup):
-    inst, user, instrument, reminder = reminder_setup
+    _inst, user, _instrument, _reminder = reminder_setup
     token = create_access_token(user)
 
     res = client.get("/v1/scheduler/status", headers={"Authorization": f"Bearer {token}"})
