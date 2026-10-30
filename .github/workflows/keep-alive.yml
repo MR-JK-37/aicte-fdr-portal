@@ -1,0 +1,23 @@
+name: Keep backend warm
+
+# Render's free plan spins the API down after ~15 minutes of inactivity,
+# then cold-starts it on the next request (30-60+ seconds). Pinging the
+# health endpoint often enough resets that idle timer so real users never
+# hit a cold start. This does not touch any business/financial state —
+# /healthz is a read-only liveness check.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping API health endpoint
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 https://aicte-fdr-api.onrender.com/healthz)
+          echo "healthz responded with HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::warning::Backend health check did not return 200 (got $code) — it may be cold-starting or down."
+          fi
