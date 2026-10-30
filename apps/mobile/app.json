@@ -6,12 +6,17 @@
     "scheme": "aictefdr",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "org.aicte.fdr.mobile"
     },
     "android": {
       "package": "org.aicte.fdr.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon-foreground.png",
+        "backgroundColor": "#050505"
+      },
       "permissions": [
         "VIBRATE",
         "USE_FULL_SCREEN_INTENT"
@@ -19,7 +24,8 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font",

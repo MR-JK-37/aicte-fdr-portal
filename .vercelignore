@@ -1,0 +1,30 @@
+# Vercel's upload step doesn't honour nested .gitignore files (only the
+# root one), so this monorepo's native mobile build output and local dev
+# data directories were being uploaded in full (several GB) on every
+# `vercel deploy` even though git itself already ignores them.
+apps/mobile/android
+apps/mobile/ios
+apps/mobile/.expo
+apps/mobile/dist
+apps/mobile/node_modules
+
+services/api/.venv
+services/api/__pycache__
+
+node_modules
+.turbo
+.expo
+
+db_data
+valkey_data
+minio_data
+garage_data
+garage_meta
+backups
+.local
+
+*.apk
+*.ipa
+aicte-fdr-sample-demo.pdf
+
+.git
