@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Dev/staging-only cleartext allowance, scoped to the specific hosts the app
+  talks to in non-production environments (see resolveApiBaseUrl() in
+  src/lib/apiClient.ts): the Android emulator's host-loopback alias, common
+  private-LAN gateways a physical device resolves the dev machine's IP to,
+  and localhost for the web/simulator preview path. This is deliberately NOT
+  a blanket app-wide usesCleartextTraffic allowance (flagged by security
+  review) — a real production backend must be HTTPS and is never covered by
+  this file. Base config (everything else) keeps the platform default of
+  cleartext disabled.
+-->
+<network-security-config>
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">localhost</domain>
+    <domain includeSubdomains="false">127.0.0.1</domain>
+    <domain includeSubdomains="false">10.0.2.2</domain>
+    <!-- apiClient.ts's hardcoded dev-machine fallback IP -->
+    <domain includeSubdomains="false">192.168.31.237</domain>
+  </domain-config>
+</network-security-config>

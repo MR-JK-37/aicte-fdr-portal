@@ -101,7 +101,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
+      # pnpm/action-setup@v4's self-installer crashes
+      # (`onlyBuiltDependencies?.sort is not a function`) against the
+      # pnpm@11.26.0 pinned in package.json's `packageManager` field — a
+      # known incompatibility between that action and newer pnpm major
+      # versions. corepack (bundled with the runner's preinstalled Node)
+      # activates the pinned version directly, with no third-party action
+      # in the loop. This has to run BEFORE actions/setup-node@v5: that
+      # action's own packageManager-field detection shells out to `pnpm`
+      # unconditionally once it sees the field, even without `cache: pnpm`
+      # set, and fails if pnpm isn't on PATH yet.
+      - run: corepack enable && corepack prepare --activate
       - uses: actions/setup-node@v5
         with:
           node-version: 22

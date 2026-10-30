@@ -18,6 +18,7 @@ import { PublicReceiptVerification } from './components/PublicReceiptVerificatio
 import { NotificationCenter } from './components/NotificationCenter';
 import { CommandPalette } from './components/CommandPalette';
 import { SecurityView } from './components/SecurityView';
+import { IntakeQueueView } from './components/IntakeQueueView';
 import { AskHandbookModal } from './components/AskHandbookModal';
 import { LoginScreen } from './auth/LoginScreen';
 import { useAuth } from './auth/AuthContext';
@@ -29,6 +30,7 @@ import { IconName } from './design-system/Icon';
 
 const PRIMARY_NAV_ITEMS: { key: string; label: string; icon: IconName }[] = [
   { key: 'dashboard', label: 'KPI Dashboard', icon: 'dashboard' },
+  { key: 'intake_queue', label: 'Intake Queue', icon: 'inbox' },
   { key: 'search', label: 'Search & Views', icon: 'search' },
   { key: 'submit', label: 'Submit FDR', icon: 'upload' },
   { key: 'verify', label: 'Bank Verification', icon: 'verified' },
@@ -57,8 +59,8 @@ const ROLE_NAV_KEYS: Record<AppRole, string[]> = {
   institution_viewer: ['dashboard', 'search', 'reminders', 'reports', 'help'],
 
   // AICTE Official Roles
-  intake_officer: ['dashboard', 'search', 'verify', 'reports', 'copilot', 'help'],
-  scrutiny_officer: ['dashboard', 'search', 'submit', 'verify', 'reminders', 'release', 'reports', 'copilot', 'audit', 'admin', 'security', 'help'],
+  intake_officer: ['dashboard', 'intake_queue', 'search', 'verify', 'reports', 'copilot', 'help'],
+  scrutiny_officer: ['dashboard', 'intake_queue', 'search', 'submit', 'verify', 'reminders', 'release', 'reports', 'copilot', 'audit', 'admin', 'security', 'help'],
   finance_verifier: ['verify', 'dashboard', 'search', 'reminders', 'release', 'reports', 'copilot', 'help'],
   regional_supervisor: ['dashboard', 'search', 'reminders', 'release', 'reports', 'copilot', 'help'],
   competent_authority: ['release', 'dashboard', 'search', 'reports', 'copilot', 'help'],
@@ -84,6 +86,9 @@ const ROLE_NAV_KEYS: Record<AppRole, string[]> = {
 function getInitialTabForRole(role: AppRole, landingRoute?: string | null): string {
   // Respect backend navigation manifest landing_route if provided
   if (landingRoute) {
+    if (landingRoute.includes('intake-queue')) {
+      return 'intake_queue';
+    }
     if (landingRoute.includes('assigned-requests') || landingRoute.includes('verification')) {
       return 'verify';
     }
@@ -100,6 +105,8 @@ function getInitialTabForRole(role: AppRole, landingRoute?: string | null): stri
 
   // Role-specific primary landing screen
   switch (role) {
+    case 'intake_officer':
+      return 'intake_queue';
     case 'bank_verifier':
     case 'bank_user':
       return 'verify';
@@ -155,6 +162,7 @@ const AuthenticatedApp: React.FC<{ userRole: AppRole; onLogout: () => void }> = 
   const { navigation } = useAuth();
   const initialTab = getInitialTabForRole(userRole, navigation?.landing_route);
   const [activeTab, setActiveTab] = useState<string>(initialTab);
+  const [searchSeed, setSearchSeed] = useState<string>('');
   const [language, setLanguage] = useState<string>('en');
 
   // Sync activeTab when role/navigation manifest updates
@@ -283,7 +291,18 @@ const AuthenticatedApp: React.FC<{ userRole: AppRole; onLogout: () => void }> = 
 
           {activeTab === 'dashboard' && <KPIBoard instruments={instruments} />}
 
-          {activeTab === 'search' && <SearchWorkspace instruments={instruments} />}
+          {activeTab === 'intake_queue' && (
+            <IntakeQueueView
+              onOpenCase={(query) => {
+                setSearchSeed(query);
+                setActiveTab('search');
+              }}
+            />
+          )}
+
+          {activeTab === 'search' && (
+            <SearchWorkspace instruments={instruments} initialQuery={searchSeed} />
+          )}
 
           {activeTab === 'submit' && <NewFDRSubmission lang={language} />}
 

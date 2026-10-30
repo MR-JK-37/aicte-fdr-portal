@@ -25,6 +25,7 @@ from app.models.enums import EvidenceLevel, InstrumentStatus, InstrumentType
 from app.models.workflow import InstrumentVersion
 from app.problem_json import ConflictError, ForbiddenError, NotFoundError
 from app.receipts.generator import generate_submission_receipt_pdf
+from app.rules.discrepancies import sync_discrepancies
 
 router = APIRouter(prefix="/v1/instruments", tags=["Instruments & Versions"])
 
@@ -118,6 +119,8 @@ class InstrumentResponse(BaseModel):
     utr: str | None = None
     created_at: datetime
     updated_at: datetime
+    open_discrepancy_count: int | None = None
+    open_discrepancy_fields: list[str] | None = None
 
 
 class InstrumentVersionResponse(BaseModel):
@@ -356,6 +359,17 @@ def submit_instrument(
         reason_code="OFFICIAL_SUBMISSION",
     )
 
+    # Runs the declared-vs-extracted discrepancy rule engine (app/rules/
+    # discrepancies.py) at the moment of submission, not only when a
+    # scrutiny officer happens to open the discrepancies tab for this
+    # instrument — the engine already existed but had no caller anywhere in
+    # the submit flow, so a declared amount/instrument number that
+    # contradicted the uploaded document's own OCR extraction was silently
+    # accepted with no discrepancy ever recorded. This never blocks or
+    # rejects the submission (per the engine's own invariant); it only
+    # ensures the record exists for scrutiny to see.
+    open_discrepancies = sync_discrepancies(db, instrument)
+
     res = InstrumentResponse(
         id=instrument.id,
         institution_id=instrument.institution_id,
@@ -370,6 +384,8 @@ def submit_instrument(
         utr=instrument.utr,
         created_at=instrument.created_at,
         updated_at=instrument.updated_at,
+        open_discrepancy_count=len(open_discrepancies),
+        open_discrepancy_fields=[d.field for d in open_discrepancies],
     )
     db.commit()
     return res

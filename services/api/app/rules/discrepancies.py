@@ -44,12 +44,28 @@ def check_amount_discrepancy(
     if not extracted_amount_val:
         return None
 
-    try:
-        if isinstance(extracted_amount_val, dict):
-            extracted_num = Decimal(str(extracted_amount_val.get("value", 0)))
-        else:
-            extracted_num = Decimal(str(extracted_amount_val))
-    except (ValueError, TypeError, InvalidOperation):
+    raw_value = (
+        extracted_amount_val.get("value", 0)
+        if isinstance(extracted_amount_val, dict)
+        else extracted_amount_val
+    )
+    # OCR on an Indian FDR certificate commonly reads amounts in
+    # lakh/crore comma grouping (e.g. "35,00,000.00") or with a currency
+    # prefix/suffix (e.g. "Rs. 35,00,000") — Decimal() rejects both outright
+    # (InvalidOperation), which this used to catch and silently treat as "no
+    # discrepancy" rather than actually comparing the value. Extract just the
+    # numeric substring (stripping the currency marker, not just any
+    # non-digit character — a naive strip leaves "Rs." as a stray leading
+    # dot and corrupts the value by two orders of magnitude) and drop comma
+    # thousand-separators before parsing.
+    match = re.search(r"\d[\d,]*\.?\d*", str(raw_value))
+    extracted_num: Decimal | None = None
+    if match:
+        try:
+            extracted_num = Decimal(match.group(0).replace(",", ""))
+        except InvalidOperation:
+            extracted_num = None
+    if extracted_num is None:
         return None
 
     declared_num = Decimal(str(instrument.amount))

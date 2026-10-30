@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -35,6 +37,8 @@ from app.statements.router import router as statements_router
 from app.support.router import router as support_router
 from app.users.router import router as users_router
 from app.verification.router import router as verification_router
+
+logger = logging.getLogger(__name__)
 
 # Refuses to continue importing/starting this module at all if the
 # environment is production and any simulation/demo/mock/fake flag is
@@ -98,6 +102,12 @@ app.include_router(agents_router)
 
 @app.on_event("startup")
 def ensure_aph_clauses_seeded() -> None:
+    # A failure here must never be silent: it means the AI Copilot's entire
+    # retrieval corpus is missing, which surfaces to users as a
+    # resource-not-found cl. failure quietly (CLAUDE.md non-negotiable #9) —
+    # the app is deliberately allowed to continue starting (a transient
+    # seeding failure shouldn't take the whole API down), but the exception
+    # is always logged with its traceback so it's actually diagnosable.
     try:
         from app.agents.seed_aph_clauses import seed
         from app.models.rag import AphClauseChunk
@@ -107,7 +117,7 @@ def ensure_aph_clauses_seeded() -> None:
                 seed(session)
                 session.commit()
     except Exception:
-        pass
+        logger.exception("Startup APH clause seeding failed; AI Copilot retrieval corpus may be empty or incomplete")
 
 
 @app.get("/health", tags=["system"])

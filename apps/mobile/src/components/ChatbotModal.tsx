@@ -214,9 +214,9 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<React.ElementRef<typeof ScrollView>>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const watchdogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingQueryRef = useRef<string>('');
 
   useEffect(() => {

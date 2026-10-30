@@ -6,6 +6,7 @@ import { formatPaiseINR } from '@aicte-fdr/shared';
 interface SearchWorkspaceProps {
   instruments: Instrument[];
   onSelectInstrument?: (inst: Instrument) => void;
+  initialQuery?: string;
 }
 
 const PRESET_VIEWS: SavedViewPreset[] = [
@@ -47,9 +48,9 @@ function matchesPreset(inst: Instrument, preset: SavedViewPreset): boolean {
   return true;
 }
 
-export const SearchWorkspace: React.FC<SearchWorkspaceProps> = ({ instruments, onSelectInstrument }) => {
+export const SearchWorkspace: React.FC<SearchWorkspaceProps> = ({ instruments, onSelectInstrument, initialQuery }) => {
   const [filterState, setFilterState] = useState<SearchFilterState>({
-    query: '',
+    query: initialQuery ?? '',
     status: [],
     bank: [],
     minAmountPaise: undefined,

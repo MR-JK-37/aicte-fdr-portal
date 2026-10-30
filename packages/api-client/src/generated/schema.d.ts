@@ -3797,6 +3797,10 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Open Discrepancy Count */
+            open_discrepancy_count?: number | null;
+            /** Open Discrepancy Fields */
+            open_discrepancy_fields?: string[] | null;
         };
         /**
          * InstrumentStatus

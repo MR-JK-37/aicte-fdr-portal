@@ -41,6 +41,8 @@ export const NewFDRSubmission: React.FC<NewFDRSubmissionProps> = ({ lang }) => {
   const [uploadStatus, setUploadStatus] = useState<StepStatus>('idle');
   const [extractStatus, setExtractStatus] = useState<StepStatus>('idle');
   const [submitStatus, setSubmitStatus] = useState<StepStatus>('idle');
+  const [openDiscrepancyCount, setOpenDiscrepancyCount] = useState<number>(0);
+  const [openDiscrepancyFields, setOpenDiscrepancyFields] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [instrumentId, setInstrumentId] = useState<string | null>(null);
@@ -134,6 +136,15 @@ export const NewFDRSubmission: React.FC<NewFDRSubmissionProps> = ({ lang }) => {
     draftStatus !== 'running' &&
     uploadStatus !== 'running';
 
+  // Tells the user exactly which required field is empty instead of just
+  // leaving the button silently greyed out — the instrument number/amount
+  // placeholder text (a worked example, not a pre-filled value) is easy to
+  // mistake for real content, especially next to a chosen file + dates.
+  const missingFieldReasons: string[] = [];
+  if (!user?.institution_id) missingFieldReasons.push(t.noInstitution);
+  if (instrumentNumber.trim().length < 3) missingFieldReasons.push('Enter the FDR / instrument number.');
+  if (!amount || Number(amount) <= 0) missingFieldReasons.push('Enter the deposit amount.');
+
   const handleCreateAndUpload = async () => {
     setErrorMessage(null);
     setCandidateFields(null);
@@ -209,7 +220,7 @@ export const NewFDRSubmission: React.FC<NewFDRSubmissionProps> = ({ lang }) => {
   const handleSubmitForScrutiny = async () => {
     if (!instrumentId) return;
     setSubmitStatus('running');
-    const { error } = await api.POST('/v1/instruments/{instrument_id}/submit', {
+    const { data, error } = await api.POST('/v1/instruments/{instrument_id}/submit', {
       params: { path: { instrument_id: instrumentId } },
       body: {
         reason: 'Institution submission via Submit FDR screen',
@@ -221,6 +232,13 @@ export const NewFDRSubmission: React.FC<NewFDRSubmissionProps> = ({ lang }) => {
       setErrorMessage(extractErrorMessage(error, 'Could not submit for scrutiny.'));
       return;
     }
+    // Submission itself is never blocked by a discrepancy (the rule engine's
+    // own invariant — a human decides, not the engine), but the declared
+    // vs. extracted comparison runs at this exact moment, so the submitter
+    // should see right away if what they typed doesn't match the document
+    // they uploaded, not just find out later when scrutiny opens it.
+    setOpenDiscrepancyCount(data?.open_discrepancy_count ?? 0);
+    setOpenDiscrepancyFields(data?.open_discrepancy_fields ?? []);
     setSubmitStatus('done');
   };
 
@@ -251,25 +269,33 @@ export const NewFDRSubmission: React.FC<NewFDRSubmissionProps> = ({ lang }) => {
 
         <div style={{ marginTop: '24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div>
-            <label style={labelStyle}>{t.instrumentNumber}</label>
+            <label style={labelStyle}>
+              {t.instrumentNumber} <span style={{ color: '#DC2626' }}>*</span>
+            </label>
             <input
-              style={inputStyle}
+              style={
+                instrumentNumber.trim().length === 0
+                  ? { ...inputStyle, border: '1px solid #F59E0B' }
+                  : inputStyle
+              }
               value={instrumentNumber}
               onChange={(e) => setInstrumentNumber(e.target.value)}
-              placeholder="SBI/2026/00123"
+              placeholder="e.g. SBI/2026/00123 — type the actual number"
               disabled={draftStatus === 'done'}
             />
           </div>
           <div>
-            <label style={labelStyle}>{t.amount}</label>
+            <label style={labelStyle}>
+              {t.amount} <span style={{ color: '#DC2626' }}>*</span>
+            </label>
             <input
-              style={inputStyle}
+              style={!amount ? { ...inputStyle, border: '1px solid #F59E0B' } : inputStyle}
               type="number"
               min="0"
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="3500000"
+              placeholder="e.g. 3500000 — type the actual amount"
               disabled={draftStatus === 'done'}
             />
           </div>
@@ -423,8 +449,31 @@ export const NewFDRSubmission: React.FC<NewFDRSubmissionProps> = ({ lang }) => {
               )}
             </button>
           ) : submitStatus === 'done' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#15803D', fontSize: '13px', fontWeight: 700 }}>
-              <CheckCircle2 size={18} /> {t.submitted}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#15803D', fontSize: '13px', fontWeight: 700 }}>
+                <CheckCircle2 size={18} /> {t.submitted}
+              </div>
+              {openDiscrepancyCount > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '8px',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    background: '#FEF2F2',
+                    color: '#991B1B',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <span>
+                    {describeDiscrepancies(openDiscrepancyFields)} Not corrected automatically — review it under
+                    Search &amp; Views before it reaches a decision.
+                  </span>
+                </div>
+              )}
             </div>
           ) : (
             <button
@@ -446,6 +495,11 @@ export const NewFDRSubmission: React.FC<NewFDRSubmissionProps> = ({ lang }) => {
             </button>
           )}
         </div>
+        {draftStatus !== 'done' && !canSubmit && missingFieldReasons.length > 0 && (
+          <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text3)' }}>
+            {missingFieldReasons.join(' ')}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -470,4 +524,32 @@ function extractErrorMessage(error: unknown, fallback: string): string {
     if (typeof e.title === 'string') return e.title;
   }
   return fallback;
+}
+
+// Maps the real rule-engine field names (app/rules/discrepancies.py) to an
+// accurate description of what was actually flagged. These are distinct
+// checks, not all "declared vs. document" mismatches — `instrument_number`
+// specifically means a duplicate of an already-registered number, not an
+// OCR mismatch, and showing the wrong explanation for that case is as
+// misleading as showing no explanation at all (CLAUDE.md non-negotiable #9).
+function describeDiscrepancies(fields: string[]): string {
+  if (fields.length === 0) return 'A discrepancy was flagged.';
+  const descriptions = fields.map((field) => {
+    switch (field) {
+      case 'amount':
+        return 'the declared amount does not match what OCR read from the uploaded document';
+      case 'instrument_number':
+        return 'this instrument number is already registered under another record (possible duplicate submission)';
+      case 'dates':
+        return 'the issue date is not before the maturity date';
+      case 'maturity_date':
+        return 'the maturity date has already passed';
+      case 'ifsc':
+        return 'the bank IFSC code is not in a valid format';
+      default:
+        return `a problem was found with "${field}"`;
+    }
+  });
+  const prefix = descriptions.length === 1 ? 'Flagged for scrutiny:' : `${descriptions.length} issues flagged for scrutiny:`;
+  return `${prefix} ${descriptions.join('; ')}.`;
 }

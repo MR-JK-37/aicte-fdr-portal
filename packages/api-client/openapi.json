@@ -14854,6 +14854,31 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "open_discrepancy_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Discrepancy Count"
+          },
+          "open_discrepancy_fields": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Discrepancy Fields"
           }
         },
         "type": "object",
