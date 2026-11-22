@@ -128,7 +128,20 @@ function getInitialTabForRole(role: AppRole, landingRoute?: string | null): stri
 }
 
 export const App: React.FC = () => {
-  const { status, user, logout } = useAuth();
+  const { status, user, serverUnreachable, refresh, logout } = useAuth();
+  const [showColdStartHint, setShowColdStartHint] = useState(false);
+
+  useEffect(() => {
+    if (status !== 'checking') {
+      setShowColdStartHint(false);
+      return;
+    }
+    // The backend runs on Render's free tier and can take 30-60s to
+    // cold-start after being idle. Surface that after a few seconds instead
+    // of leaving a bare "Loading…" on screen with no explanation.
+    const timer = setTimeout(() => setShowColdStartHint(true), 4000);
+    return () => clearTimeout(timer);
+  }, [status]);
 
   if (status === 'checking') {
     return (
@@ -136,14 +149,64 @@ export const App: React.FC = () => {
         style={{
           minHeight: '100vh',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          gap: 12,
           background: 'var(--canvas)',
           color: 'var(--text-muted)',
           fontSize: 13,
+          textAlign: 'center',
+          padding: 24,
         }}
       >
-        Loading…
+        <div>Loading…</div>
+        {showColdStartHint && (
+          <div style={{ maxWidth: 360, fontSize: 12, color: 'var(--text3, var(--text-muted))' }}>
+            The server is waking up — this can take up to a minute on the first visit after a
+            period of inactivity. Please keep this page open.
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (status === 'signed-out' && serverUnreachable) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 16,
+          background: 'var(--canvas)',
+          color: 'var(--text-muted)',
+          fontSize: 13,
+          textAlign: 'center',
+          padding: 24,
+        }}
+      >
+        <div style={{ maxWidth: 360 }}>
+          Unable to reach the server. It may still be starting up, or your connection may be
+          temporarily unavailable.
+        </div>
+        <button
+          onClick={() => refresh()}
+          style={{
+            padding: '8px 20px',
+            borderRadius: 8,
+            border: '1px solid var(--border, #ccc)',
+            background: 'var(--surface, #fff)',
+            color: 'inherit',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          Retry
+        </button>
       </div>
     );
   }
